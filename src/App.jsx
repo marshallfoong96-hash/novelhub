@@ -6,7 +6,8 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import NovelDetail from './pages/NovelDetail';
 import ChapterRead from './pages/ChapterRead';
-import { Sparkles, BookOpen, Users, PenTool, Mail, Github, Twitter } from 'lucide-react';
+import { Sparkles, BookOpen, Users, PenTool, Mail, Github, Facebook, ExternalLink } from 'lucide-react';
+import { AdBanner } from './components/AdSpace';
 
 function App() {
   return (
@@ -14,7 +15,7 @@ function App() {
       <Router>
         <div className="min-h-screen bg-background flex flex-col">
           <Header />
-          <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <main className="flex-1 w-full max-w-7xl mx-auto px-4 py-6">
             <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/login" element={<Login />} />
@@ -35,16 +36,16 @@ function NotFound() {
   return (
     <div className="min-h-[60vh] flex items-center justify-center">
       <div className="text-center">
-        <h1 className="text-8xl font-bold text-muted-foreground/20 mb-4">404</h1>
-        <h2 className="text-2xl font-semibold text-foreground mb-2">Page Not Found</h2>
-        <p className="text-muted-foreground mb-6">
-          The page you&apos;re looking for doesn&apos;t exist or has been moved.
+        <h1 className="text-7xl font-bold text-muted-foreground/20 mb-4">404</h1>
+        <h2 className="text-xl font-semibold text-foreground mb-2">Không tìm thấy trang</h2>
+        <p className="text-muted-foreground text-sm mb-6">
+          Trang bạn đang tìm kiếm không tồn tại hoặc đã được di chuyển.
         </p>
         <Link 
           to="/" 
-          className="inline-flex items-center gap-2 px-6 py-3 bg-foreground text-background rounded-lg font-medium hover:bg-foreground/90 transition-colors"
+          className="inline-flex items-center gap-2 px-5 py-2.5 bg-accent text-accent-foreground rounded-lg text-sm font-medium hover:bg-accent/90 transition-colors"
         >
-          Back to Home
+          Về trang chủ
         </Link>
       </div>
     </div>
@@ -56,58 +57,73 @@ function Footer() {
 
   const footerLinks = {
     discover: [
-      { label: 'Home', to: '/' },
-      { label: 'New Releases', to: '/truyen-moi' },
-      { label: 'Completed', to: '/truyen-full' },
-      { label: 'Genres', to: '/the-loai' },
+      { label: 'Trang chủ', to: '/' },
+      { label: 'Truyện Hot', to: '/hot' },
+      { label: 'Mới cập nhật', to: '/truyen-moi' },
+      { label: 'Truyện Full', to: '/truyen-full' },
+      { label: 'Thể loại', to: '/the-loai' },
     ],
     create: [
-      { label: 'AI Writing', to: '/truyen-sang-tac' },
-      { label: 'Teams', to: '/team' },
-      { label: 'Audio Novels', to: '/audio' },
+      { label: 'Viết truyện AI', to: '/truyen-sang-tac' },
+      { label: 'Đội nhóm', to: '/team' },
+      { label: 'Truyện Audio', to: '/audio' },
     ],
     company: [
-      { label: 'About', to: '/gioi-thieu' },
-      { label: 'Privacy', to: '/chinh-sach' },
-      { label: 'Terms', to: '/terms' },
+      { label: 'Giới thiệu', to: '/gioi-thieu' },
+      { label: 'Chính sách', to: '/chinh-sach' },
+      { label: 'Điều khoản', to: '/terms' },
+      { label: 'Liên hệ', to: '/lien-he' },
+    ],
+    partners: [
+      { label: 'Shopee', href: 'https://shopee.vn', external: true },
+      { label: 'Google Ads', href: '#', external: true },
     ],
   };
 
   return (
     <footer className="border-t border-border bg-card mt-auto">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      {/* Footer Ad Banner */}
+      <div className="max-w-7xl mx-auto px-4 py-4">
+        <AdBanner type="horizontal" className="hidden md:flex" />
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4">
         {/* Main Footer */}
-        <div className="py-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
+        <div className="py-8 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-8">
           {/* Brand */}
-          <div className="lg:col-span-2">
-            <Link to="/" className="flex items-center gap-2.5 mb-4">
-              <div className="w-9 h-9 bg-foreground rounded-lg flex items-center justify-center">
-                <Sparkles className="w-5 h-5 text-background" />
+          <div className="col-span-2 md:col-span-4 lg:col-span-1">
+            <Link to="/" className="flex items-center gap-2 mb-3">
+              <div className="w-8 h-8 bg-accent rounded-lg flex items-center justify-center">
+                <Sparkles className="w-4 h-4 text-accent-foreground" />
               </div>
-              <span className="text-xl font-bold text-foreground">NovelHub</span>
+              <span className="text-lg font-bold text-foreground">NovelHub</span>
             </Link>
-            <p className="text-muted-foreground text-sm max-w-sm mb-6">
-              Your ultimate destination for reading and creating novels. 
-              Powered by AI to help you discover and write amazing stories.
+            <p className="text-muted-foreground text-xs max-w-xs mb-4 leading-relaxed">
+              Nền tảng đọc truyện online hàng đầu với hàng nghìn tác phẩm hay. 
+              Hỗ trợ AI viết truyện thông minh.
             </p>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
               <a 
-                href="#" 
-                className="w-9 h-9 flex items-center justify-center bg-secondary text-muted-foreground hover:text-foreground rounded-lg transition-colors"
-                aria-label="Twitter"
+                href="https://facebook.com" 
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-8 h-8 flex items-center justify-center bg-secondary text-muted-foreground hover:text-foreground hover:bg-accent/10 rounded-lg transition-colors"
+                aria-label="Facebook"
               >
-                <Twitter className="w-4 h-4" />
+                <Facebook className="w-4 h-4" />
               </a>
               <a 
-                href="#" 
-                className="w-9 h-9 flex items-center justify-center bg-secondary text-muted-foreground hover:text-foreground rounded-lg transition-colors"
+                href="https://github.com" 
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-8 h-8 flex items-center justify-center bg-secondary text-muted-foreground hover:text-foreground hover:bg-accent/10 rounded-lg transition-colors"
                 aria-label="GitHub"
               >
                 <Github className="w-4 h-4" />
               </a>
               <a 
                 href="mailto:contact@novelhub.com" 
-                className="w-9 h-9 flex items-center justify-center bg-secondary text-muted-foreground hover:text-foreground rounded-lg transition-colors"
+                className="w-8 h-8 flex items-center justify-center bg-secondary text-muted-foreground hover:text-foreground hover:bg-accent/10 rounded-lg transition-colors"
                 aria-label="Email"
               >
                 <Mail className="w-4 h-4" />
@@ -115,18 +131,18 @@ function Footer() {
             </div>
           </div>
 
-          {/* Links */}
+          {/* Links - Discover */}
           <div>
-            <h4 className="font-semibold text-foreground mb-4 flex items-center gap-2">
-              <BookOpen className="w-4 h-4 text-accent" />
-              Discover
+            <h4 className="font-semibold text-foreground text-sm mb-3 flex items-center gap-1.5">
+              <BookOpen className="w-3.5 h-3.5 text-accent" />
+              Khám phá
             </h4>
-            <ul className="space-y-3">
+            <ul className="space-y-2">
               {footerLinks.discover.map((link) => (
                 <li key={link.to}>
                   <Link 
                     to={link.to} 
-                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                    className="text-xs text-muted-foreground hover:text-foreground transition-colors"
                   >
                     {link.label}
                   </Link>
@@ -135,17 +151,18 @@ function Footer() {
             </ul>
           </div>
 
+          {/* Links - Create */}
           <div>
-            <h4 className="font-semibold text-foreground mb-4 flex items-center gap-2">
-              <PenTool className="w-4 h-4 text-accent" />
-              Create
+            <h4 className="font-semibold text-foreground text-sm mb-3 flex items-center gap-1.5">
+              <PenTool className="w-3.5 h-3.5 text-accent" />
+              Sáng tác
             </h4>
-            <ul className="space-y-3">
+            <ul className="space-y-2">
               {footerLinks.create.map((link) => (
                 <li key={link.to}>
                   <Link 
                     to={link.to} 
-                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                    className="text-xs text-muted-foreground hover:text-foreground transition-colors"
                   >
                     {link.label}
                   </Link>
@@ -154,20 +171,44 @@ function Footer() {
             </ul>
           </div>
 
+          {/* Links - Company */}
           <div>
-            <h4 className="font-semibold text-foreground mb-4 flex items-center gap-2">
-              <Users className="w-4 h-4 text-accent" />
-              Company
+            <h4 className="font-semibold text-foreground text-sm mb-3 flex items-center gap-1.5">
+              <Users className="w-3.5 h-3.5 text-accent" />
+              Về chúng tôi
             </h4>
-            <ul className="space-y-3">
+            <ul className="space-y-2">
               {footerLinks.company.map((link) => (
                 <li key={link.to}>
                   <Link 
                     to={link.to} 
-                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                    className="text-xs text-muted-foreground hover:text-foreground transition-colors"
                   >
                     {link.label}
                   </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Partners */}
+          <div className="hidden lg:block">
+            <h4 className="font-semibold text-foreground text-sm mb-3 flex items-center gap-1.5">
+              <ExternalLink className="w-3.5 h-3.5 text-accent" />
+              Đối tác
+            </h4>
+            <ul className="space-y-2">
+              {footerLinks.partners.map((link) => (
+                <li key={link.label}>
+                  <a 
+                    href={link.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1"
+                  >
+                    {link.label}
+                    <ExternalLink className="w-2.5 h-2.5" />
+                  </a>
                 </li>
               ))}
             </ul>
@@ -175,13 +216,18 @@ function Footer() {
         </div>
 
         {/* Bottom Bar */}
-        <div className="py-6 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p className="text-sm text-muted-foreground">
+        <div className="py-4 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-3">
+          <p className="text-[10px] text-muted-foreground">
             © {currentYear} NovelHub. All rights reserved.
           </p>
-          <p className="text-sm text-muted-foreground">
-            Made with ❤️ for readers and writers
-          </p>
+          <div className="flex items-center gap-4 text-[10px] text-muted-foreground">
+            <Link to="/chinh-sach" className="hover:text-foreground transition-colors">
+              Chính sách bảo mật
+            </Link>
+            <Link to="/terms" className="hover:text-foreground transition-colors">
+              Điều khoản sử dụng
+            </Link>
+          </div>
         </div>
       </div>
     </footer>

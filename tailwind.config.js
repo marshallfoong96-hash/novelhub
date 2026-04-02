@@ -48,7 +48,8 @@ export default {
         sm: "calc(var(--radius) - 4px)",
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
+        sans: ['Be Vietnam Pro', 'system-ui', 'sans-serif'],
+        serif: ['Noto Serif JP', 'Georgia', 'serif'],
       },
       animation: {
         "fade-in": "fade-in 0.5s ease-out",

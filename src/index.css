@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Noto+Serif+JP:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,48 +6,50 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 0 0% 3.9%;
+    --background: 210 20% 98%;
+    --foreground: 222 47% 11%;
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 3.9%;
+    --card-foreground: 222 47% 11%;
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 3.9%;
-    --primary: 0 0% 9%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 0 0% 96.1%;
-    --secondary-foreground: 0 0% 9%;
-    --muted: 0 0% 96.1%;
-    --muted-foreground: 0 0% 45.1%;
-    --accent: 24 95% 53%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 84.2% 60.2%;
+    --popover-foreground: 222 47% 11%;
+    --primary: 222 47% 11%;
+    --primary-foreground: 210 20% 98%;
+    --secondary: 214 32% 91%;
+    --secondary-foreground: 222 47% 11%;
+    --muted: 214 32% 91%;
+    --muted-foreground: 215 16% 47%;
+    --accent: 346 77% 50%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 89.8%;
-    --input: 0 0% 89.8%;
-    --ring: 0 0% 3.9%;
-    --radius: 0.75rem;
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 346 77% 50%;
+    --radius: 0.5rem;
+    --success: 142 71% 45%;
+    --warning: 38 92% 50%;
   }
 
   .dark {
-    --background: 0 0% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 0 0% 7%;
-    --card-foreground: 0 0% 98%;
-    --popover: 0 0% 7%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 0 0% 9%;
-    --secondary: 0 0% 14.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 14.9%;
-    --muted-foreground: 0 0% 63.9%;
-    --accent: 24 95% 53%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
+    --background: 222 47% 8%;
+    --foreground: 210 20% 98%;
+    --card: 222 47% 11%;
+    --card-foreground: 210 20% 98%;
+    --popover: 222 47% 11%;
+    --popover-foreground: 210 20% 98%;
+    --primary: 210 20% 98%;
+    --primary-foreground: 222 47% 11%;
+    --secondary: 217 33% 17%;
+    --secondary-foreground: 210 20% 98%;
+    --muted: 217 33% 17%;
+    --muted-foreground: 215 20% 65%;
+    --accent: 346 77% 55%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 62% 30%;
     --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 14.9%;
-    --input: 0 0% 14.9%;
-    --ring: 0 0% 83.1%;
+    --border: 217 33% 17%;
+    --input: 217 33% 17%;
+    --ring: 346 77% 55%;
   }
 }
 
@@ -105,24 +107,6 @@ html {
   @apply bg-card/80 backdrop-blur-xl;
 }
 
-/* Animated gradient border */
-.gradient-border {
-  position: relative;
-}
-
-.gradient-border::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  padding: 1px;
-  background: linear-gradient(135deg, hsl(var(--accent)), hsl(var(--muted-foreground)));
-  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-}
-
 /* Line clamp utilities */
 .line-clamp-1 {
   display: -webkit-box;
@@ -143,4 +127,75 @@ html {
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+/* Ad container styles */
+.ad-container {
+  @apply bg-secondary/50 border border-dashed border-border rounded-lg flex items-center justify-center text-muted-foreground text-sm;
+  min-height: 90px;
+}
+
+.ad-banner {
+  @apply w-full bg-secondary/30 border border-dashed border-border rounded-lg flex items-center justify-center text-muted-foreground text-xs;
+}
+
+/* Novel card hover effects */
+.novel-card {
+  @apply relative overflow-hidden rounded-lg transition-all duration-300;
+}
+
+.novel-card:hover {
+  @apply shadow-lg -translate-y-1;
+}
+
+.novel-card::after {
+  content: '';
+  @apply absolute inset-0 bg-gradient-to-t from-foreground/60 via-transparent to-transparent opacity-0 transition-opacity duration-300;
+}
+
+.novel-card:hover::after {
+  @apply opacity-100;
+}
+
+/* Status badges */
+.badge-hot {
+  @apply bg-accent text-accent-foreground;
+}
+
+.badge-new {
+  @apply bg-[hsl(var(--success))] text-white;
+}
+
+.badge-full {
+  @apply bg-[hsl(var(--warning))] text-foreground;
+}
+
+/* Category tags */
+.category-tag {
+  @apply inline-flex items-center px-2.5 py-1 text-xs font-medium rounded-full bg-secondary text-secondary-foreground hover:bg-accent hover:text-accent-foreground transition-colors cursor-pointer;
+}
+
+/* Section divider */
+.section-divider {
+  @apply relative py-8;
+}
+
+.section-divider::before {
+  content: '';
+  @apply absolute left-0 right-0 top-1/2 h-px bg-border;
+}
+
+/* Marquee animation for announcements */
+@keyframes marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.animate-marquee {
+  animation: marquee 30s linear infinite;
+}
+
+/* Reading progress */
+.reading-progress {
+  @apply fixed top-0 left-0 h-1 bg-accent z-50 transition-all duration-150;
 }
