@@ -238,11 +238,14 @@ function Home() {
             </div>
           </div>
 
-          {/* Shopee Deals */}
-          <ShopeeDeals />
+          {/* Top Views Section */}
+          <TopViewsSection novels={hotNovels} />
 
-          {/* Sidebar Ads */}
+          {/* Sidebar Ad */}
           <AdSidebar />
+          
+          {/* Shopee Affiliate */}
+          <ShopeeDeals />
         </aside>
       </div>
 
@@ -459,6 +462,70 @@ function UpdateRow({ novel }) {
           {novel.chapters?.[0] ? formatDate(novel.chapters[0].createdAt) : formatDate(novel.updatedAt)}
         </span>
       </div>
+    </div>
+  );
+}
+
+function TopViewsSection({ novels }) {
+  // Sort novels by view count to show most viewed
+  const topViewed = [...novels]
+    .sort((a, b) => (b.viewCount || 0) - (a.viewCount || 0))
+    .slice(0, 5);
+
+  if (topViewed.length === 0) return null;
+
+  return (
+    <div className="bg-card border border-border rounded-lg overflow-hidden">
+      <div className="p-3 border-b border-border bg-accent/5">
+        <div className="flex items-center gap-2">
+          <Eye className="w-4 h-4 text-accent" />
+          <h3 className="font-semibold text-foreground text-sm">Lượt Xem Cao Nhất</h3>
+        </div>
+      </div>
+      
+      <div className="divide-y divide-border">
+        {topViewed.map((novel, index) => (
+          <Link
+            key={novel.id}
+            to={`/truyen/${novel.slug}`}
+            className="flex gap-3 p-3 hover:bg-secondary/30 transition-colors group"
+          >
+            <img
+              src={novel.cover || '/default-cover.jpg'}
+              alt={novel.title}
+              className="w-12 h-16 object-cover rounded flex-shrink-0"
+            />
+            <div className="flex-1 min-w-0">
+              <h4 className="text-xs font-medium text-foreground line-clamp-2 group-hover:text-accent transition-colors">
+                {novel.title}
+              </h4>
+              <div className="flex items-center gap-2 mt-1.5">
+                <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                  <Eye className="w-3 h-3" />
+                  {formatNumber(novel.viewCount || 0)}
+                </span>
+                <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                  <Heart className="w-3 h-3" />
+                  {formatNumber(novel.likes || 0)}
+                </span>
+              </div>
+              {novel.status === 'completed' && (
+                <span className="inline-block mt-1 text-[9px] px-1.5 py-0.5 bg-[hsl(var(--success))]/10 text-[hsl(var(--success))] rounded font-medium">
+                  FULL
+                </span>
+              )}
+            </div>
+          </Link>
+        ))}
+      </div>
+      
+      <Link
+        to="/hot"
+        className="flex items-center justify-center gap-1 p-2.5 text-xs text-accent hover:bg-accent/5 transition-colors border-t border-border"
+      >
+        Xem tất cả
+        <ChevronRight className="w-3.5 h-3.5" />
+      </Link>
     </div>
   );
 }
