@@ -1,0 +1,201 @@
+@import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Noto+Serif+JP:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 210 20% 98%;
+    --foreground: 222 47% 11%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+    --primary: 222 47% 11%;
+    --primary-foreground: 210 20% 98%;
+    --secondary: 214 32% 91%;
+    --secondary-foreground: 222 47% 11%;
+    --muted: 214 32% 91%;
+    --muted-foreground: 215 16% 47%;
+    --accent: 346 77% 50%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 346 77% 50%;
+    --radius: 0.5rem;
+    --success: 142 71% 45%;
+    --warning: 38 92% 50%;
+  }
+
+  .dark {
+    --background: 222 47% 8%;
+    --foreground: 210 20% 98%;
+    --card: 222 47% 11%;
+    --card-foreground: 210 20% 98%;
+    --popover: 222 47% 11%;
+    --popover-foreground: 210 20% 98%;
+    --primary: 210 20% 98%;
+    --primary-foreground: 222 47% 11%;
+    --secondary: 217 33% 17%;
+    --secondary-foreground: 210 20% 98%;
+    --muted: 217 33% 17%;
+    --muted-foreground: 215 20% 65%;
+    --accent: 346 77% 55%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 62% 30%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 217 33% 17%;
+    --input: 217 33% 17%;
+    --ring: 346 77% 55%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-muted;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-muted-foreground/30 rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-muted-foreground/50;
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Focus styles */
+*:focus-visible {
+  @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+}
+
+/* Selection color */
+::selection {
+  @apply bg-accent/20 text-accent-foreground;
+}
+
+/* Gradient text utility */
+.gradient-text {
+  @apply bg-gradient-to-r from-foreground to-muted-foreground bg-clip-text text-transparent;
+}
+
+/* Glass effect */
+.glass {
+  @apply bg-card/80 backdrop-blur-xl;
+}
+
+/* Line clamp utilities */
+.line-clamp-1 {
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Ad container styles */
+.ad-container {
+  @apply bg-secondary/50 border border-dashed border-border rounded-lg flex items-center justify-center text-muted-foreground text-sm;
+  min-height: 90px;
+}
+
+.ad-banner {
+  @apply w-full bg-secondary/30 border border-dashed border-border rounded-lg flex items-center justify-center text-muted-foreground text-xs;
+}
+
+/* Novel card hover effects */
+.novel-card {
+  @apply relative overflow-hidden rounded-lg transition-all duration-300;
+}
+
+.novel-card:hover {
+  @apply shadow-lg -translate-y-1;
+}
+
+.novel-card::after {
+  content: '';
+  @apply absolute inset-0 bg-gradient-to-t from-foreground/60 via-transparent to-transparent opacity-0 transition-opacity duration-300;
+}
+
+.novel-card:hover::after {
+  @apply opacity-100;
+}
+
+/* Status badges */
+.badge-hot {
+  @apply bg-accent text-accent-foreground;
+}
+
+.badge-new {
+  @apply bg-[hsl(var(--success))] text-white;
+}
+
+.badge-full {
+  @apply bg-[hsl(var(--warning))] text-foreground;
+}
+
+/* Category tags */
+.category-tag {
+  @apply inline-flex items-center px-2.5 py-1 text-xs font-medium rounded-full bg-secondary text-secondary-foreground hover:bg-accent hover:text-accent-foreground transition-colors cursor-pointer;
+}
+
+/* Section divider */
+.section-divider {
+  @apply relative py-8;
+}
+
+.section-divider::before {
+  content: '';
+  @apply absolute left-0 right-0 top-1/2 h-px bg-border;
+}
+
+/* Marquee animation for announcements */
+@keyframes marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.animate-marquee {
+  animation: marquee 30s linear infinite;
+}
+
+/* Reading progress */
+.reading-progress {
+  @apply fixed top-0 left-0 h-1 bg-accent z-50 transition-all duration-150;
+}
