@@ -1,6 +1,19 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Star, Flame, Clock, TrendingUp, Eye, ChevronRight, Users, BookOpen } from 'lucide-react';
+import { 
+  Sparkles, 
+  Flame, 
+  Clock, 
+  TrendingUp, 
+  Eye, 
+  ChevronRight, 
+  BookOpen, 
+  Zap,
+  PenTool,
+  ArrowRight,
+  Star,
+  Users
+} from 'lucide-react';
 import { novelAPI, genreAPI } from '../api/services';
 import NovelCard from '../components/NovelCard';
 import { formatNumber, formatDate } from '../utils/helpers';
@@ -22,7 +35,6 @@ function Home() {
     try {
       setLoading(true);
       
-      // Fetch all data in parallel
       const [hotRes, updatesRes, genresRes] = await Promise.all([
         novelAPI.getHot({ period: 'month', limit: 6 }),
         novelAPI.getRecentUpdates({ limit: 8 }),
@@ -33,7 +45,6 @@ function Home() {
       setNewUpdates(updatesRes.data.novels || []);
       setGenres(genresRes.data.genres || []);
 
-      // Fetch rankings for different periods
       const [dayRes, weekRes, monthRes] = await Promise.all([
         novelAPI.getHot({ period: 'day', limit: 10 }),
         novelAPI.getHot({ period: 'week', limit: 10 }),
@@ -46,9 +57,7 @@ function Home() {
         month: monthRes.data.novels || []
       });
 
-      // Use first 3 hot novels as featured
       setFeaturedNovels(hotRes.data.novels?.slice(0, 3) || []);
-
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
@@ -58,101 +67,88 @@ function Home() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-2 border-accent border-t-transparent rounded-full animate-spin" />
+          <p className="text-muted-foreground text-sm">Loading novels...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8">
-      {/* Featured Section */}
-      {featuredNovels.length > 0 && <FeaturedSection novels={featuredNovels} />}
+    <div className="space-y-16">
+      {/* Hero Section */}
+      <HeroSection />
+
+      {/* Stats Section */}
+      <StatsSection />
+
+      {/* Featured Novels */}
+      {featuredNovels.length > 0 && (
+        <section>
+          <SectionHeader 
+            icon={<Sparkles className="w-5 h-5" />}
+            title="Featured Today"
+            link="/featured"
+          />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {featuredNovels.map((novel) => (
+              <NovelCard key={novel.id} novel={novel} variant="featured" />
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Hot Novels */}
       <section>
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <Flame className="w-5 h-5 text-red-500" />
-            <h2 className="text-lg font-bold text-gray-900">TRUYỆN HOT THÁNG NÀY</h2>
-          </div>
-          <Link to="/hot" className="text-sm text-blue-500 hover:text-blue-600 flex items-center gap-1">
-            Xem thêm <ChevronRight className="w-4 h-4" />
-          </Link>
-        </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
+        <SectionHeader 
+          icon={<Flame className="w-5 h-5 text-accent" />}
+          title="Trending This Month"
+          link="/hot"
+        />
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
           {hotNovels.map((novel) => (
-            <NovelCard key={novel.id} novel={novel} />
+            <NovelCard key={novel.id} novel={novel} showStatus />
           ))}
         </div>
       </section>
 
-      {/* Main Content Grid */}
+      {/* Two Column Layout */}
       <div className="grid lg:grid-cols-3 gap-8">
         {/* Left Column */}
-        <div className="lg:col-span-2 space-y-8">
+        <div className="lg:col-span-2 space-y-12">
           {/* New Updates */}
           <section>
-            <div className="flex items-center gap-2 mb-4">
-              <Clock className="w-5 h-5 text-green-500" />
-              <h2 className="text-lg font-bold text-gray-900">TRUYỆN MỚI CẬP NHẬT</h2>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <SectionHeader 
+              icon={<Clock className="w-5 h-5 text-accent" />}
+              title="Recently Updated"
+              link="/truyen-moi"
+            />
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
               {newUpdates.map((novel) => (
-                <div key={novel.id} className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow">
-                  <Link to={`/truyen/${novel.slug}`}>
-                    <div className="relative aspect-[3/4] overflow-hidden">
-                      <img
-                        src={novel.cover || '/default-cover.jpg'}
-                        alt={novel.title}
-                        className="w-full h-full object-cover"
-                      />
-                      {novel.status === 'completed' && (
-                        <span className="absolute top-2 right-2 px-2 py-1 bg-red-500 text-white text-xs font-bold rounded">
-                          FULL
-                        </span>
-                      )}
-                    </div>
-                  </Link>
-                  <div className="p-3">
-                    <Link to={`/truyen/${novel.slug}`}>
-                      <h3 className="font-medium text-sm text-gray-900 line-clamp-1 mb-1 hover:text-blue-500">
-                        {novel.title}
-                      </h3>
-                    </Link>
-                    {novel.chapters?.[0] && (
-                      <div className="flex items-center justify-between text-xs text-gray-500">
-                        <Link 
-                          to={`/truyen/${novel.slug}/chuong-${novel.chapters[0].chapterNumber}`}
-                          className="text-blue-500 hover:underline"
-                        >
-                          {novel.chapters[0].title}
-                        </Link>
-                        <span>{formatDate(novel.chapters[0].createdAt)}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
+                <UpdateCard key={novel.id} novel={novel} />
               ))}
             </div>
           </section>
 
-          {/* Genres */}
+          {/* Genres Grid */}
           <section>
-            <div className="flex items-center gap-2 mb-4">
-              <BookOpen className="w-5 h-5 text-indigo-500" />
-              <h2 className="text-lg font-bold text-gray-900">THỂ LOẠI</h2>
-            </div>
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <SectionHeader 
+              icon={<BookOpen className="w-5 h-5 text-accent" />}
+              title="Browse by Genre"
+              link="/the-loai"
+            />
+            <div className="bg-card border border-border rounded-xl p-6">
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
                 {genres.map((genre) => (
                   <Link
                     key={genre.id}
                     to={`/the-loai/${genre.slug}`}
-                    className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-colors"
+                    className="group flex items-center gap-2 px-4 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:bg-secondary rounded-lg transition-all"
                   >
-                    <ChevronRight className="w-3 h-3 text-gray-400" />
-                    {genre.name}
+                    <ChevronRight className="w-3 h-3 text-muted-foreground group-hover:text-accent group-hover:translate-x-0.5 transition-all" />
+                    <span>{genre.name}</span>
                   </Link>
                 ))}
               </div>
@@ -162,53 +158,57 @@ function Home() {
 
         {/* Right Column - Rankings */}
         <div className="lg:col-span-1">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden sticky top-24">
-            <div className="p-4 border-b border-gray-100">
+          <div className="bg-card border border-border rounded-xl overflow-hidden sticky top-24">
+            <div className="p-4 border-b border-border">
               <div className="flex items-center gap-2">
-                <TrendingUp className="w-5 h-5 text-purple-500" />
-                <h3 className="font-bold text-gray-900">BẢNG XẾP HẠNG</h3>
+                <TrendingUp className="w-5 h-5 text-accent" />
+                <h3 className="font-semibold text-foreground">Top Rankings</h3>
               </div>
             </div>
             
             {/* Tabs */}
-            <div className="flex border-b">
-              {['day', 'week', 'month'].map((tab) => (
+            <div className="flex border-b border-border">
+              {[
+                { key: 'day', label: 'Today' },
+                { key: 'week', label: 'Week' },
+                { key: 'month', label: 'Month' },
+              ].map((tab) => (
                 <button
-                  key={tab}
-                  onClick={() => setActiveRankTab(tab)}
-                  className={`flex-1 py-2 text-xs font-medium capitalize ${
-                    activeRankTab === tab
-                      ? 'text-blue-500 border-b-2 border-blue-500'
-                      : 'text-gray-500 hover:text-gray-700'
+                  key={tab.key}
+                  onClick={() => setActiveRankTab(tab.key)}
+                  className={`flex-1 py-3 text-sm font-medium transition-colors ${
+                    activeRankTab === tab.key
+                      ? 'text-accent border-b-2 border-accent -mb-px'
+                      : 'text-muted-foreground hover:text-foreground'
                   }`}
                 >
-                  {tab === 'day' ? 'Ngày' : tab === 'week' ? 'Tuần' : 'Tháng'}
+                  {tab.label}
                 </button>
               ))}
             </div>
 
             {/* Ranking List */}
-            <div className="divide-y">
+            <div className="divide-y divide-border">
               {rankings[activeRankTab]?.map((novel, index) => (
                 <Link
                   key={novel.id}
                   to={`/truyen/${novel.slug}`}
-                  className="flex items-center gap-3 p-3 hover:bg-gray-50 transition-colors"
+                  className="flex items-center gap-3 p-4 hover:bg-secondary/50 transition-colors"
                 >
-                  <span className={`w-6 h-6 flex items-center justify-center rounded text-xs font-bold ${
+                  <span className={`w-7 h-7 flex items-center justify-center rounded-lg text-xs font-bold ${
                     index < 3 
-                      ? 'bg-gradient-to-br from-orange-400 to-orange-500 text-white' 
-                      : 'bg-gray-100 text-gray-600'
+                      ? 'bg-accent text-accent-foreground' 
+                      : 'bg-secondary text-muted-foreground'
                   }`}>
                     {index + 1}
                   </span>
                   <div className="flex-1 min-w-0">
-                    <h4 className="text-sm font-medium text-gray-900 line-clamp-1">
+                    <h4 className="text-sm font-medium text-foreground line-clamp-1">
                       {novel.title}
                     </h4>
-                    <p className="text-xs text-gray-500">{novel.totalChapters} chương</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{novel.totalChapters} chapters</p>
                   </div>
-                  <span className="flex items-center gap-1 text-xs text-gray-500">
+                  <span className="flex items-center gap-1 text-xs text-muted-foreground">
                     <Eye className="w-3 h-3" />
                     {formatNumber(novel.viewCount)}
                   </span>
@@ -218,95 +218,171 @@ function Home() {
           </div>
         </div>
       </div>
+
+      {/* CTA Section */}
+      <CTASection />
     </div>
   );
 }
 
-// Featured Section Component
-function FeaturedSection({ novels }) {
-  const [currentSlide, setCurrentSlide] = useState(0);
-
-  if (!novels.length) return null;
-
+function HeroSection() {
   return (
-    <section>
-      <div className="flex items-center gap-2 mb-4">
-        <Star className="w-5 h-5 text-orange-500" />
-        <h2 className="text-lg font-bold text-gray-900">ĐỀ CỬ HÔM NAY</h2>
-      </div>
+    <section className="relative overflow-hidden rounded-2xl bg-card border border-border">
+      {/* Background Pattern */}
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,hsl(var(--accent)/0.1),transparent_50%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,hsl(var(--accent)/0.05),transparent_50%)]" />
       
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="grid md:grid-cols-2 gap-0">
-          {/* Featured Novel */}
-          <div className="p-6 flex gap-4">
-            <img
-              src={novels[currentSlide]?.cover}
-              alt={novels[currentSlide]?.title}
-              className="w-32 h-48 object-cover rounded-lg shadow-md flex-shrink-0"
-            />
-            <div className="flex-1 min-w-0">
-              <h3 className="font-bold text-gray-900 line-clamp-2 mb-2">
-                {novels[currentSlide]?.title}
-              </h3>
-              <p className="text-sm text-gray-600 line-clamp-3 mb-3">
-                {novels[currentSlide]?.description}
-              </p>
-              <div className="flex items-center gap-2 text-sm text-gray-500 mb-2">
-                <Users className="w-4 h-4" />
-                <span>{novels[currentSlide]?.author}</span>
-              </div>
-              <div className="flex items-center gap-4 text-sm text-gray-500">
-                <span className="flex items-center gap-1">
-                  <Eye className="w-4 h-4" />
-                  {formatNumber(novels[currentSlide]?.viewCount)}
-                </span>
-                <span className="flex items-center gap-1">
-                  <BookOpen className="w-4 h-4" />
-                  {novels[currentSlide]?.totalChapters} chương
-                </span>
-              </div>
-            </div>
+      <div className="relative px-8 py-16 sm:py-24 lg:py-32">
+        <div className="max-w-3xl mx-auto text-center">
+          <div className="inline-flex items-center gap-2 px-3 py-1 bg-accent/10 text-accent rounded-full text-sm font-medium mb-6">
+            <Sparkles className="w-4 h-4" />
+            AI-Powered Novel Platform
           </div>
-
-          {/* Side List */}
-          <div className="border-t md:border-t-0 md:border-l border-gray-100">
-            {novels.map((novel, index) => (
-              <button
-                key={novel.id}
-                onClick={() => setCurrentSlide(index)}
-                className={`w-full p-4 text-left flex gap-3 hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-b-0 ${
-                  index === currentSlide ? 'bg-blue-50' : ''
-                }`}
-              >
-                <img
-                  src={novel.cover}
-                  alt={novel.title}
-                  className="w-16 h-24 object-cover rounded flex-shrink-0"
-                />
-                <div className="flex-1 min-w-0">
-                  <h4 className={`font-medium text-sm line-clamp-2 mb-1 ${
-                    index === currentSlide ? 'text-blue-600' : 'text-gray-900'
-                  }`}>
-                    {novel.title}
-                  </h4>
-                  <p className="text-xs text-gray-500">{novel.author}</p>
-                </div>
-              </button>
-            ))}
+          
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-foreground leading-tight text-balance mb-6">
+            Discover and Create
+            <span className="block text-accent">Amazing Stories</span>
+          </h1>
+          
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-8 text-pretty">
+            Read thousands of novels or unleash your creativity with our AI writing assistant. 
+            Your next favorite story is just a click away.
+          </p>
+          
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <Link
+              to="/truyen-moi"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-foreground text-background rounded-lg font-medium hover:bg-foreground/90 transition-colors"
+            >
+              Start Reading
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+            <Link
+              to="/truyen-sang-tac"
+              className="inline-flex items-center gap-2 px-6 py-3 border border-border text-foreground rounded-lg font-medium hover:bg-secondary transition-colors"
+            >
+              <PenTool className="w-4 h-4" />
+              Write with AI
+            </Link>
           </div>
         </div>
+      </div>
+    </section>
+  );
+}
 
-        {/* Dots */}
-        <div className="flex justify-center gap-2 p-4">
-          {novels.map((_, index) => (
-            <button
-              key={index}
-              onClick={() => setCurrentSlide(index)}
-              className={`w-2 h-2 rounded-full transition-colors ${
-                index === currentSlide ? 'bg-blue-500' : 'bg-gray-300'
-              }`}
-            />
-          ))}
+function StatsSection() {
+  const stats = [
+    { value: '10K+', label: 'Novels', icon: BookOpen },
+    { value: '500K+', label: 'Chapters', icon: Star },
+    { value: '1M+', label: 'Readers', icon: Users },
+    { value: '99%', label: 'Satisfaction', icon: Zap },
+  ];
+
+  return (
+    <section className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      {stats.map((stat, index) => (
+        <div 
+          key={index}
+          className="bg-card border border-border rounded-xl p-6 text-center hover:border-accent/50 transition-colors"
+        >
+          <div className="inline-flex items-center justify-center w-10 h-10 bg-accent/10 text-accent rounded-lg mb-3">
+            <stat.icon className="w-5 h-5" />
+          </div>
+          <div className="text-2xl font-bold text-foreground mb-1">{stat.value}</div>
+          <div className="text-sm text-muted-foreground">{stat.label}</div>
+        </div>
+      ))}
+    </section>
+  );
+}
+
+function SectionHeader({ icon, title, link }) {
+  return (
+    <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center gap-2">
+        {icon}
+        <h2 className="text-lg font-semibold text-foreground">{title}</h2>
+      </div>
+      {link && (
+        <Link 
+          to={link} 
+          className="text-sm text-muted-foreground hover:text-accent flex items-center gap-1 transition-colors"
+        >
+          View all
+          <ChevronRight className="w-4 h-4" />
+        </Link>
+      )}
+    </div>
+  );
+}
+
+function UpdateCard({ novel }) {
+  return (
+    <div className="group bg-card border border-border rounded-lg overflow-hidden hover:border-accent/50 transition-all">
+      <Link to={`/truyen/${novel.slug}`}>
+        <div className="relative aspect-[3/4] overflow-hidden">
+          <img
+            src={novel.cover || '/default-cover.jpg'}
+            alt={novel.title}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          />
+          {novel.status === 'completed' && (
+            <span className="absolute top-2 right-2 px-2 py-0.5 bg-accent text-accent-foreground text-xs font-semibold rounded">
+              Complete
+            </span>
+          )}
+        </div>
+      </Link>
+      <div className="p-3">
+        <Link to={`/truyen/${novel.slug}`}>
+          <h3 className="font-medium text-sm text-foreground line-clamp-1 mb-1 group-hover:text-accent transition-colors">
+            {novel.title}
+          </h3>
+        </Link>
+        {novel.chapters?.[0] && (
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <Link 
+              to={`/truyen/${novel.slug}/chuong-${novel.chapters[0].chapterNumber}`}
+              className="text-accent hover:underline truncate"
+            >
+              {novel.chapters[0].title}
+            </Link>
+            <span className="ml-2 whitespace-nowrap">{formatDate(novel.chapters[0].createdAt)}</span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function CTASection() {
+  return (
+    <section className="relative overflow-hidden rounded-2xl bg-foreground text-background">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,hsl(var(--accent)),transparent_50%)] opacity-20" />
+      
+      <div className="relative px-8 py-16 text-center">
+        <h2 className="text-3xl font-bold mb-4 text-balance">
+          Ready to Start Your Writing Journey?
+        </h2>
+        <p className="text-background/70 max-w-xl mx-auto mb-8">
+          Join thousands of writers using our AI-powered tools to create compelling stories. 
+          Start writing for free today.
+        </p>
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+          <Link
+            to="/register"
+            className="inline-flex items-center gap-2 px-6 py-3 bg-background text-foreground rounded-lg font-medium hover:bg-background/90 transition-colors"
+          >
+            Create Free Account
+            <ArrowRight className="w-4 h-4" />
+          </Link>
+          <Link
+            to="/truyen-sang-tac"
+            className="inline-flex items-center gap-2 px-6 py-3 border border-background/30 text-background rounded-lg font-medium hover:bg-background/10 transition-colors"
+          >
+            Learn More
+          </Link>
         </div>
       </div>
     </section>

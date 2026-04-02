@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import Header from './components/Header';
 import Home from './pages/Home';
@@ -6,14 +6,15 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import NovelDetail from './pages/NovelDetail';
 import ChapterRead from './pages/ChapterRead';
+import { Sparkles, BookOpen, Users, PenTool, Mail, Github, Twitter } from 'lucide-react';
 
 function App() {
   return (
     <AuthProvider>
       <Router>
-        <div className="min-h-screen bg-gray-50">
+        <div className="min-h-screen bg-background flex flex-col">
           <Header />
-          <main className="max-w-7xl mx-auto px-4 py-6">
+          <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/login" element={<Login />} />
@@ -32,68 +33,155 @@ function App() {
 
 function NotFound() {
   return (
-    <div className="text-center py-12">
-      <h1 className="text-4xl font-bold text-gray-300 mb-4">404</h1>
-      <p className="text-gray-600 mb-4">Trang không tồn tại</p>
-      <a href="/" className="text-blue-500 hover:underline">
-        Quay lại trang chủ
-      </a>
+    <div className="min-h-[60vh] flex items-center justify-center">
+      <div className="text-center">
+        <h1 className="text-8xl font-bold text-muted-foreground/20 mb-4">404</h1>
+        <h2 className="text-2xl font-semibold text-foreground mb-2">Page Not Found</h2>
+        <p className="text-muted-foreground mb-6">
+          The page you&apos;re looking for doesn&apos;t exist or has been moved.
+        </p>
+        <Link 
+          to="/" 
+          className="inline-flex items-center gap-2 px-6 py-3 bg-foreground text-background rounded-lg font-medium hover:bg-foreground/90 transition-colors"
+        >
+          Back to Home
+        </Link>
+      </div>
     </div>
   );
 }
 
 function Footer() {
+  const currentYear = new Date().getFullYear();
+
+  const footerLinks = {
+    discover: [
+      { label: 'Home', to: '/' },
+      { label: 'New Releases', to: '/truyen-moi' },
+      { label: 'Completed', to: '/truyen-full' },
+      { label: 'Genres', to: '/the-loai' },
+    ],
+    create: [
+      { label: 'AI Writing', to: '/truyen-sang-tac' },
+      { label: 'Teams', to: '/team' },
+      { label: 'Audio Novels', to: '/audio' },
+    ],
+    company: [
+      { label: 'About', to: '/gioi-thieu' },
+      { label: 'Privacy', to: '/chinh-sach' },
+      { label: 'Terms', to: '/terms' },
+    ],
+  };
+
   return (
-    <footer className="bg-white border-t border-gray-100 mt-12">
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="grid md:grid-cols-2 gap-8 mb-8">
-          <div>
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-10 h-10 bg-gradient-to-br from-orange-400 to-orange-500 rounded-full flex items-center justify-center">
-                <span className="text-white font-bold text-xl">N</span>
+    <footer className="border-t border-border bg-card mt-auto">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Main Footer */}
+        <div className="py-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
+          {/* Brand */}
+          <div className="lg:col-span-2">
+            <Link to="/" className="flex items-center gap-2.5 mb-4">
+              <div className="w-9 h-9 bg-foreground rounded-lg flex items-center justify-center">
+                <Sparkles className="w-5 h-5 text-background" />
               </div>
-              <span className="text-2xl font-bold bg-gradient-to-r from-orange-500 to-orange-600 bg-clip-text text-transparent">
-                NovelHub
-              </span>
-            </div>
-            <p className="text-gray-600 text-sm mb-4">
-              Đọc truyện online, truyện chữ hay nhất. Cập nhật liên tục các truyện mới, 
-              truyện full, truyện sáng tác chất lượng cao.
+              <span className="text-xl font-bold text-foreground">NovelHub</span>
+            </Link>
+            <p className="text-muted-foreground text-sm max-w-sm mb-6">
+              Your ultimate destination for reading and creating novels. 
+              Powered by AI to help you discover and write amazing stories.
             </p>
-            <div className="text-sm text-gray-500">
-              <p>Email: contact@novelhub.com</p>
+            <div className="flex items-center gap-3">
+              <a 
+                href="#" 
+                className="w-9 h-9 flex items-center justify-center bg-secondary text-muted-foreground hover:text-foreground rounded-lg transition-colors"
+                aria-label="Twitter"
+              >
+                <Twitter className="w-4 h-4" />
+              </a>
+              <a 
+                href="#" 
+                className="w-9 h-9 flex items-center justify-center bg-secondary text-muted-foreground hover:text-foreground rounded-lg transition-colors"
+                aria-label="GitHub"
+              >
+                <Github className="w-4 h-4" />
+              </a>
+              <a 
+                href="mailto:contact@novelhub.com" 
+                className="w-9 h-9 flex items-center justify-center bg-secondary text-muted-foreground hover:text-foreground rounded-lg transition-colors"
+                aria-label="Email"
+              >
+                <Mail className="w-4 h-4" />
+              </a>
             </div>
           </div>
-          
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-            <div>
-              <h4 className="font-semibold text-gray-900 mb-3">Khám phá</h4>
-              <ul className="space-y-2 text-sm text-gray-600">
-                <li><a href="/" className="hover:text-blue-500">Trang chủ</a></li>
-                <li><a href="/truyen-moi" className="hover:text-blue-500">Truyện mới</a></li>
-                <li><a href="/truyen-full" className="hover:text-blue-500">Truyện Full</a></li>
-                <li><a href="/the-loai" className="hover:text-blue-500">Thể loại</a></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-semibold text-gray-900 mb-3">Cộng đồng</h4>
-              <ul className="space-y-2 text-sm text-gray-600">
-                <li><a href="/team" className="hover:text-blue-500">Nhóm dịch</a></li>
-                <li><a href="/truyen-sang-tac" className="hover:text-blue-500">Sáng tác</a></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-semibold text-gray-900 mb-3">Hỗ trợ</h4>
-              <ul className="space-y-2 text-sm text-gray-600">
-                <li><a href="/gioi-thieu" className="hover:text-blue-500">Giới thiệu</a></li>
-                <li><a href="/chinh-sach" className="hover:text-blue-500">Chính sách</a></li>
-              </ul>
-            </div>
+
+          {/* Links */}
+          <div>
+            <h4 className="font-semibold text-foreground mb-4 flex items-center gap-2">
+              <BookOpen className="w-4 h-4 text-accent" />
+              Discover
+            </h4>
+            <ul className="space-y-3">
+              {footerLinks.discover.map((link) => (
+                <li key={link.to}>
+                  <Link 
+                    to={link.to} 
+                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div>
+            <h4 className="font-semibold text-foreground mb-4 flex items-center gap-2">
+              <PenTool className="w-4 h-4 text-accent" />
+              Create
+            </h4>
+            <ul className="space-y-3">
+              {footerLinks.create.map((link) => (
+                <li key={link.to}>
+                  <Link 
+                    to={link.to} 
+                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div>
+            <h4 className="font-semibold text-foreground mb-4 flex items-center gap-2">
+              <Users className="w-4 h-4 text-accent" />
+              Company
+            </h4>
+            <ul className="space-y-3">
+              {footerLinks.company.map((link) => (
+                <li key={link.to}>
+                  <Link 
+                    to={link.to} 
+                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
           </div>
         </div>
-        
-        <div className="border-t border-gray-100 pt-4 text-center text-sm text-gray-500">
-          <p>Copyright © 2024 NovelHub. All rights reserved.</p>
+
+        {/* Bottom Bar */}
+        <div className="py-6 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-4">
+          <p className="text-sm text-muted-foreground">
+            © {currentYear} NovelHub. All rights reserved.
+          </p>
+          <p className="text-sm text-muted-foreground">
+            Made with ❤️ for readers and writers
+          </p>
         </div>
       </div>
     </footer>

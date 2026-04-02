@@ -1,12 +1,31 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Search, User, Menu, X, BookOpen, Home, Library, Headphones, Users, PenTool } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import { Search, User, Menu, X, BookOpen, Sparkles, ChevronDown, Moon, Sun } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [isDark, setIsDark] = useState(false);
   const { user, isAuthenticated, logout } = useAuth();
+  const location = useLocation();
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 10);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  useEffect(() => {
+    if (isDark) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [isDark]);
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -15,69 +34,116 @@ function Header() {
     }
   };
 
-  return (
-    <header className="bg-white shadow-sm sticky top-0 z-50">
-      {/* Top Bar */}
-      <div className="border-b border-gray-100">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="flex items-center justify-between h-16">
-            {/* Logo */}
-            <Link to="/" className="flex items-center gap-2">
-              <div className="w-10 h-10 bg-gradient-to-br from-orange-400 to-orange-500 rounded-full flex items-center justify-center">
-                <BookOpen className="w-6 h-6 text-white" />
-              </div>
-              <span className="text-2xl font-bold bg-gradient-to-r from-orange-500 to-orange-600 bg-clip-text text-transparent">
-                NovelHub
-              </span>
-            </Link>
+  const navLinks = [
+    { to: '/', label: 'Home' },
+    { to: '/truyen-moi', label: 'New Releases' },
+    { to: '/the-loai', label: 'Genres' },
+    { to: '/truyen-full', label: 'Completed' },
+    { to: '/truyen-sang-tac', label: 'AI Writing' },
+  ];
 
+  return (
+    <header 
+      className={`sticky top-0 z-50 transition-all duration-300 ${
+        isScrolled 
+          ? 'bg-background/80 backdrop-blur-xl border-b border-border shadow-sm' 
+          : 'bg-background border-b border-transparent'
+      }`}
+    >
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-16">
+          {/* Logo */}
+          <Link to="/" className="flex items-center gap-2.5 group">
+            <div className="relative">
+              <div className="w-9 h-9 bg-foreground rounded-lg flex items-center justify-center group-hover:scale-105 transition-transform">
+                <Sparkles className="w-5 h-5 text-background" />
+              </div>
+            </div>
+            <span className="text-xl font-bold text-foreground">
+              NovelHub
+            </span>
+          </Link>
+
+          {/* Desktop Navigation */}
+          <nav className="hidden lg:flex items-center gap-1">
+            {navLinks.map((link) => (
+              <Link
+                key={link.to}
+                to={link.to}
+                className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                  location.pathname === link.to
+                    ? 'text-foreground bg-secondary'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
+                }`}
+              >
+                {link.label}
+              </Link>
+            ))}
+          </nav>
+
+          {/* Right Side Actions */}
+          <div className="flex items-center gap-3">
             {/* Search Bar - Desktop */}
-            <form onSubmit={handleSearch} className="hidden md:flex flex-1 max-w-xl mx-8">
-              <div className="relative w-full">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <form onSubmit={handleSearch} className="hidden md:flex">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <input
                   type="text"
-                  placeholder="Tìm truyện..."
+                  placeholder="Search novels..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
+                  className="w-64 pl-10 pr-4 py-2 bg-secondary text-foreground placeholder:text-muted-foreground border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ring focus:bg-background transition-colors"
                 />
               </div>
             </form>
 
-            {/* Auth Buttons */}
-            <div className="hidden md:flex items-center gap-3">
+            {/* Theme Toggle */}
+            <button
+              onClick={() => setIsDark(!isDark)}
+              className="p-2 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-lg transition-colors"
+              aria-label="Toggle theme"
+            >
+              {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+            </button>
+
+            {/* Auth Buttons - Desktop */}
+            <div className="hidden md:flex items-center gap-2">
               {isAuthenticated ? (
                 <div className="flex items-center gap-3">
-                  <Link to="/profile" className="flex items-center gap-2 text-gray-700 hover:text-blue-500">
-                    <img 
-                      src={user?.avatar || '/default-avatar.png'} 
-                      alt={user?.username}
-                      className="w-8 h-8 rounded-full object-cover"
-                    />
+                  <Link to="/profile" className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
+                    <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center overflow-hidden">
+                      {user?.avatar ? (
+                        <img 
+                          src={user.avatar} 
+                          alt={user?.username}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <User className="w-4 h-4" />
+                      )}
+                    </div>
                     <span className="text-sm font-medium">{user?.username}</span>
                   </Link>
                   <button
                     onClick={logout}
-                    className="text-sm text-gray-500 hover:text-red-500"
+                    className="text-sm text-muted-foreground hover:text-destructive transition-colors"
                   >
-                    Đăng xuất
+                    Sign out
                   </button>
                 </div>
               ) : (
                 <>
                   <Link 
                     to="/login" 
-                    className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-blue-500"
+                    className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
                   >
-                    <User className="w-4 h-4" />
-                    Đăng nhập
+                    Sign in
                   </Link>
                   <Link 
                     to="/register"
-                    className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium"
+                    className="px-4 py-2 bg-foreground text-background hover:bg-foreground/90 rounded-lg text-sm font-medium transition-colors"
                   >
-                    Đăng ký
+                    Get Started
                   </Link>
                 </>
               )}
@@ -86,68 +152,74 @@ function Header() {
             {/* Mobile Menu Button */}
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="md:hidden p-2 text-gray-600"
+              className="lg:hidden p-2 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-lg transition-colors"
             >
-              {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+              {isMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
           </div>
         </div>
       </div>
 
-      {/* Navigation */}
-      <nav className="border-b border-gray-100">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="hidden md:flex items-center gap-1 h-12">
-            <NavLink to="/" icon={<Home className="w-4 h-4" />}>Trang chủ</NavLink>
-            <NavLink to="/truyen-moi">Truyện mới</NavLink>
-            <NavLink to="/the-loai" icon={<Library className="w-4 h-4" />}>Thể loại</NavLink>
-            <NavLink to="/truyen-full">Truyện Full</NavLink>
-            <NavLink to="/truyen-dai">Truyện Dài</NavLink>
-            <NavLink to="/truyen-sang-tac" icon={<PenTool className="w-4 h-4" />}>Truyện Sáng Tác</NavLink>
-            <NavLink to="/team" icon={<Users className="w-4 h-4" />}>Team</NavLink>
-            <NavLink to="/audio" icon={<Headphones className="w-4 h-4" />}>Nghe Audio</NavLink>
-          </div>
-        </div>
-      </nav>
-
       {/* Mobile Menu */}
       {isMenuOpen && (
-        <div className="md:hidden bg-white border-t border-gray-100">
-          <div className="p-4 space-y-3">
-            <form onSubmit={handleSearch} className="w-full">
-              <input
-                type="text"
-                placeholder="Tìm truyện..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg"
-              />
+        <div className="lg:hidden bg-background border-t border-border animate-fade-in">
+          <div className="max-w-7xl mx-auto px-4 py-4 space-y-4">
+            {/* Mobile Search */}
+            <form onSubmit={handleSearch}>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <input
+                  type="text"
+                  placeholder="Search novels..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2.5 bg-secondary text-foreground placeholder:text-muted-foreground border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ring"
+                />
+              </div>
             </form>
-            <div className="space-y-1">
-              <MobileNavLink to="/">Trang chủ</MobileNavLink>
-              <MobileNavLink to="/truyen-moi">Truyện mới</MobileNavLink>
-              <MobileNavLink to="/the-loai">Thể loại</MobileNavLink>
-              <MobileNavLink to="/truyen-full">Truyện Full</MobileNavLink>
-              <MobileNavLink to="/truyen-dai">Truyện Dài</MobileNavLink>
-              <MobileNavLink to="/truyen-sang-tac">Truyện Sáng Tác</MobileNavLink>
-              <MobileNavLink to="/team">Team</MobileNavLink>
-              <MobileNavLink to="/audio">Nghe Audio</MobileNavLink>
-            </div>
-            <div className="flex gap-3 pt-3 border-t">
+
+            {/* Mobile Navigation */}
+            <nav className="space-y-1">
+              {navLinks.map((link) => (
+                <Link
+                  key={link.to}
+                  to={link.to}
+                  onClick={() => setIsMenuOpen(false)}
+                  className={`block px-4 py-2.5 text-sm font-medium rounded-lg transition-colors ${
+                    location.pathname === link.to
+                      ? 'text-foreground bg-secondary'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
+                  }`}
+                >
+                  {link.label}
+                </Link>
+              ))}
+            </nav>
+
+            {/* Mobile Auth */}
+            <div className="pt-4 border-t border-border flex gap-3">
               {isAuthenticated ? (
                 <button
-                  onClick={logout}
-                  className="flex-1 py-2 text-center text-red-500 border border-red-200 rounded-lg"
+                  onClick={() => { logout(); setIsMenuOpen(false); }}
+                  className="flex-1 py-2.5 text-center text-destructive border border-destructive/30 rounded-lg text-sm font-medium hover:bg-destructive/10 transition-colors"
                 >
-                  Đăng xuất
+                  Sign out
                 </button>
               ) : (
                 <>
-                  <Link to="/login" className="flex-1 py-2 text-center border border-gray-200 rounded-lg">
-                    Đăng nhập
+                  <Link 
+                    to="/login" 
+                    onClick={() => setIsMenuOpen(false)}
+                    className="flex-1 py-2.5 text-center text-muted-foreground border border-border rounded-lg text-sm font-medium hover:bg-secondary transition-colors"
+                  >
+                    Sign in
                   </Link>
-                  <Link to="/register" className="flex-1 py-2 text-center bg-blue-500 text-white rounded-lg">
-                    Đăng ký
+                  <Link 
+                    to="/register" 
+                    onClick={() => setIsMenuOpen(false)}
+                    className="flex-1 py-2.5 text-center bg-foreground text-background rounded-lg text-sm font-medium hover:bg-foreground/90 transition-colors"
+                  >
+                    Get Started
                   </Link>
                 </>
               )}
@@ -156,26 +228,6 @@ function Header() {
         </div>
       )}
     </header>
-  );
-}
-
-function NavLink({ to, children, icon }) {
-  return (
-    <Link
-      to={to}
-      className="flex items-center gap-1.5 px-3 py-2 text-sm text-gray-700 hover:text-blue-500 hover:bg-blue-50 rounded-md transition-colors"
-    >
-      {icon}
-      {children}
-    </Link>
-  );
-}
-
-function MobileNavLink({ to, children }) {
-  return (
-    <Link to={to} className="block px-3 py-2 text-gray-700 hover:bg-gray-50 rounded-md">
-      {children}
-    </Link>
   );
 }
 
