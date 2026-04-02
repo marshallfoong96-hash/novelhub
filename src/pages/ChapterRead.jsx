@@ -4,7 +4,7 @@ import { ChevronLeft, ChevronRight, BookOpen, List, MessageSquare, User, Send, A
 import { novelAPI, commentAPI } from '../api/services';
 import { useAuth } from '../contexts/AuthContext';
 import { formatDate } from '../utils/helpers';
-import { AdBanner, AdInline } from '../components/AdSpace';
+import { AdBanner, AdInline, ShopeeDeals } from '../components/AdSpace';
 
 function ChapterRead() {
   const { slug, chapterNumber } = useParams();
@@ -300,6 +300,14 @@ function ChapterRead() {
 
         {/* Bottom Banner Ad */}
         <AdBanner type="large" className="mb-4" />
+
+        {/* AI Recommended Products based on the novel */}
+        <div className="mb-4">
+          <ShopeeDeals 
+            genre={chapter.novel?.Genres?.[0]?.name} 
+            novelTitle={chapter.novel?.title}
+          />
+        </div>
 
         {/* Comments Section */}
         {showComments && (

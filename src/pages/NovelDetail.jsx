@@ -4,7 +4,7 @@ import { Eye, BookOpen, User, Clock, MessageSquare, ArrowRight, CheckCircle, Sen
 import { novelAPI, commentAPI } from '../api/services';
 import { useAuth } from '../contexts/AuthContext';
 import { formatNumber, formatDate } from '../utils/helpers';
-import { AdBanner, AdSidebar, AdInline } from '../components/AdSpace';
+import { AdBanner, AdSidebar, AdInline, ShopeeDeals } from '../components/AdSpace';
 
 function NovelDetail() {
   const { slug } = useParams();
@@ -334,7 +334,12 @@ function NovelDetail() {
         </div>
 
         {/* Sidebar */}
-        <aside className="lg:col-span-1">
+        <aside className="lg:col-span-1 space-y-4">
+          {/* AI Recommended Products based on novel genre */}
+          <ShopeeDeals 
+            genre={novel.Genres?.[0]?.name} 
+            novelTitle={novel.title}
+          />
           <AdSidebar />
         </aside>
       </div>
