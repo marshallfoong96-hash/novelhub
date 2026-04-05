@@ -1,79 +1,90 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { authAPI } from '../api/services';
+import { supabase } from '../lib/supabase';
 
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
+  // =====================
+  // 初始化：檢查登入狀態
+  // =====================
   useEffect(() => {
     checkAuth();
+
+    // 監聽登入/登出
+    const { data: listener } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        setUser(session?.user || null);
+      }
+    );
+
+    return () => {
+      listener.subscription.unsubscribe();
+    };
   }, []);
 
   const checkAuth = async () => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      try {
-        const response = await authAPI.getMe();
-        setUser(response.data.user);
-        setIsAuthenticated(true);
-      } catch (error) {
-        console.error('Auth check failed:', error);
-        localStorage.removeItem('token');
-        setUser(null);
-        setIsAuthenticated(false);
-      }
-    }
+    const { data } = await supabase.auth.getUser();
+    setUser(data?.user || null);
     setLoading(false);
   };
 
+  // =====================
+  // 登入
+  // =====================
   const login = async (email, password) => {
-    try {
-      const response = await authAPI.login({ email, password });
-      const { user, token } = response.data;
-      
-      localStorage.setItem('token', token);
-      setUser(user);
-      setIsAuthenticated(true);
-      
-      return { success: true, user };
-    } catch (error) {
-      return { 
-        success: false, 
-        message: error.message || 'Login failed' 
+    const { data, error } = await authAPI.login(email, password);
+
+    if (error) {
+      return {
+        success: false,
+        message: error.message || 'Login failed'
       };
     }
+
+    setUser(data.user);
+
+    return {
+      success: true,
+      user: data.user
+    };
   };
 
-  const register = async (username, email, password) => {
-    try {
-      const response = await authAPI.register({ username, email, password });
-      const { user, token } = response.data;
-      
-      localStorage.setItem('token', token);
-      setUser(user);
-      setIsAuthenticated(true);
-      
-      return { success: true, user };
-    } catch (error) {
-      return { 
-        success: false, 
-        message: error.message || 'Registration failed' 
+  // =====================
+  // 註冊
+  // =====================
+  const register = async (email, password) => {
+    const { data, error } = await authAPI.register(email, password);
+
+    if (error) {
+      return {
+        success: false,
+        message: error.message || 'Registration failed'
       };
     }
+
+    setUser(data.user);
+
+    return {
+      success: true,
+      user: data.user
+    };
   };
 
-  const logout = () => {
-    localStorage.removeItem('token');
+  // =====================
+  // 登出
+  // =====================
+  const logout = async () => {
+    await supabase.auth.signOut();
     setUser(null);
-    setIsAuthenticated(false);
   };
 
   const value = {
     user,
-    isAuthenticated,
+    isAuthenticated: !!user,
     loading,
     login,
     register,
@@ -87,6 +98,7 @@ export const AuthProvider = ({ children }) => {
   );
 };
 
+// Hook
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {

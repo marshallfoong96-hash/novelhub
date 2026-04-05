@@ -79,29 +79,6 @@ function Home() {
     }
   };
 
-  if (!isSupabaseConfigured) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="bg-card border border-border rounded-lg p-8 max-w-md text-center">
-          <div className="w-12 h-12 bg-destructive/10 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Sparkles className="w-6 h-6 text-destructive" />
-          </div>
-          <h2 className="text-xl font-bold text-foreground mb-2">Cấu hình Supabase</h2>
-          <p className="text-muted-foreground text-sm mb-4">
-            Vui lòng tạo file <code className="bg-secondary px-1.5 py-0.5 rounded text-xs">.env.local</code> trong thư mục gốc với nội dung:
-          </p>
-          <div className="bg-secondary rounded-lg p-4 text-left text-xs font-mono mb-4">
-            <p>VITE_SUPABASE_URL=https://your-project.supabase.co</p>
-            <p>VITE_SUPABASE_ANON_KEY=your-anon-key</p>
-          </div>
-          <p className="text-muted-foreground text-xs">
-            Sau đó restart dev server: <code className="bg-secondary px-1.5 py-0.5 rounded">npm run dev</code>
-          </p>
-        </div>
-      </div>
-    );
-  }
-
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
