@@ -11,7 +11,7 @@ function NovelCard({ novel, showStatus = false, variant = 'default' }) {
           <img
             src={novel.cover_url || '/default-cover.jpg'}
             alt={novel.title}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-foreground/80 via-foreground/20 to-transparent" />
           
@@ -53,7 +53,7 @@ function NovelCard({ novel, showStatus = false, variant = 'default' }) {
           <img
             src={novel.cover_url || '/default-cover.jpg'}
             alt={novel.title}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
           />
           
           {/* Overlay */}
@@ -98,7 +98,7 @@ function NovelCard({ novel, showStatus = false, variant = 'default' }) {
         <img
           src={novel.cover_url || '/default-cover.jpg'}
           alt={novel.title}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
         />
         
         {/* Overlay with stats */}

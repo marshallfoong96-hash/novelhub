@@ -129,7 +129,7 @@ function NovelDetail() {
                     <img
                       src={novel.cover_url || '/default-cover.jpg'}
                       alt={novel.title}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-contain"
                     />
                     {novel.status === 'completed' && (
                       <span className="absolute top-2 right-2 px-2 py-0.5 bg-[hsl(var(--success))] text-white text-[10px] font-bold rounded flex items-center gap-1">
@@ -319,7 +319,7 @@ function NovelDetail() {
                               <img
                                 src={comment.user.avatar}
                                 alt={comment.user?.username}
-                                className="w-full h-full object-cover"
+                                className="w-full h-full object-contain"
                               />
                             ) : (
                               <User className="w-4 h-4 text-muted-foreground" />

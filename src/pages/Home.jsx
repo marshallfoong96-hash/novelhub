@@ -296,7 +296,7 @@ function HeroSection({ featuredNovels }) {
         <img
           src={featured?.cover_url || '/default-cover.jpg'}
           alt={featured?.title}
-            className="w-full h-full object-cover"
+            className="w-full h-full object-contain"
           />
           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-card md:block hidden" />
           <div className="absolute inset-0 bg-gradient-to-t from-card via-transparent to-transparent md:hidden" />
@@ -436,7 +436,7 @@ function UpdateRow({ novel }) {
         <img
           src={novel.cover_url || '/default-cover.jpg'}
           alt={novel.title}
-          className="w-10 h-14 object-cover rounded"
+          className="w-10 h-14 object-contain rounded"
         />
       </Link>
       <div className="flex-1 min-w-0">
@@ -491,7 +491,7 @@ function TopViewsSection({ novels }) {
             <img
               src={novel.cover_url || '/default-cover.jpg'}
               alt={novel.title}
-              className="w-12 h-16 object-cover rounded flex-shrink-0"
+              className="w-12 h-16 object-contain rounded flex-shrink-0"
             />
             <div className="flex-1 min-w-0">
               <h4 className="text-xs font-medium text-foreground line-clamp-2 group-hover:text-accent transition-colors">
