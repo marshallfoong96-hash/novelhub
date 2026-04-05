@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from "react";
+import { supabase, isSupabaseConfigured } from "../lib/supabase";
 import { Link } from 'react-router-dom';
 import { 
   Sparkles, 
@@ -18,7 +19,7 @@ import {
   History,
   Heart
 } from 'lucide-react';
-import { novelAPI, genreAPI } from '../api/services';
+
 import NovelCard from '../components/NovelCard';
 import { AdBanner, AdSidebar, ShopeeDeals, AdInline } from '../components/AdSpace';
 import { formatNumber, formatDate } from '../utils/helpers';
@@ -32,6 +33,8 @@ function Home() {
   const [genres, setGenres] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeRankTab, setActiveRankTab] = useState('day');
+  const [novels, setNovels] = useState([]);
+  const [latestNovels, setLatestNovels] = useState([]);
 
   useEffect(() => {
     fetchData();
@@ -40,37 +43,64 @@ function Home() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      
-      const [hotRes, updatesRes, genresRes] = await Promise.all([
-        novelAPI.getHot({ period: 'month', limit: 12 }),
-        novelAPI.getRecentUpdates({ limit: 12 }),
-        genreAPI.getAll()
-      ]);
 
-      setHotNovels(hotRes.data.novels || []);
-      setNewUpdates(updatesRes.data.novels || []);
-      setGenres(genresRes.data.genres || []);
-      setCompletedNovels((hotRes.data.novels || []).filter(n => n.status === 'completed').slice(0, 6));
+      if (!isSupabaseConfigured || !supabase) {
+        console.error('[v0] Supabase not configured');
+        setLoading(false);
+        return;
+      }
 
-      const [dayRes, weekRes, monthRes] = await Promise.all([
-        novelAPI.getHot({ period: 'day', limit: 10 }),
-        novelAPI.getHot({ period: 'week', limit: 10 }),
-        novelAPI.getHot({ period: 'month', limit: 10 })
-      ]);
+      const { data: novels, error } = await supabase
+        .from("novels")
+        .select("*");
+
+      if (error) {
+        console.error(error);
+        return;
+      }
+
+      setHotNovels(novels || []);
+      setNewUpdates(novels || []);
+      setGenres([]);
+      setCompletedNovels((novels || []).slice(0, 6));
 
       setRankings({
-        day: dayRes.data.novels || [],
-        week: weekRes.data.novels || [],
-        month: monthRes.data.novels || []
+        day: novels || [],
+        week: novels || [],
+        month: novels || []
       });
 
-      setFeaturedNovels(hotRes.data.novels?.slice(0, 5) || []);
+      setFeaturedNovels((novels || []).slice(0, 5));
+
     } catch (error) {
-      console.error('Error fetching data:', error);
+      console.error(error);
     } finally {
       setLoading(false);
     }
   };
+
+  if (!isSupabaseConfigured) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="bg-card border border-border rounded-lg p-8 max-w-md text-center">
+          <div className="w-12 h-12 bg-destructive/10 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Sparkles className="w-6 h-6 text-destructive" />
+          </div>
+          <h2 className="text-xl font-bold text-foreground mb-2">Cấu hình Supabase</h2>
+          <p className="text-muted-foreground text-sm mb-4">
+            Vui lòng tạo file <code className="bg-secondary px-1.5 py-0.5 rounded text-xs">.env.local</code> trong thư mục gốc với nội dung:
+          </p>
+          <div className="bg-secondary rounded-lg p-4 text-left text-xs font-mono mb-4">
+            <p>VITE_SUPABASE_URL=https://your-project.supabase.co</p>
+            <p>VITE_SUPABASE_ANON_KEY=your-anon-key</p>
+          </div>
+          <p className="text-muted-foreground text-xs">
+            Sau đó restart dev server: <code className="bg-secondary px-1.5 py-0.5 rounded">npm run dev</code>
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
@@ -213,7 +243,7 @@ function Home() {
               {rankings[activeRankTab]?.slice(0, 10).map((novel, index) => (
                 <Link
                   key={novel.id}
-                  to={`/truyen/${novel.slug}`}
+                  to={`/truyen/${novel.id}`}
                   className="flex items-center gap-2 p-3 hover:bg-secondary/50 transition-colors"
                 >
                   <span className={`w-6 h-6 flex items-center justify-center rounded text-xs font-bold ${
@@ -231,7 +261,7 @@ function Home() {
                     <h4 className="text-xs font-medium text-foreground line-clamp-1">
                       {novel.title}
                     </h4>
-                    <p className="text-[10px] text-muted-foreground">{novel.totalChapters} chương</p>
+                    <p className="text-[10px] text-muted-foreground">{novel.view_count || 0} lượt xem</p>
                   </div>
                 </Link>
               ))}
@@ -286,9 +316,9 @@ function HeroSection({ featuredNovels }) {
       <div className="grid md:grid-cols-2 gap-0">
         {/* Featured Novel Image */}
         <div className="relative aspect-[4/3] md:aspect-auto md:h-[320px]">
-          <img
-            src={featured?.cover || '/default-cover.jpg'}
-            alt={featured?.title}
+        <img
+          src={featured?.cover_url || '/default-cover.jpg'}
+          alt={featured?.title}
             className="w-full h-full object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-card md:block hidden" />
@@ -313,7 +343,7 @@ function HeroSection({ featuredNovels }) {
           <div className="mb-3">
             <span className="text-xs text-accent font-medium uppercase tracking-wider">Đề cử hôm nay</span>
           </div>
-          <Link to={`/truyen/${featured?.slug}`}>
+          <Link to={`/truyen/${featured?.id}`}>
             <h2 className="text-xl md:text-2xl font-bold text-foreground mb-3 hover:text-accent transition-colors line-clamp-2">
               {featured?.title}
             </h2>
@@ -324,7 +354,7 @@ function HeroSection({ featuredNovels }) {
           <div className="flex items-center gap-4 text-xs text-muted-foreground mb-4">
             <span className="flex items-center gap-1">
               <Eye className="w-3.5 h-3.5" />
-              {formatNumber(featured?.viewCount || 0)}
+              {formatNumber(featured?.view_count || 0)}
             </span>
             <span className="flex items-center gap-1">
               <BookOpen className="w-3.5 h-3.5" />
@@ -337,14 +367,14 @@ function HeroSection({ featuredNovels }) {
           </div>
           <div className="flex items-center gap-3">
             <Link
-              to={`/truyen/${featured?.slug}/chuong-1`}
+              to={`/truyen/${featured?.id}/chuong/1`}
               className="inline-flex items-center gap-2 px-4 py-2.5 bg-accent text-accent-foreground rounded-lg text-sm font-medium hover:bg-accent/90 transition-colors"
             >
               <BookOpen className="w-4 h-4" />
               Đọc ngay
             </Link>
             <Link
-              to={`/truyen/${featured?.slug}`}
+              to={`/truyen/${featured?.id}`}
               className="inline-flex items-center gap-2 px-4 py-2.5 border border-border text-foreground rounded-lg text-sm font-medium hover:bg-secondary transition-colors"
             >
               Chi tiết
@@ -425,15 +455,15 @@ function SectionHeader({ icon, title, subtitle, link }) {
 function UpdateRow({ novel }) {
   return (
     <div className="flex items-center gap-3 p-3 hover:bg-secondary/30 transition-colors">
-      <Link to={`/truyen/${novel.slug}`} className="flex-shrink-0">
+      <Link to={`/truyen/${novel.id}`} className="flex-shrink-0">
         <img
-          src={novel.cover || '/default-cover.jpg'}
+          src={novel.cover_url || '/default-cover.jpg'}
           alt={novel.title}
           className="w-10 h-14 object-cover rounded"
         />
       </Link>
       <div className="flex-1 min-w-0">
-        <Link to={`/truyen/${novel.slug}`}>
+        <Link to={`/truyen/${novel.id}`}>
           <h3 className="text-sm font-medium text-foreground line-clamp-1 hover:text-accent transition-colors">
             {novel.title}
           </h3>
@@ -448,18 +478,9 @@ function UpdateRow({ novel }) {
         </div>
       </div>
       <div className="flex-shrink-0 text-right">
-        {novel.chapters?.[0] ? (
-          <Link 
-            to={`/truyen/${novel.slug}/chuong-${novel.chapters[0].chapterNumber}`}
-            className="text-xs text-accent hover:underline block"
-          >
-            Chương {novel.chapters[0].chapterNumber}
-          </Link>
-        ) : (
-          <span className="text-xs text-muted-foreground">{novel.totalChapters} chương</span>
-        )}
+        <span className="text-xs text-muted-foreground">{novel.view_count || 0} lượt xem</span>
         <span className="text-[10px] text-muted-foreground block mt-0.5">
-          {novel.chapters?.[0] ? formatDate(novel.chapters[0].createdAt) : formatDate(novel.updatedAt)}
+          {formatDate(novel.created_at)}
         </span>
       </div>
     </div>
@@ -469,7 +490,7 @@ function UpdateRow({ novel }) {
 function TopViewsSection({ novels }) {
   // Sort novels by view count to show most viewed
   const topViewed = [...novels]
-    .sort((a, b) => (b.viewCount || 0) - (a.viewCount || 0))
+    .sort((a, b) => (b.view_count || 0) - (a.view_count || 0))
     .slice(0, 5);
 
   if (topViewed.length === 0) return null;
@@ -487,11 +508,11 @@ function TopViewsSection({ novels }) {
         {topViewed.map((novel, index) => (
           <Link
             key={novel.id}
-            to={`/truyen/${novel.slug}`}
+            to={`/truyen/${novel.id}`}
             className="flex gap-3 p-3 hover:bg-secondary/30 transition-colors group"
           >
             <img
-              src={novel.cover || '/default-cover.jpg'}
+              src={novel.cover_url || '/default-cover.jpg'}
               alt={novel.title}
               className="w-12 h-16 object-cover rounded flex-shrink-0"
             />
@@ -502,11 +523,7 @@ function TopViewsSection({ novels }) {
               <div className="flex items-center gap-2 mt-1.5">
                 <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
                   <Eye className="w-3 h-3" />
-                  {formatNumber(novel.viewCount || 0)}
-                </span>
-                <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
-                  <Heart className="w-3 h-3" />
-                  {formatNumber(novel.likes || 0)}
+                  {formatNumber(novel.view_count || 0)}
                 </span>
               </div>
               {novel.status === 'completed' && (

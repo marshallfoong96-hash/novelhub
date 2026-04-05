@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Eye, BookOpen, User, Clock, MessageSquare, ArrowRight, CheckCircle, Send, ChevronRight, Heart, Share2, Bookmark, Flame } from 'lucide-react';
-import { novelAPI, commentAPI } from '../api/services';
+import { Eye, BookOpen, User, Clock, MessageSquare, ArrowRight, CheckCircle, Send, ChevronRight, Heart, Share2, Bookmark } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { formatNumber, formatDate } from '../utils/helpers';
 import { AdBanner, AdSidebar, AdInline, ShopeeDeals } from '../components/AdSpace';
 
 function NovelDetail() {
-  const { slug } = useParams();
+  const { slug } = useParams(); // This is now the novel ID
   const [novel, setNovel] = useState(null);
   const [chapters, setChapters] = useState([]);
   const [comments, setComments] = useState([]);
@@ -23,23 +23,37 @@ function NovelDetail() {
   const fetchNovelData = async () => {
     try {
       setLoading(true);
-      const [novelRes, chaptersRes, commentsRes] = await Promise.all([
-        novelAPI.getBySlug(slug),
-        novelAPI.getChapters(slug, { limit: 50 }),
-        commentAPI.getAll({ novelId: 'temp' })
-      ]);
-
-      setNovel(novelRes.data.novel);
-      setChapters(chaptersRes.data.chapters || []);
       
-      if (novelRes.data.novel?.id) {
-        const commentsResponse = await commentAPI.getAll({ 
-          novelId: novelRes.data.novel.id 
-        });
-        setComments(commentsResponse.data.comments || []);
+      // Fetch novel by ID
+      const { data: novelData, error: novelError } = await supabase
+        .from('novels')
+        .select('*')
+        .eq('id', parseInt(slug))
+        .single();
+
+      if (novelError) {
+        console.error('[v0] Error fetching novel:', novelError);
+        setNovel(null);
+        return;
       }
+
+      setNovel(novelData);
+
+      // Fetch chapters for this novel
+      const { data: chaptersData, error: chaptersError } = await supabase
+        .from('chapters')
+        .select('*')
+        .eq('novel_id', parseInt(slug))
+        .order('chapter_number', { ascending: true });
+
+      if (chaptersError) {
+        console.error('[v0] Error fetching chapters:', chaptersError);
+      } else {
+        setChapters(chaptersData || []);
+      }
+
     } catch (error) {
-      console.error('Error fetching novel:', error);
+      console.error('[v0] Error fetching novel data:', error);
     } finally {
       setLoading(false);
     }
@@ -49,18 +63,16 @@ function NovelDetail() {
     e.preventDefault();
     if (!newComment.trim() || !novel?.id) return;
 
-    try {
-      const response = await commentAPI.create({
-        novelId: novel.id,
-        content: newComment
-      });
-      
-      setComments([response.data.comment, ...comments]);
-      setNewComment('');
-    } catch (error) {
-      console.error('Error posting comment:', error);
-      alert('Không thể đăng bình luận. Vui lòng thử lại.');
-    }
+    // For now, just add to local state (comments table not in schema)
+    const mockComment = {
+      id: Date.now(),
+      content: newComment,
+      createdAt: new Date().toISOString(),
+      user: { username: user?.username || 'You' }
+    };
+    
+    setComments([mockComment, ...comments]);
+    setNewComment('');
   };
 
   if (loading) {
@@ -115,7 +127,7 @@ function NovelDetail() {
                 <div className="w-40 flex-shrink-0 mx-auto sm:mx-0">
                   <div className="relative aspect-[2/3] rounded-lg overflow-hidden bg-secondary">
                     <img
-                      src={novel.cover || '/default-cover.jpg'}
+                      src={novel.cover_url || '/default-cover.jpg'}
                       alt={novel.title}
                       className="w-full h-full object-cover"
                     />
@@ -137,34 +149,32 @@ function NovelDetail() {
                   <div className="flex flex-wrap justify-center sm:justify-start gap-4 mb-4 text-sm">
                     <div className="flex items-center gap-1.5 text-muted-foreground">
                       <User className="w-4 h-4" />
-                      <span>{novel.author}</span>
+                      <span>{novel.author || 'Đang cập nhật'}</span>
                     </div>
                     <div className="flex items-center gap-1.5 text-muted-foreground">
                       <BookOpen className="w-4 h-4" />
-                      <span>{novel.totalChapters} chương</span>
+                      <span>{chapters.length} chương</span>
                     </div>
                     <div className="flex items-center gap-1.5 text-muted-foreground">
                       <Eye className="w-4 h-4" />
-                      <span>{formatNumber(novel.viewCount)}</span>
+                      <span>{formatNumber(novel.view_count || 0)}</span>
                     </div>
                     <div className="flex items-center gap-1.5 text-muted-foreground">
                       <Clock className="w-4 h-4" />
-                      <span>{formatDate(novel.updatedAt)}</span>
+                      <span>{formatDate(novel.created_at)}</span>
                     </div>
                   </div>
 
-                  {/* Genres */}
-                  {novel.Genres?.length > 0 && (
+                  {/* Status Badge */}
+                  {novel.status && (
                     <div className="flex flex-wrap justify-center sm:justify-start gap-1.5 mb-4">
-                      {novel.Genres.map((genre) => (
-                        <Link
-                          key={genre.id}
-                          to={`/the-loai/${genre.slug}`}
-                          className="category-tag"
-                        >
-                          {genre.name}
-                        </Link>
-                      ))}
+                      <span className={`px-2 py-1 text-xs font-medium rounded ${
+                        novel.status === 'completed' 
+                          ? 'bg-[hsl(var(--success))]/10 text-[hsl(var(--success))]' 
+                          : 'bg-accent/10 text-accent'
+                      }`}>
+                        {novel.status === 'completed' ? 'Hoàn thành' : 'Đang tiến hành'}
+                      </span>
                     </div>
                   )}
 
@@ -172,7 +182,7 @@ function NovelDetail() {
                   <div className="flex flex-wrap justify-center sm:justify-start gap-2">
                     {chapters.length > 0 && (
                       <Link
-                        to={`/truyen/${novel.slug}/chuong-1`}
+                        to={`/chapter/${chapters[0].id}`}
                         className="inline-flex items-center gap-2 px-4 py-2 bg-accent text-accent-foreground rounded-lg text-sm font-medium hover:bg-accent/90 transition-colors"
                       >
                         <BookOpen className="w-4 h-4" />
@@ -212,7 +222,7 @@ function NovelDetail() {
               >
                 <span className="flex items-center justify-center gap-2">
                   <BookOpen className="w-4 h-4" />
-                  Danh sách chương
+                  Danh sách chương ({chapters.length})
                 </span>
               </button>
               <button
@@ -232,29 +242,32 @@ function NovelDetail() {
 
             <div className="p-4">
               {activeTab === 'chapters' ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                  {chapters.map((chapter) => (
-                    <Link
-                      key={chapter.id}
-                      to={`/truyen/${novel.slug}/chuong-${chapter.chapterNumber}`}
-                      className="group flex items-center justify-between p-3 hover:bg-secondary/50 rounded-lg border border-border hover:border-accent/30 transition-all"
-                    >
-                      <div className="flex-1 min-w-0">
-                        <span className="text-sm font-medium text-foreground group-hover:text-accent transition-colors line-clamp-1">
-                          Chương {chapter.chapterNumber}: {chapter.title}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-3 ml-3 text-xs text-muted-foreground">
-                        <span className="hidden sm:flex items-center gap-1">
-                          <Eye className="w-3 h-3" />
-                          {formatNumber(chapter.viewCount)}
-                        </span>
-                        <span className="whitespace-nowrap">{formatDate(chapter.createdAt)}</span>
-                        <ChevronRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
-                      </div>
-                    </Link>
-                  ))}
-                </div>
+                chapters.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    {chapters.map((chapter) => (
+                      <Link
+                        key={chapter.id}
+                        to={`/chapter/${chapter.id}`}
+                        className="group flex items-center justify-between p-3 hover:bg-secondary/50 rounded-lg border border-border hover:border-accent/30 transition-all"
+                      >
+                        <div className="flex-1 min-w-0">
+                          <span className="text-sm font-medium text-foreground group-hover:text-accent transition-colors line-clamp-1">
+                            Chương {chapter.chapter_number}: {chapter.title}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-3 ml-3 text-xs text-muted-foreground">
+                          <span className="whitespace-nowrap">{formatDate(chapter.created_at)}</span>
+                          <ChevronRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <BookOpen className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+                    <p className="text-muted-foreground text-sm">Chưa có chương nào được đăng.</p>
+                  </div>
+                )
               ) : (
                 <div className="space-y-4">
                   {/* Comment Form */}
@@ -335,11 +348,7 @@ function NovelDetail() {
 
         {/* Sidebar */}
         <aside className="lg:col-span-1 space-y-4">
-          {/* AI Recommended Products based on novel genre */}
-          <ShopeeDeals 
-            genre={novel.Genres?.[0]?.name} 
-            novelTitle={novel.title}
-          />
+          <ShopeeDeals novelTitle={novel.title} />
           <AdSidebar />
         </aside>
       </div>

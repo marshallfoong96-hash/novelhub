@@ -6,10 +6,10 @@ function NovelCard({ novel, showStatus = false, variant = 'default' }) {
   // Featured variant - larger card with more info
   if (variant === 'featured') {
     return (
-      <Link to={`/truyen/${novel.slug}`} className="group block">
+      <Link to={`/truyen/${novel.id}`} className="group block">
         <div className="relative aspect-[2/3] rounded-lg overflow-hidden bg-secondary">
           <img
-            src={novel.cover || '/default-cover.jpg'}
+            src={novel.cover_url || '/default-cover.jpg'}
             alt={novel.title}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           />
@@ -17,12 +17,6 @@ function NovelCard({ novel, showStatus = false, variant = 'default' }) {
           
           {/* Status Badge */}
           <div className="absolute top-2 left-2 flex gap-1.5">
-            {novel.isHot && (
-              <span className="px-1.5 py-0.5 bg-accent text-accent-foreground text-[10px] font-bold rounded flex items-center gap-0.5">
-                <Flame className="w-2.5 h-2.5" />
-                HOT
-              </span>
-            )}
             {novel.status === 'completed' && (
               <span className="px-1.5 py-0.5 bg-[hsl(var(--success))] text-white text-[10px] font-bold rounded flex items-center gap-0.5">
                 <CheckCircle className="w-2.5 h-2.5" />
@@ -42,11 +36,7 @@ function NovelCard({ novel, showStatus = false, variant = 'default' }) {
             <div className="flex items-center gap-3 text-[10px] text-white/60">
               <span className="flex items-center gap-1">
                 <Eye className="w-3 h-3" />
-                {formatNumber(novel.viewCount)}
-              </span>
-              <span className="flex items-center gap-1">
-                <BookOpen className="w-3 h-3" />
-                {novel.totalChapters}
+                {formatNumber(novel.view_count || 0)}
               </span>
             </div>
           </div>
@@ -58,10 +48,10 @@ function NovelCard({ novel, showStatus = false, variant = 'default' }) {
   // Compact variant - smaller, more info-dense
   if (variant === 'compact') {
     return (
-      <Link to={`/truyen/${novel.slug}`} className="group block">
+      <Link to={`/truyen/${novel.id}`} className="group block">
         <div className="relative aspect-[2/3] rounded overflow-hidden bg-secondary">
           <img
-            src={novel.cover || '/default-cover.jpg'}
+            src={novel.cover_url || '/default-cover.jpg'}
             alt={novel.title}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
           />
@@ -77,18 +67,14 @@ function NovelCard({ novel, showStatus = false, variant = 'default' }) {
                   FULL
                 </span>
               )}
-              {novel.isHot && (
-                <span className="px-1.5 py-0.5 bg-accent text-accent-foreground text-[9px] font-bold rounded">
-                  HOT
-                </span>
-              )}
             </div>
           )}
           
-          {/* Chapter count badge */}
+          {/* View count badge */}
           <div className="absolute bottom-1.5 right-1.5">
-            <span className="px-1.5 py-0.5 bg-foreground/80 text-background text-[9px] font-medium rounded">
-              {novel.totalChapters} ch
+            <span className="px-1.5 py-0.5 bg-foreground/80 text-background text-[9px] font-medium rounded flex items-center gap-1">
+              <Eye className="w-2.5 h-2.5" />
+              {formatNumber(novel.view_count || 0)}
             </span>
           </div>
         </div>
@@ -107,10 +93,10 @@ function NovelCard({ novel, showStatus = false, variant = 'default' }) {
 
   // Default variant
   return (
-    <Link to={`/truyen/${novel.slug}`} className="group block">
+    <Link to={`/truyen/${novel.id}`} className="group block">
       <div className="relative aspect-[2/3] rounded-lg overflow-hidden bg-secondary mb-2">
         <img
-          src={novel.cover || '/default-cover.jpg'}
+          src={novel.cover_url || '/default-cover.jpg'}
           alt={novel.title}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
         />
@@ -127,12 +113,6 @@ function NovelCard({ novel, showStatus = false, variant = 'default' }) {
                 FULL
               </span>
             )}
-            {novel.isHot && (
-              <span className="px-2 py-0.5 bg-accent text-accent-foreground text-[10px] font-bold rounded flex items-center gap-1">
-                <Flame className="w-3 h-3" />
-                HOT
-              </span>
-            )}
           </div>
         )}
         
@@ -141,11 +121,7 @@ function NovelCard({ novel, showStatus = false, variant = 'default' }) {
           <div className="flex items-center justify-between text-xs text-white">
             <span className="flex items-center gap-1">
               <Eye className="w-3.5 h-3.5" />
-              {formatNumber(novel.viewCount)}
-            </span>
-            <span className="flex items-center gap-1">
-              <BookOpen className="w-3.5 h-3.5" />
-              {novel.totalChapters}
+              {formatNumber(novel.view_count || 0)}
             </span>
           </div>
         </div>

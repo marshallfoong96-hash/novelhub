@@ -18,10 +18,10 @@ function App() {
           <main className="flex-1 w-full max-w-7xl mx-auto px-4 py-6">
             <Routes>
               <Route path="/" element={<Home />} />
+              <Route path="/chapter/:id" element={<ChapterRead />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
               <Route path="/truyen/:slug" element={<NovelDetail />} />
-              <Route path="/truyen/:slug/chuong-:chapterNumber" element={<ChapterRead />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </main>

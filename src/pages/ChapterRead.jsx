@@ -1,33 +1,49 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, BookOpen, List, MessageSquare, User, Send, ArrowRight, Settings, Minus, Plus, Home } from 'lucide-react';
-import { novelAPI, commentAPI } from '../api/services';
-import { useAuth } from '../contexts/AuthContext';
-import { formatDate } from '../utils/helpers';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import { supabase } from "../lib/supabase";
 import { AdBanner, AdInline, ShopeeDeals } from '../components/AdSpace';
 
-function ChapterRead() {
-  const { slug, chapterNumber } = useParams();
+import {
+  Home, BookOpen, Settings, MessageSquare,
+  Minus, Plus, ChevronLeft, ChevronRight,
+  List, Send, ArrowRight, User
+} from "lucide-react";
+
+export default function ChapterRead() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+
   const [chapter, setChapter] = useState(null);
-  const [comments, setComments] = useState([]);
-  const [newComment, setNewComment] = useState('');
+  const [novel, setNovel] = useState(null);
+  const [allChapters, setAllChapters] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  const [comments, setComments] = useState([]);
+  const [newComment, setNewComment] = useState("");
   const [showComments, setShowComments] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const [fontSize, setFontSize] = useState(18);
   const [lineHeight, setLineHeight] = useState(1.8);
-  const [showSettings, setShowSettings] = useState(false);
   const [readingProgress, setReadingProgress] = useState(0);
-  const { isAuthenticated } = useAuth();
+  const isAuthenticated = true;
+
+  const formatDate = (date) => {
+    return new Date(date).toLocaleString();
+  };
 
   useEffect(() => {
     fetchChapter();
-  }, [slug, chapterNumber]);
+  }, [id]);
+
+  useEffect(() => {
+    setShowComments(false);
+  }, [id]);
 
   useEffect(() => {
     const handleScroll = () => {
       const scrollTop = window.scrollY;
       const docHeight = document.documentElement.scrollHeight - window.innerHeight;
-      const progress = (scrollTop / docHeight) * 100;
+      const progress = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
       setReadingProgress(Math.min(progress, 100));
     };
 
@@ -38,18 +54,51 @@ function ChapterRead() {
   const fetchChapter = async () => {
     try {
       setLoading(true);
-      const response = await novelAPI.getChapter(slug, chapterNumber);
-      setChapter(response.data.chapter);
-      
-      if (response.data.chapter?.id) {
-        const commentsRes = await commentAPI.getAll({
-          novelId: response.data.chapter.novelId,
-          chapterId: response.data.chapter.id
-        });
-        setComments(commentsRes.data.comments || []);
+
+      console.log("query id:", id); // ✅ 加這行
+
+      // Fetch the chapter
+      const { data: chapterData, error: chapterError } = await supabase
+        .from("chapters")
+        .select("*")
+        .eq("id", parseInt(id))
+        .single();
+
+      console.log("data:", chapterData);   // ✅ 加這行
+      console.log("error:", chapterError); // ✅ 加這行
+
+      if (chapterError) {
+        console.error('[v0] Error fetching chapter:', chapterError);
+        return;
+      }
+
+      setChapter(chapterData);
+
+      if (chapterData?.novel_id) {
+        // Fetch the novel info
+        const { data: novelData, error: novelError } = await supabase
+          .from("novels")
+          .select("*")
+          .eq("id", chapterData.novel_id)
+          .single();
+
+        if (!novelError) {
+          setNovel(novelData);
+        }
+
+        // Fetch all chapters for navigation
+        const { data: chaptersData, error: chaptersError } = await supabase
+          .from("chapters")
+          .select("id, chapter_number, title")
+          .eq("novel_id", chapterData.novel_id)
+          .order("chapter_number", { ascending: true });
+
+        if (!chaptersError) {
+          setAllChapters(chaptersData || []);
+        }
       }
     } catch (error) {
-      console.error('Error fetching chapter:', error);
+      console.error('[v0] Error fetching chapter:', error);
     } finally {
       setLoading(false);
     }
@@ -59,20 +108,21 @@ function ChapterRead() {
     e.preventDefault();
     if (!newComment.trim() || !chapter) return;
 
-    try {
-      const response = await commentAPI.create({
-        novelId: chapter.novelId,
-        chapterId: chapter.id,
-        content: newComment
-      });
-      
-      setComments([response.data.comment, ...comments]);
-      setNewComment('');
-    } catch (error) {
-      console.error('Error posting comment:', error);
-      alert('Không thể đăng bình luận. Vui lòng thử lại.');
-    }
+    const mockComment = {
+      id: Date.now(),
+      content: newComment,
+      createdAt: new Date().toISOString(),
+      user: { username: "You" }
+    };
+    
+    setComments([mockComment, ...comments]);
+    setNewComment('');
   };
+
+  // Find prev/next chapters
+  const currentIndex = allChapters.findIndex(c => c.id === chapter?.id);
+  const prevChapter = currentIndex > 0 ? allChapters[currentIndex - 1] : null;
+  const nextChapter = currentIndex < allChapters.length - 1 ? allChapters[currentIndex + 1] : null;
 
   if (loading) {
     return (
@@ -92,10 +142,10 @@ function ChapterRead() {
           <h2 className="text-xl font-semibold text-foreground mb-2">Không tìm thấy chương</h2>
           <p className="text-muted-foreground text-sm mb-6">Chương này không tồn tại hoặc đã bị xóa.</p>
           <Link 
-            to={`/truyen/${slug}`} 
+            to="/" 
             className="inline-flex items-center gap-2 px-5 py-2.5 bg-accent text-accent-foreground rounded-lg text-sm font-medium hover:bg-accent/90 transition-colors"
           >
-            Quay lại truyện
+            Về trang chủ
           </Link>
         </div>
       </div>
@@ -126,13 +176,15 @@ function ChapterRead() {
               >
                 <Home className="w-4 h-4" />
               </Link>
-              <Link 
-                to={`/truyen/${slug}`}
-                className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors min-w-0"
-              >
-                <BookOpen className="w-4 h-4 flex-shrink-0" />
-                <span className="text-sm font-medium truncate">{chapter.novel?.title}</span>
-              </Link>
+              {novel && (
+                <Link 
+                  to={`/truyen/${novel.id}`}
+                  className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors min-w-0"
+                >
+                  <BookOpen className="w-4 h-4 flex-shrink-0" />
+                  <span className="text-sm font-medium truncate">{novel.title}</span>
+                </Link>
+              )}
             </div>
             <div className="flex items-center gap-1">
               <button
@@ -157,7 +209,7 @@ function ChapterRead() {
           </div>
           
           <h1 className="text-base font-bold text-foreground text-center mt-3 text-balance">
-            Chương {chapter.chapterNumber}: {chapter.title}
+            Chương {chapter.chapter_number}: {chapter.title}
           </h1>
 
           {/* Settings Panel */}
@@ -211,9 +263,9 @@ function ChapterRead() {
 
         {/* Navigation */}
         <div className="flex items-center justify-between gap-3 mb-4">
-          {chapter.prevChapter ? (
+          {prevChapter ? (
             <Link
-              to={`/truyen/${slug}/chuong-${chapter.prevChapter.chapterNumber}`}
+              to={`/chapter/${prevChapter.id}`}
               className="flex items-center gap-1.5 px-3 py-2 bg-card border border-border rounded-lg text-sm text-muted-foreground hover:text-foreground hover:border-foreground/20 transition-all"
             >
               <ChevronLeft className="w-4 h-4" />
@@ -223,17 +275,19 @@ function ChapterRead() {
             <div className="w-20" />
           )}
 
-          <Link
-            to={`/truyen/${slug}`}
-            className="flex items-center gap-1.5 px-3 py-2 bg-card border border-border rounded-lg text-sm text-muted-foreground hover:text-foreground hover:border-foreground/20 transition-all"
-          >
-            <List className="w-4 h-4" />
-            <span className="hidden sm:inline">Mục lục</span>
-          </Link>
-
-          {chapter.nextChapter ? (
+          {novel && (
             <Link
-              to={`/truyen/${slug}/chuong-${chapter.nextChapter.chapterNumber}`}
+              to={`/truyen/${novel.id}`}
+              className="flex items-center gap-1.5 px-3 py-2 bg-card border border-border rounded-lg text-sm text-muted-foreground hover:text-foreground hover:border-foreground/20 transition-all"
+            >
+              <List className="w-4 h-4" />
+              <span className="hidden sm:inline">Mục lục</span>
+            </Link>
+          )}
+
+          {nextChapter ? (
+            <Link
+              to={`/chapter/${nextChapter.id}`}
               className="flex items-center gap-1.5 px-3 py-2 bg-accent text-accent-foreground rounded-lg text-sm font-medium hover:bg-accent/90 transition-colors"
             >
               <span className="hidden sm:inline">Tiếp</span>
@@ -250,7 +304,7 @@ function ChapterRead() {
             className="max-w-none text-foreground"
             style={{ fontSize: `${fontSize}px`, lineHeight: lineHeight }}
           >
-            {chapter.content.split('\n').map((paragraph, index) => (
+            {(chapter.content?.split('\n') || []).map((paragraph, index) => (
               paragraph.trim() && (
                 <p key={index} className="mb-5 text-justify">
                   {paragraph}
@@ -265,9 +319,9 @@ function ChapterRead() {
 
         {/* Navigation Bottom */}
         <div className="flex items-center justify-between gap-3 mb-4">
-          {chapter.prevChapter ? (
+          {prevChapter ? (
             <Link
-              to={`/truyen/${slug}/chuong-${chapter.prevChapter.chapterNumber}`}
+              to={`/chapter/${prevChapter.id}`}
               className="flex items-center gap-1.5 px-3 py-2 bg-card border border-border rounded-lg text-sm text-muted-foreground hover:text-foreground hover:border-foreground/20 transition-all"
             >
               <ChevronLeft className="w-4 h-4" />
@@ -277,17 +331,19 @@ function ChapterRead() {
             <div className="w-24" />
           )}
 
-          <Link
-            to={`/truyen/${slug}`}
-            className="flex items-center gap-1.5 px-3 py-2 bg-card border border-border rounded-lg text-sm text-muted-foreground hover:text-foreground hover:border-foreground/20 transition-all"
-          >
-            <List className="w-4 h-4" />
-            <span className="hidden sm:inline">Mục lục</span>
-          </Link>
-
-          {chapter.nextChapter ? (
+          {novel && (
             <Link
-              to={`/truyen/${slug}/chuong-${chapter.nextChapter.chapterNumber}`}
+              to={`/truyen/${novel.id}`}
+              className="flex items-center gap-1.5 px-3 py-2 bg-card border border-border rounded-lg text-sm text-muted-foreground hover:text-foreground hover:border-foreground/20 transition-all"
+            >
+              <List className="w-4 h-4" />
+              <span className="hidden sm:inline">Mục lục</span>
+            </Link>
+          )}
+
+          {nextChapter ? (
+            <Link
+              to={`/chapter/${nextChapter.id}`}
               className="flex items-center gap-1.5 px-3 py-2 bg-accent text-accent-foreground rounded-lg text-sm font-medium hover:bg-accent/90 transition-colors"
             >
               <span className="hidden sm:inline">Chương tiếp</span>
@@ -303,10 +359,7 @@ function ChapterRead() {
 
         {/* AI Recommended Products based on the novel */}
         <div className="mb-4">
-          <ShopeeDeals 
-            genre={chapter.novel?.Genres?.[0]?.name} 
-            novelTitle={chapter.novel?.title}
-          />
+          <ShopeeDeals novelTitle={novel?.title} />
         </div>
 
         {/* Comments Section */}
@@ -391,5 +444,3 @@ function ChapterRead() {
     </>
   );
 }
-
-export default ChapterRead;
