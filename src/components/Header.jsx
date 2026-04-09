@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Search, User, Menu, X, BookOpen, Sparkles, Moon, Sun, Flame, Clock, CheckCircle, History, ChevronDown } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
@@ -12,8 +12,21 @@ function Header() {
   const [showSearch, setShowSearch] = useState(false);
   const [openMenu, setOpenMenu] = useState('');
   const [genres, setGenres] = useState([]);
+  const closeTimerRef = useRef(null);
   const { user, isAuthenticated, logout } = useAuth();
   const location = useLocation();
+
+  const monkeyDGenres = [
+    'Bach Hop', 'BE', 'Binh Luan Cot Truyen', 'Chua Lanh', 'Co Dai', 'Cung Dau', 'Cuoi Truoc Yeu Sau',
+    'Cuong Thu Hao Doat', 'Di Nang', 'Duong The', 'Dam My', 'Dien Van', 'Do Thi', 'Doan Van', 'Doc Tam',
+    'Ga Thay', 'Gia Dau', 'Gia Dinh', 'Guong Vo Khong Lanh', 'Guong Vo Lai Lanh', 'Hai Huoc', 'Hanh Dong',
+    'Hao Mon The Gia', 'HE', 'He Thong', 'Hien Dai', 'Hoan Doi Than Xac', 'Hoc Ba', 'Hoc Duong',
+    'Hu Cau Ky Ao', 'Huyen Huyen', 'Khong CP', 'Kinh Di', 'Linh Di', 'Mat The', 'My Thuc', 'Ngon Tinh',
+    'Ngot', 'Nguoc', 'Nguoc Luyen Tan Tam', 'Nguoc Nam', 'Nguoc Nu', 'Nhan Thu', 'Nien Dai', 'Nu Cuong',
+    'OE', 'Phep Thuat', 'Phieu Luu', 'Phuong Dong', 'Phuong Tay', 'Quy Tac', 'Sang Van', 'SE', 'Showbiz',
+    'Sung', 'Thanh Xuan Vuon Truong', 'Thuc Tinh Nhan Vat', 'Tien Hiep', 'Tieu Thuyet', 'Tong Tai',
+    'Tra Thu', 'Trinh Tham', 'Trong Sinh', 'Truy The', 'Truyen Cam Hung', 'Va Mat', 'Vo Tri', 'Xuyen Khong', 'Xuyen Sach'
+  ];
 
   useEffect(() => {
     const handleScroll = () => {
@@ -35,6 +48,10 @@ function Header() {
     setIsMenuOpen(false);
     setShowSearch(false);
     setOpenMenu('');
+    if (closeTimerRef.current) {
+      clearTimeout(closeTimerRef.current);
+      closeTimerRef.current = null;
+    }
   }, [location.pathname]);
 
   useEffect(() => {
@@ -75,11 +92,51 @@ function Header() {
     { to: '/so-chuong/500-1000', label: '500 - 1000 chuong' },
     { to: '/so-chuong/tren-1000', label: 'Tren 1000 chuong' }
   ];
+  const toSlug = (value) =>
+    String(value || '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
 
-  const genreColumns = [[], [], [], []];
-  genres.forEach((genre, index) => {
-    genreColumns[index % 4].push(genre);
+  const mergedGenres = useMemo(() => {
+    const dbGenres = (genres || []).map((genre) => ({
+      id: genre.id || genre.slug,
+      name: genre.name,
+      slug: genre.slug || toSlug(genre.name)
+    }));
+
+    const map = new Map(dbGenres.map((genre) => [genre.slug, genre]));
+    monkeyDGenres.forEach((name) => {
+      const slug = toSlug(name);
+      if (!map.has(slug)) {
+        map.set(slug, { id: `static-${slug}`, name, slug });
+      }
+    });
+    return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
+  }, [genres]);
+
+  const genreColumns = [[], [], [], [], []];
+  mergedGenres.forEach((genre, index) => {
+    genreColumns[index % 5].push(genre);
   });
+
+  const openDropdown = (menuKey) => {
+    if (closeTimerRef.current) {
+      clearTimeout(closeTimerRef.current);
+      closeTimerRef.current = null;
+    }
+    setOpenMenu(menuKey);
+  };
+
+  const scheduleClose = () => {
+    if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
+    closeTimerRef.current = setTimeout(() => {
+      setOpenMenu('');
+      closeTimerRef.current = null;
+    }, 220);
+  };
 
   return (
     <>
@@ -93,15 +150,15 @@ function Header() {
         </div>
       </div>
 
-      <header 
+      <header
         className={`sticky top-0 z-50 transition-all duration-300 ${
           isScrolled 
             ? 'bg-background/95 backdrop-blur-lg border-b border-border shadow-sm' 
             : 'bg-background border-b border-border'
         }`}
       >
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="flex items-center justify-between h-14">
+        <div className="max-w-[1500px] mx-auto px-6">
+          <div className="flex items-center justify-between h-16">
             {/* Logo */}
             <Link to="/" className="flex items-center gap-2 group flex-shrink-0">
               <div className="w-8 h-8 bg-accent rounded-xl flex items-center justify-center group-hover:scale-105 transition-transform shadow-md">
@@ -113,7 +170,7 @@ function Header() {
             </Link>
 
             {/* Desktop Navigation */}
-            <nav className="hidden lg:flex items-center gap-1.5">
+            <nav className="hidden lg:flex items-center gap-2">
               {navLinks.map((link) => (
                 <Link
                   key={link.to}
@@ -128,7 +185,7 @@ function Header() {
                   {link.label}
                 </Link>
               ))}
-              <div className="relative" onMouseEnter={() => setOpenMenu('danh-sach')} onMouseLeave={() => setOpenMenu('')}>
+              <div className="relative" onMouseEnter={() => openDropdown('danh-sach')} onMouseLeave={scheduleClose}>
                 <button
                   type="button"
                   className={`top-nav-pill ${
@@ -143,7 +200,7 @@ function Header() {
                 </button>
 
                 {openMenu === 'danh-sach' && (
-                  <div className="absolute top-full left-0 mt-2 w-[760px] dropdown-surface p-4 z-50">
+                  <div className="absolute top-full left-0 mt-1 w-[980px] dropdown-surface p-4 z-50" onMouseEnter={() => openDropdown('danh-sach')} onMouseLeave={scheduleClose}>
                     <div className="grid grid-cols-4 gap-3 mb-3">
                       {quickCategoryLinks.map((item) => (
                         <Link
@@ -155,7 +212,7 @@ function Header() {
                         </Link>
                       ))}
                     </div>
-                    <div className="grid grid-cols-4 gap-3 border-t border-border pt-3">
+                    <div className="grid grid-cols-5 gap-3 border-t border-border pt-3 max-h-[420px] overflow-y-auto">
                       {genreColumns.map((column, colIndex) => (
                         <div key={colIndex} className="space-y-2">
                           {column.map((genre) => (
@@ -174,7 +231,7 @@ function Header() {
                 )}
               </div>
 
-              <div className="relative" onMouseEnter={() => setOpenMenu('chapter-range')} onMouseLeave={() => setOpenMenu('')}>
+              <div className="relative" onMouseEnter={() => openDropdown('chapter-range')} onMouseLeave={scheduleClose}>
                 <button
                   type="button"
                   className={`top-nav-pill ${
@@ -188,7 +245,7 @@ function Header() {
                   <ChevronDown className={`w-3.5 h-3.5 transition-transform ${openMenu === 'chapter-range' ? 'rotate-180' : ''}`} />
                 </button>
                 {openMenu === 'chapter-range' && (
-                  <div className="absolute top-full left-0 mt-2 w-64 dropdown-surface p-3 z-50">
+                  <div className="absolute top-full left-0 mt-1 w-64 dropdown-surface p-3 z-50" onMouseEnter={() => openDropdown('chapter-range')} onMouseLeave={scheduleClose}>
                     <div className="space-y-2">
                       {chapterRangeLinks.map((item) => (
                         <Link
@@ -204,7 +261,7 @@ function Header() {
                 )}
               </div>
 
-              <div className="relative" onMouseEnter={() => setOpenMenu('customize')} onMouseLeave={() => setOpenMenu('')}>
+              <div className="relative" onMouseEnter={() => openDropdown('customize')} onMouseLeave={scheduleClose}>
                 <button
                   type="button"
                   className={`top-nav-pill ${openMenu === 'customize' ? 'top-nav-pill-active' : 'top-nav-pill-idle'}`}
@@ -214,7 +271,7 @@ function Header() {
                   <ChevronDown className={`w-3.5 h-3.5 transition-transform ${openMenu === 'customize' ? 'rotate-180' : ''}`} />
                 </button>
                 {openMenu === 'customize' && (
-                  <div className="absolute top-full left-0 mt-2 w-56 dropdown-surface p-3 z-50">
+                  <div className="absolute top-full left-0 mt-1 w-56 dropdown-surface p-3 z-50" onMouseEnter={() => openDropdown('customize')} onMouseLeave={scheduleClose}>
                     <div className="space-y-2">
                       <button
                         type="button"
@@ -233,6 +290,9 @@ function Header() {
                       <Link to="/chinh-sach" className="block text-sm font-medium text-foreground hover:text-accent transition-colors">
                         Chinh sach
                       </Link>
+                      <Link to="/quan-ly-the-loai" className="block text-sm font-medium text-foreground hover:text-accent transition-colors">
+                        Quan ly the loai
+                      </Link>
                     </div>
                   </div>
                 )}
@@ -250,7 +310,7 @@ function Header() {
                     placeholder="Tìm truyện..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-48 lg:w-56 pl-8 pr-3 py-1.5 bg-secondary/80 text-foreground placeholder:text-muted-foreground border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent focus:bg-background transition-all"
+                    className="w-56 lg:w-64 pl-8 pr-3 py-1.5 bg-secondary/80 text-foreground placeholder:text-muted-foreground border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent focus:bg-background transition-all"
                   />
                 </div>
               </form>
@@ -406,11 +466,11 @@ function Header() {
                 </Link>
               </nav>
 
-              {genres.length > 0 && (
+              {mergedGenres.length > 0 && (
                 <div className="space-y-2">
                   <h4 className="text-xs uppercase tracking-wide text-muted-foreground">The loai</h4>
                   <div className="grid grid-cols-2 gap-2">
-                    {genres.map((genre) => (
+                    {mergedGenres.map((genre) => (
                       <Link
                         key={genre.id}
                         to={`/the-loai/${genre.slug}`}

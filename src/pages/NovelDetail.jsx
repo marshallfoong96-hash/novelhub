@@ -40,40 +40,17 @@ function NovelDetail() {
 
       setNovel(novelData);
 
-      const { data: genresData } = await supabase
-        .from("genres")
-        .select("*");
-
-      const normalize = (value) => String(value || '').toLowerCase().trim();
-      const getNovelGenreSlug = (row) => {
-        const directSlug = normalize(row.genre_slug);
-        if (directSlug) return directSlug;
-
-        const byId = (genresData || []).find((genre) => String(genre.id) === String(row.genre_id));
-        if (byId?.slug) return normalize(byId.slug);
-
-        const raw = normalize(row.genre || row.category || row.tags);
-        const matched = (genresData || []).find((genre) => {
-          const slugValue = normalize(genre.slug);
-          const nameValue = normalize(genre.name);
-          return (slugValue && raw.includes(slugValue)) || (nameValue && raw.includes(nameValue));
-        });
-        return normalize(matched?.slug);
-      };
-
-      const currentGenreSlug = getNovelGenreSlug(novelData);
-      if (currentGenreSlug) {
+      const currentGenreId = novelData?.genre_id || null;
+      if (currentGenreId) {
         const { data: allNovels } = await supabase
           .from('novels')
           .select('*')
           .neq('id', parseInt(slug))
+          .eq('genre_id', currentGenreId)
           .order('view_count', { ascending: false })
-          .limit(100);
+          .limit(6);
 
-        const sameGenre = (allNovels || [])
-          .filter((item) => getNovelGenreSlug(item) === currentGenreSlug)
-          .slice(0, 6);
-        setRelatedNovels(sameGenre);
+        setRelatedNovels(allNovels || []);
       } else {
         setRelatedNovels([]);
       }

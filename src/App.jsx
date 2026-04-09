@@ -8,6 +8,7 @@ import NovelDetail from './pages/NovelDetail';
 import ChapterRead from './pages/ChapterRead';
 import BrowseNovels from './pages/BrowseNovels';
 import ReadingHistory from './pages/ReadingHistory';
+import GenreManager from './pages/GenreManager';
 import { AboutPage, PrivacyPage, TermsPage, ContactPage } from './pages/InfoPage';
 import { Sparkles, BookOpen, Users, PenTool, Mail, Github, Facebook, ExternalLink } from 'lucide-react';
 import { AdBanner } from './components/AdSpace';
@@ -31,6 +32,7 @@ function App() {
               <Route path="/truyen-dang-ra" element={<BrowseNovels mode="ongoing" />} />
               <Route path="/so-chuong/:range" element={<BrowseNovels mode="chapterRange" />} />
               <Route path="/lich-su" element={<ReadingHistory />} />
+              <Route path="/quan-ly-the-loai" element={<GenreManager />} />
               <Route path="/the-loai" element={<BrowseNovels mode="all" />} />
               <Route path="/the-loai/:slug" element={<BrowseNovels mode="category" />} />
               <Route path="/gioi-thieu" element={<AboutPage />} />
