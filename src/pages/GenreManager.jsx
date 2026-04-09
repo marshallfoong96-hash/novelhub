@@ -18,6 +18,8 @@ function getRandomCover() {
 function GenreManager() {
   const [novels, setNovels] = useState([]);
   const [genres, setGenres] = useState([]);
+  const [novelGenreMap, setNovelGenreMap] = useState({});
+  const [supportsMultiGenre, setSupportsMultiGenre] = useState(true);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState(null);
@@ -39,9 +41,10 @@ function GenreManager() {
         return;
       }
 
-      const [novelsRes, genresRes] = await Promise.all([
+      const [novelsRes, genresRes, relationsRes] = await Promise.all([
         supabase.from("novels").select("id,title,author,genre_id,created_at").order("created_at", { ascending: false }),
-        supabase.from("genres").select("id,name,slug").order("name", { ascending: true })
+        supabase.from("genres").select("id,name,slug,image").order("name", { ascending: true }),
+        supabase.from("novel_genres").select("novel_id,genre_id")
       ]);
 
       if (novelsRes.error) {
@@ -55,8 +58,20 @@ function GenreManager() {
         return;
       }
 
+      const nextMap = {};
+      if (relationsRes.error) {
+        setSupportsMultiGenre(false);
+      } else {
+        setSupportsMultiGenre(true);
+        (relationsRes.data || []).forEach((row) => {
+          if (!nextMap[row.novel_id]) nextMap[row.novel_id] = [];
+          nextMap[row.novel_id].push(Number(row.genre_id));
+        });
+      }
+
       setNovels(novelsRes.data || []);
       setGenres(genresRes.data || []);
+      setNovelGenreMap(nextMap);
       setLoading(false);
     };
 
@@ -67,7 +82,11 @@ function GenreManager() {
     const keyword = search.trim().toLowerCase();
     let rows = novels;
     if (onlyUncategorized) {
-      rows = rows.filter((novel) => novel.genre_id === null || novel.genre_id === undefined);
+      rows = rows.filter((novel) => {
+        const multiGenres = novelGenreMap[novel.id] || [];
+        if (supportsMultiGenre) return multiGenres.length === 0;
+        return novel.genre_id === null || novel.genre_id === undefined;
+      });
     }
     if (!keyword) return rows;
     return rows.filter((novel) => {
@@ -76,31 +95,71 @@ function GenreManager() {
         String(novel.author || "").toLowerCase().includes(keyword)
       );
     });
-  }, [novels, search, onlyUncategorized]);
+  }, [novels, search, onlyUncategorized, novelGenreMap, supportsMultiGenre]);
 
   const selectedCount = selectedIds.length;
 
-  const handleChangeGenre = async (novelId, genreId) => {
+  const handleChangeGenre = async (novelId, selectedGenreIds) => {
     setSavingId(novelId);
     setNotice("");
-    const payload = { genre_id: genreId ? Number(genreId) : null };
-    const { error: updateError } = await supabase
+    setError("");
+    const selected = (selectedGenreIds || []).map(Number).filter(Boolean);
+    const primaryGenreId = selected[0] || null;
+
+    if (!supportsMultiGenre) {
+      const payload = { genre_id: primaryGenreId };
+      const { error: updateError } = await supabase
+        .from("novels")
+        .update(payload)
+        .eq("id", novelId);
+      if (updateError) {
+        setError(updateError.message || "Failed to update genre.");
+        setSavingId(null);
+        return;
+      }
+      setNovels((prev) =>
+        prev.map((novel) => (novel.id === novelId ? { ...novel, genre_id: payload.genre_id } : novel))
+      );
+      setSavingId(null);
+      setNotice("Da cap nhat the loai thanh cong.");
+      setTimeout(() => setNotice(""), 1500);
+      return;
+    }
+
+    const { error: deleteError } = await supabase.from("novel_genres").delete().eq("novel_id", novelId);
+    if (deleteError) {
+      setError(deleteError.message || "Failed to update multi genres.");
+      setSavingId(null);
+      return;
+    }
+    if (selected.length > 0) {
+      const rows = selected.map((genreId) => ({ novel_id: novelId, genre_id: genreId }));
+      const { error: insertError } = await supabase.from("novel_genres").insert(rows);
+      if (insertError) {
+        setError(insertError.message || "Failed to save selected genres.");
+        setSavingId(null);
+        return;
+      }
+    }
+
+    const { error: primaryError } = await supabase
       .from("novels")
-      .update(payload)
+      .update({ genre_id: primaryGenreId })
       .eq("id", novelId);
 
-    if (updateError) {
-      setError(updateError.message || "Failed to update genre.");
+    if (primaryError) {
+      setError(primaryError.message || "Failed to sync primary genre.");
       setSavingId(null);
       return;
     }
 
+    setNovelGenreMap((prev) => ({ ...prev, [novelId]: selected }));
     setNovels((prev) =>
-      prev.map((novel) => (novel.id === novelId ? { ...novel, genre_id: payload.genre_id } : novel))
+      prev.map((novel) => (novel.id === novelId ? { ...novel, genre_id: primaryGenreId } : novel))
     );
     setSavingId(null);
-    setNotice("Da cap nhat the loai thanh cong.");
-    setTimeout(() => setNotice(""), 1500);
+    setNotice("Da cap nhat nhieu the loai thanh cong.");
+    setTimeout(() => setNotice(""), 1600);
   };
 
   const handleToggleSelect = (novelId) => {
@@ -124,26 +183,43 @@ function GenreManager() {
     setError("");
     setNotice("");
 
-    const { error: updateError } = await supabase
-      .from("novels")
-      .update({ genre_id: Number(batchGenreId) })
-      .in("id", selectedIds);
-
-    if (updateError) {
-      setError(updateError.message || "Batch update failed.");
-      setBatchSaving(false);
-      return;
+    if (supportsMultiGenre) {
+      const rows = selectedIds.map((novelId) => ({ novel_id: novelId, genre_id: Number(batchGenreId) }));
+      const { error: insertError } = await supabase.from("novel_genres").upsert(rows, { onConflict: "novel_id,genre_id" });
+      if (insertError) {
+        setError(insertError.message || "Batch multi update failed.");
+        setBatchSaving(false);
+        return;
+      }
+      setNovelGenreMap((prev) => {
+        const next = { ...prev };
+        selectedIds.forEach((novelId) => {
+          const arr = Array.isArray(next[novelId]) ? next[novelId] : [];
+          if (!arr.includes(Number(batchGenreId))) next[novelId] = [...arr, Number(batchGenreId)];
+        });
+        return next;
+      });
+    } else {
+      const { error: updateError } = await supabase
+        .from("novels")
+        .update({ genre_id: Number(batchGenreId) })
+        .in("id", selectedIds);
+      if (updateError) {
+        setError(updateError.message || "Batch update failed.");
+        setBatchSaving(false);
+        return;
+      }
+      setNovels((prev) =>
+        prev.map((novel) =>
+          selectedIds.includes(novel.id) ? { ...novel, genre_id: Number(batchGenreId) } : novel
+        )
+      );
     }
 
-    setNovels((prev) =>
-      prev.map((novel) =>
-        selectedIds.includes(novel.id) ? { ...novel, genre_id: Number(batchGenreId) } : novel
-      )
-    );
     setBatchSaving(false);
     setSelectedIds([]);
     setBatchGenreId("");
-    setNotice("Da cap nhat the loai hang loat thanh cong.");
+    setNotice(supportsMultiGenre ? "Da them the loai hang loat thanh cong." : "Da cap nhat the loai hang loat thanh cong.");
     setTimeout(() => setNotice(""), 1600);
   };
 
@@ -170,8 +246,15 @@ function GenreManager() {
         <h1 className="text-xl font-bold text-foreground">Quan ly the loai co dinh</h1>
       </div>
       <p className="text-sm text-muted-foreground">
-        Chon the loai cho tung truyen. He thong se luon loc theo <code>genre_id</code>.
+        {supportsMultiGenre
+          ? "Chon nhieu the loai cho tung truyen (giu Ctrl/Cmd de chon nhieu). The loai dau tien se dong bo vao genre_id."
+          : "Che do hien tai dang la 1 the loai/1 truyen vi chua co bang novel_genres."}
       </p>
+      {!supportsMultiGenre && (
+        <div className="text-xs text-muted-foreground">
+          SQL can chay: <code>create table if not exists public.novel_genres (novel_id bigint not null references public.novels(id) on delete cascade, genre_id bigint not null references public.genres(id) on delete cascade, created_at timestamp with time zone default now(), primary key (novel_id, genre_id));</code>
+        </div>
+      )}
 
       <div className="section-shell p-3">
         <div className="flex flex-col md:flex-row md:items-center gap-3">
@@ -222,7 +305,7 @@ function GenreManager() {
             onChange={(e) => setBatchGenreId(e.target.value)}
             className="w-full lg:w-64 text-sm rounded-lg bg-secondary border border-border px-3 py-2"
           >
-            <option value="">Chon the loai de cap nhat hang loat</option>
+            <option value="">{supportsMultiGenre ? "Them the loai cho hang loat" : "Chon the loai de cap nhat hang loat"}</option>
             {genres.map((genre) => (
               <option key={genre.id} value={genre.id}>
                 {genre.name}
@@ -298,14 +381,22 @@ function GenreManager() {
                   <p className="text-xs text-muted-foreground">{novel.author || "Dang cap nhat"}</p>
                 </div>
 
-                <div className="w-full md:w-72 flex items-center gap-2">
+                <div className="w-full md:w-[380px] flex items-center gap-2">
                   <select
-                    value={novel.genre_id ?? ""}
-                    onChange={(e) => handleChangeGenre(novel.id, e.target.value)}
+                    multiple={supportsMultiGenre}
+                    value={supportsMultiGenre ? (novelGenreMap[novel.id] || []) : (novel.genre_id ?? "")}
+                    onChange={(e) => {
+                      if (supportsMultiGenre) {
+                        const selected = Array.from(e.target.selectedOptions).map((option) => Number(option.value));
+                        handleChangeGenre(novel.id, selected);
+                      } else {
+                        handleChangeGenre(novel.id, [Number(e.target.value)]);
+                      }
+                    }}
                     disabled={savingId === novel.id}
-                    className="w-full text-sm rounded-lg bg-secondary border border-border px-3 py-2"
+                    className={`w-full text-sm rounded-lg bg-secondary border border-border px-3 py-2 ${supportsMultiGenre ? "h-28" : ""}`}
                   >
-                    <option value="">Chua chon the loai</option>
+                    {!supportsMultiGenre && <option value="">Chua chon the loai</option>}
                     {genres.map((genre) => (
                       <option key={genre.id} value={genre.id}>
                         {genre.name}

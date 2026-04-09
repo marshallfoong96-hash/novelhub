@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Search, User, Menu, X, BookOpen, Sparkles, Moon, Sun, Flame, Clock, CheckCircle, History, ChevronDown } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
@@ -10,11 +10,17 @@ function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isDark, setIsDark] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
+  const [searchResults, setSearchResults] = useState([]);
+  const [hotSuggestions, setHotSuggestions] = useState([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [showSearchDropdown, setShowSearchDropdown] = useState(false);
   const [openMenu, setOpenMenu] = useState('');
   const [genres, setGenres] = useState([]);
   const closeTimerRef = useRef(null);
+  const searchBoxRef = useRef(null);
   const { user, isAuthenticated, logout } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
 
   const monkeyDGenres = [
     'Bach Hop', 'BE', 'Binh Luan Cot Truyen', 'Chua Lanh', 'Co Dai', 'Cung Dau', 'Cuoi Truoc Yeu Sau',
@@ -48,11 +54,23 @@ function Header() {
     setIsMenuOpen(false);
     setShowSearch(false);
     setOpenMenu('');
+    setShowSearchDropdown(false);
     if (closeTimerRef.current) {
       clearTimeout(closeTimerRef.current);
       closeTimerRef.current = null;
     }
   }, [location.pathname]);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (!searchBoxRef.current) return;
+      if (!searchBoxRef.current.contains(event.target)) {
+        setShowSearchDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   useEffect(() => {
     const fetchGenres = async () => {
@@ -66,12 +84,66 @@ function Header() {
     fetchGenres();
   }, []);
 
-  const handleSearch = (e) => {
+  const handleSearch = async (e) => {
     e.preventDefault();
-    if (searchQuery.trim()) {
-      window.location.href = `/search?q=${encodeURIComponent(searchQuery)}`;
+    const keyword = searchQuery.trim();
+    if (!keyword || !isSupabaseConfigured || !supabase) return;
+    const topHit = searchResults[0];
+    if (topHit?.id) {
+      navigate(`/truyen/${topHit.id}`);
+      return;
+    }
+    const { data } = await supabase
+      .from('novels')
+      .select('id')
+      .ilike('title', `%${keyword}%`)
+      .order('view_count', { ascending: false })
+      .limit(1);
+    if (data?.[0]?.id) {
+      navigate(`/truyen/${data[0].id}`);
     }
   };
+
+  useEffect(() => {
+    const keyword = searchQuery.trim();
+    if (!keyword || !isSupabaseConfigured || !supabase) {
+      setSearchResults([]);
+      setHotSuggestions([]);
+      setSearchLoading(false);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setSearchLoading(true);
+      const { data, error } = await supabase
+        .from('novels')
+        .select('id,title,author,cover_url,view_count')
+        .ilike('title', `%${keyword}%`)
+        .order('view_count', { ascending: false })
+        .limit(8);
+      if (error) {
+        setSearchResults([]);
+        setHotSuggestions([]);
+      } else {
+        const rows = data || [];
+        setSearchResults(rows);
+        if (rows.length === 0) {
+          const { data: hotData } = await supabase
+            .from('novels')
+            .select('id,title,author,cover_url,view_count')
+            .order('view_count', { ascending: false })
+            .limit(6);
+          setHotSuggestions(hotData || []);
+        } else {
+          setHotSuggestions([]);
+        }
+      }
+      setSearchLoading(false);
+      setShowSearchDropdown(true);
+    }, 220);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   const navLinks = [
     { to: '/', label: 'Trang chủ', icon: BookOpen },
@@ -303,15 +375,78 @@ function Header() {
             <div className="flex items-center gap-2">
               {/* Search Bar - Desktop */}
               <form onSubmit={handleSearch} className="hidden md:flex">
-                <div className="relative">
+                <div className="relative" ref={searchBoxRef}>
                   <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <input
                     type="text"
                     placeholder="Tìm truyện..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
+                    onFocus={() => {
+                      if (searchQuery.trim()) setShowSearchDropdown(true);
+                    }}
                     className="w-56 lg:w-64 pl-8 pr-3 py-1.5 bg-secondary/80 text-foreground placeholder:text-muted-foreground border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent focus:bg-background transition-all"
                   />
+                  {showSearchDropdown && (
+                    <div className="absolute top-full mt-2 w-full min-w-[340px] max-h-[420px] overflow-y-auto dropdown-surface p-2 z-50">
+                      {searchLoading ? (
+                        <p className="text-xs text-muted-foreground p-2">Dang tim...</p>
+                      ) : searchResults.length === 0 ? (
+                        hotSuggestions.length > 0 ? (
+                          <div>
+                            <p className="text-[11px] text-muted-foreground px-2 py-1">Khong tim thay. Goi y truyen hot:</p>
+                            <div className="space-y-1">
+                              {hotSuggestions.map((item) => (
+                                <Link
+                                  key={`search-hot-${item.id}`}
+                                  to={`/truyen/${item.id}`}
+                                  onClick={() => setShowSearchDropdown(false)}
+                                  className="flex items-center gap-2 p-2 rounded-lg hover:bg-secondary transition-colors"
+                                >
+                                  <img
+                                    src={item.cover_url || '/default-cover.jpg'}
+                                    alt={item.title}
+                                    className="w-9 h-12 rounded object-cover flex-shrink-0"
+                                  />
+                                  <div className="min-w-0">
+                                    <p className="text-sm text-foreground line-clamp-1">{item.title}</p>
+                                    <p className="text-xs text-muted-foreground line-clamp-1">
+                                      {item.author || 'Dang cap nhat'}
+                                    </p>
+                                  </div>
+                                </Link>
+                              ))}
+                            </div>
+                          </div>
+                        ) : (
+                          <p className="text-xs text-muted-foreground p-2">Khong co ket qua phu hop.</p>
+                        )
+                      ) : (
+                        <div className="space-y-1">
+                          {searchResults.map((item) => (
+                            <Link
+                              key={`search-${item.id}`}
+                              to={`/truyen/${item.id}`}
+                              onClick={() => setShowSearchDropdown(false)}
+                              className="flex items-center gap-2 p-2 rounded-lg hover:bg-secondary transition-colors"
+                            >
+                              <img
+                                src={item.cover_url || '/default-cover.jpg'}
+                                alt={item.title}
+                                className="w-9 h-12 rounded object-cover flex-shrink-0"
+                              />
+                              <div className="min-w-0">
+                                <p className="text-sm text-foreground line-clamp-1">{item.title}</p>
+                                <p className="text-xs text-muted-foreground line-clamp-1">
+                                  {item.author || 'Dang cap nhat'}
+                                </p>
+                              </div>
+                            </Link>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </form>
 
@@ -415,6 +550,72 @@ function Header() {
                   className="w-full pl-9 pr-4 py-2.5 bg-secondary text-foreground placeholder:text-muted-foreground border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent"
                 />
               </div>
+              {(searchLoading || searchQuery.trim() || searchResults.length > 0) && (
+                <div className="mt-2 bg-card border border-border rounded-lg max-h-72 overflow-y-auto">
+                  {searchLoading ? (
+                    <p className="text-xs text-muted-foreground p-3">Dang tim...</p>
+                  ) : searchResults.length === 0 ? (
+                    hotSuggestions.length > 0 ? (
+                      <div>
+                        <p className="text-[11px] text-muted-foreground px-3 py-2">Khong tim thay. Goi y truyen hot:</p>
+                        <div className="divide-y divide-border">
+                          {hotSuggestions.map((item) => (
+                            <Link
+                              key={`m-search-hot-${item.id}`}
+                              to={`/truyen/${item.id}`}
+                              onClick={() => {
+                                setShowSearch(false);
+                                setShowSearchDropdown(false);
+                              }}
+                              className="flex items-center gap-2 p-2 hover:bg-secondary transition-colors"
+                            >
+                              <img
+                                src={item.cover_url || '/default-cover.jpg'}
+                                alt={item.title}
+                                className="w-8 h-10 rounded object-cover flex-shrink-0"
+                              />
+                              <div className="min-w-0">
+                                <p className="text-sm text-foreground line-clamp-1">{item.title}</p>
+                                <p className="text-xs text-muted-foreground line-clamp-1">
+                                  {item.author || 'Dang cap nhat'}
+                                </p>
+                              </div>
+                            </Link>
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-xs text-muted-foreground p-3">Khong co ket qua phu hop.</p>
+                    )
+                  ) : (
+                    <div className="divide-y divide-border">
+                      {searchResults.map((item) => (
+                        <Link
+                          key={`m-search-${item.id}`}
+                          to={`/truyen/${item.id}`}
+                          onClick={() => {
+                            setShowSearch(false);
+                            setShowSearchDropdown(false);
+                          }}
+                          className="flex items-center gap-2 p-2 hover:bg-secondary transition-colors"
+                        >
+                          <img
+                            src={item.cover_url || '/default-cover.jpg'}
+                            alt={item.title}
+                            className="w-8 h-10 rounded object-cover flex-shrink-0"
+                          />
+                          <div className="min-w-0">
+                            <p className="text-sm text-foreground line-clamp-1">{item.title}</p>
+                            <p className="text-xs text-muted-foreground line-clamp-1">
+                              {item.author || 'Dang cap nhat'}
+                            </p>
+                          </div>
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </form>
           </div>
         )}
