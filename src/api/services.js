@@ -31,11 +31,14 @@ export const authAPI = {
 // =====================
 export const novelAPI = {
   // 全部小說
-  getAll: async (limit = 12) => {
-    return await supabase
+  getAll: async (limit = null) => {
+    let query = supabase
       .from("novels")
-      .select("*")
-      .limit(limit);
+      .select("*");
+    if (typeof limit === "number" && limit > 0) {
+      query = query.limit(limit);
+    }
+    return await query;
   },
 
   // 用 slug 找小說
@@ -68,21 +71,27 @@ export const novelAPI = {
   },
 
   // 🔥 熱門
-  getHot: async (limit = 12) => {
-    return await supabase
+  getHot: async (limit = null) => {
+    let query = supabase
       .from("novels")
       .select("*")
-      .order("view_count", { ascending: false })
-      .limit(limit);
+      .order("view_count", { ascending: false });
+    if (typeof limit === "number" && limit > 0) {
+      query = query.limit(limit);
+    }
+    return await query;
   },
 
   // 🆕 最新更新
-  getRecentUpdates: async (limit = 12) => {
-    return await supabase
+  getRecentUpdates: async (limit = null) => {
+    let query = supabase
       .from("novels")
       .select("*")
-      .order("created_at", { ascending: false })
-      .limit(limit);
+      .order("created_at", { ascending: false });
+    if (typeof limit === "number" && limit > 0) {
+      query = query.limit(limit);
+    }
+    return await query;
   },
 
   // 建立小說

@@ -56,8 +56,7 @@ function BrowseNovels({ mode = "all" }) {
         const { data, error: fetchError } = await supabase
           .from("novels")
           .select("*")
-          .order("created_at", { ascending: false })
-          .limit(120);
+          .order("created_at", { ascending: false });
         const { data: genresData, error: genresError } = await supabase
           .from("genres")
           .select("*")
@@ -94,6 +93,9 @@ function BrowseNovels({ mode = "all" }) {
     if (mode === "completed") {
       return novels.filter((novel) => normalize(novel.status) === "completed");
     }
+    if (mode === "ongoing") {
+      return novels.filter((novel) => normalize(novel.status) === "ongoing");
+    }
     if (mode === "category" && slug) {
       const normalizedSlug = normalize(slug);
       return novels.filter((novel) => getNovelGenreSlug(novel, genres) === normalizedSlug);
@@ -111,6 +113,7 @@ function BrowseNovels({ mode = "all" }) {
     hot: "Truyen Hot",
     recent: "Moi cap nhat",
     completed: "Truyen Full",
+    ongoing: "Truyen dang tien hanh",
     category: `The loai: ${activeGenre?.name || slug || ""}`
   };
 

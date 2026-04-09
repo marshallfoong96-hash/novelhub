@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Search, User, Menu, X, BookOpen, Sparkles, Moon, Sun, Flame, Clock, CheckCircle, History } from 'lucide-react';
+import { Search, User, Menu, X, BookOpen, Sparkles, Moon, Sun, Flame, Clock, CheckCircle, History, ChevronDown } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -9,6 +10,8 @@ function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isDark, setIsDark] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
+  const [showGenresMenu, setShowGenresMenu] = useState(false);
+  const [genres, setGenres] = useState([]);
   const { user, isAuthenticated, logout } = useAuth();
   const location = useLocation();
 
@@ -31,7 +34,20 @@ function Header() {
   useEffect(() => {
     setIsMenuOpen(false);
     setShowSearch(false);
+    setShowGenresMenu(false);
   }, [location.pathname]);
+
+  useEffect(() => {
+    const fetchGenres = async () => {
+      if (!isSupabaseConfigured || !supabase) return;
+      const { data } = await supabase
+        .from('genres')
+        .select('*')
+        .order('name', { ascending: true });
+      setGenres(data || []);
+    };
+    fetchGenres();
+  }, []);
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -45,8 +61,19 @@ function Header() {
     { to: '/hot', label: 'Hot', icon: Flame },
     { to: '/truyen-moi', label: 'Mới cập nhật', icon: Clock },
     { to: '/truyen-full', label: 'Truyện Full', icon: CheckCircle },
-    { to: '/the-loai', label: 'Thể loại', icon: null },
   ];
+
+  const quickCategoryLinks = [
+    { to: '/hot', label: 'Truyen Hot' },
+    { to: '/truyen-moi', label: 'Truyen moi cap nhat' },
+    { to: '/truyen-full', label: 'Truyen Full' },
+    { to: '/truyen-dang-ra', label: 'Truyen dang tien hanh' }
+  ];
+
+  const genreColumns = [[], [], [], []];
+  genres.forEach((genre, index) => {
+    genreColumns[index % 4].push(genre);
+  });
 
   return (
     <>
@@ -95,6 +122,55 @@ function Header() {
                   {link.label}
                 </Link>
               ))}
+              <div
+                className="relative"
+                onMouseEnter={() => setShowGenresMenu(true)}
+                onMouseLeave={() => setShowGenresMenu(false)}
+              >
+                <button
+                  type="button"
+                  className={`px-3 py-1.5 text-sm font-medium rounded transition-colors flex items-center gap-1.5 ${
+                    location.pathname.startsWith('/the-loai')
+                      ? 'text-accent bg-accent/10'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-secondary'
+                  }`}
+                >
+                  <BookOpen className="w-3.5 h-3.5" />
+                  The loai
+                  <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showGenresMenu ? 'rotate-180' : ''}`} />
+                </button>
+
+                {showGenresMenu && (
+                  <div className="absolute top-full left-0 mt-2 w-[760px] bg-card border border-border rounded-lg shadow-xl p-4 z-50">
+                    <div className="grid grid-cols-4 gap-3 mb-3">
+                      {quickCategoryLinks.map((item) => (
+                        <Link
+                          key={item.to}
+                          to={item.to}
+                          className="text-sm font-medium text-foreground hover:text-accent transition-colors"
+                        >
+                          {item.label}
+                        </Link>
+                      ))}
+                    </div>
+                    <div className="grid grid-cols-4 gap-3 border-t border-border pt-3">
+                      {genreColumns.map((column, colIndex) => (
+                        <div key={colIndex} className="space-y-2">
+                          {column.map((genre) => (
+                            <Link
+                              key={genre.id}
+                              to={`/the-loai/${genre.slug}`}
+                              className="block text-sm text-muted-foreground hover:text-foreground transition-colors"
+                            >
+                              {genre.name}
+                            </Link>
+                          ))}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             </nav>
 
             {/* Right Side Actions */}
@@ -238,7 +314,37 @@ function Header() {
                     {link.label}
                   </Link>
                 ))}
+                <Link
+                  to="/truyen-dang-ra"
+                  onClick={() => setIsMenuOpen(false)}
+                  className={`flex items-center gap-2 px-4 py-3 text-sm font-medium rounded-lg transition-colors ${
+                    location.pathname === '/truyen-dang-ra'
+                      ? 'text-accent bg-accent/10'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-secondary'
+                  }`}
+                >
+                  <Clock className="w-4 h-4" />
+                  Dang tien hanh
+                </Link>
               </nav>
+
+              {genres.length > 0 && (
+                <div className="space-y-2">
+                  <h4 className="text-xs uppercase tracking-wide text-muted-foreground">The loai</h4>
+                  <div className="grid grid-cols-2 gap-2">
+                    {genres.map((genre) => (
+                      <Link
+                        key={genre.id}
+                        to={`/the-loai/${genre.slug}`}
+                        onClick={() => setIsMenuOpen(false)}
+                        className="px-3 py-2 text-sm rounded-lg bg-secondary/50 text-foreground hover:bg-secondary transition-colors"
+                      >
+                        {genre.name}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Mobile Auth */}
               <div className="pt-4 border-t border-border">

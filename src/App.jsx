@@ -27,6 +27,7 @@ function App() {
               <Route path="/hot" element={<BrowseNovels mode="hot" />} />
               <Route path="/truyen-moi" element={<BrowseNovels mode="recent" />} />
               <Route path="/truyen-full" element={<BrowseNovels mode="completed" />} />
+              <Route path="/truyen-dang-ra" element={<BrowseNovels mode="ongoing" />} />
               <Route path="/the-loai" element={<BrowseNovels mode="all" />} />
               <Route path="/the-loai/:slug" element={<BrowseNovels mode="category" />} />
               <Route path="/gioi-thieu" element={<AboutPage />} />

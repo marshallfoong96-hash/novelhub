@@ -58,8 +58,7 @@ function Home() {
       const { data: novels, error } = await supabase
         .from("novels")
         .select("*")
-        .order("created_at", { ascending: false })
-        .limit(120);
+        .order("created_at", { ascending: false });
       const { data: genresData, error: genresError } = await supabase
         .from("genres")
         .select("*")
@@ -76,11 +75,15 @@ function Home() {
       }
 
       const novelIds = (novels || []).map((novel) => novel.id);
-      const { data: chapterRows } = await supabase
-        .from("chapters")
-        .select("id,novel_id,chapter_number")
-        .in("novel_id", novelIds)
-        .order("chapter_number", { ascending: true });
+      let chapterRows = [];
+      if (novelIds.length > 0) {
+        const chapterResult = await supabase
+          .from("chapters")
+          .select("id,novel_id,chapter_number")
+          .in("novel_id", novelIds)
+          .order("chapter_number", { ascending: true });
+        chapterRows = chapterResult.data || [];
+      }
 
       const firstChapterMap = {};
       (chapterRows || []).forEach((chapter) => {
@@ -97,7 +100,9 @@ function Home() {
       setHotNovels(novelsWithFirstChapter);
       setNewUpdates(novelsWithFirstChapter);
       setGenres((genresData || []).map(getGenreMeta));
-      setCompletedNovels(novelsWithFirstChapter.slice(0, 6));
+      setCompletedNovels(
+        novelsWithFirstChapter.filter((novel) => String(novel.status || "").toLowerCase() === "completed").slice(0, 6)
+      );
 
       setRankings({
         day: novelsWithFirstChapter,
@@ -309,14 +314,20 @@ function Home() {
 
 function HeroSection({ featuredNovels }) {
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [showFullDescription, setShowFullDescription] = useState(false);
 
   useEffect(() => {
     if (featuredNovels.length === 0) return;
+    setShowFullDescription(false);
     const timer = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % Math.min(featuredNovels.length, 5));
     }, 5000);
     return () => clearInterval(timer);
   }, [featuredNovels.length]);
+
+  useEffect(() => {
+    setShowFullDescription(false);
+  }, [currentSlide]);
 
   if (featuredNovels.length === 0) {
     return (
@@ -367,9 +378,18 @@ function HeroSection({ featuredNovels }) {
               {featured?.title}
             </h2>
           </Link>
-          <p className="text-sm text-muted-foreground mb-4 line-clamp-3">
+          <p className={`text-sm text-muted-foreground mb-2 ${showFullDescription ? '' : 'line-clamp-3'}`}>
             {featured?.description}
           </p>
+          {featured?.description && featured.description.length > 120 && (
+            <button
+              type="button"
+              onClick={() => setShowFullDescription((prev) => !prev)}
+              className="text-xs text-accent hover:underline mb-4"
+            >
+              {showFullDescription ? 'Less' : 'More'}
+            </button>
+          )}
           <div className="flex items-center gap-4 text-xs text-muted-foreground mb-4">
             <span className="flex items-center gap-1">
               <Eye className="w-3.5 h-3.5" />
