@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase, isSupabaseConfigured } from "../lib/supabase";
 import { Link } from 'react-router-dom';
 import { 
@@ -41,10 +41,12 @@ function Home() {
   const [genres, setGenres] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeRankTab, setActiveRankTab] = useState('day');
+  const [isSwitchingTab, setIsSwitchingTab] = useState(false);
   const [activeHomeTab, setActiveHomeTab] = useState(() => {
     const saved = localStorage.getItem('mi_home_tab');
     return saved && HOME_TABS.includes(saved) ? saved : 'hot';
   });
+  const tabSwitchTimerRef = useRef(null);
 
   useEffect(() => {
     fetchData();
@@ -57,6 +59,26 @@ function Home() {
     }
     localStorage.setItem('mi_home_tab', activeHomeTab);
   }, [activeHomeTab]);
+
+  useEffect(() => {
+    return () => {
+      if (tabSwitchTimerRef.current) {
+        clearTimeout(tabSwitchTimerRef.current);
+        tabSwitchTimerRef.current = null;
+      }
+    };
+  }, []);
+
+  const handleSwitchHomeTab = (tabKey) => {
+    if (tabKey === activeHomeTab) return;
+    if (tabSwitchTimerRef.current) clearTimeout(tabSwitchTimerRef.current);
+    setIsSwitchingTab(true);
+    tabSwitchTimerRef.current = setTimeout(() => {
+      setActiveHomeTab(tabKey);
+      setIsSwitchingTab(false);
+      tabSwitchTimerRef.current = null;
+    }, 130);
+  };
 
   const fetchData = async () => {
     try {
@@ -176,7 +198,7 @@ function Home() {
                 ].map((tab) => (
                   <button
                     key={tab.key}
-                    onClick={() => setActiveHomeTab(tab.key)}
+                    onClick={() => handleSwitchHomeTab(tab.key)}
                     className={`px-3 py-1.5 text-xs rounded-lg transition-colors font-medium ${
                       activeHomeTab === tab.key
                         ? 'bg-background text-foreground shadow-sm'
@@ -190,7 +212,19 @@ function Home() {
             </div>
 
             <div className="min-h-[360px]">
-              {activeHomeTab === 'hot' && (
+              {isSwitchingTab && (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 animate-pulse">
+                  {Array.from({ length: 12 }).map((_, idx) => (
+                    <div key={`tab-skeleton-${idx}`}>
+                      <div className="aspect-[2/3] rounded bg-secondary mb-2" />
+                      <div className="h-3 rounded bg-secondary mb-1" />
+                      <div className="h-3 w-2/3 rounded bg-secondary" />
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {!isSwitchingTab && activeHomeTab === 'hot' && (
                 hotNovels.length > 0 ? (
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
                     {hotNovels.slice(0, 12).map((novel) => (
@@ -202,7 +236,7 @@ function Home() {
                 )
               )}
 
-              {activeHomeTab === 'new' && (
+              {!isSwitchingTab && activeHomeTab === 'new' && (
                 newUpdates.length > 0 ? (
                   <div className="section-shell overflow-hidden">
                     <div className="divide-y divide-border">
@@ -216,7 +250,7 @@ function Home() {
                 )
               )}
 
-              {activeHomeTab === 'full' && (
+              {!isSwitchingTab && activeHomeTab === 'full' && (
                 completedNovels.length > 0 ? (
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
                     {completedNovels.slice(0, 12).map((novel) => (
