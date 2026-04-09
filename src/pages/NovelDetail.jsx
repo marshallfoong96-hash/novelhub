@@ -15,11 +15,98 @@ function NovelDetail() {
   const [newComment, setNewComment] = useState('');
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('chapters');
+  const [continueChapterId, setContinueChapterId] = useState(null);
+  const [isBookmarked, setIsBookmarked] = useState(false);
+  const [isFavorited, setIsFavorited] = useState(false);
+  const [actionNotice, setActionNotice] = useState('');
   const { isAuthenticated, user } = useAuth();
 
   useEffect(() => {
     fetchNovelData();
   }, [slug]);
+
+  useEffect(() => {
+    if (!novel?.id) return;
+    try {
+      const bookmarks = JSON.parse(localStorage.getItem('mi_bookmarks') || '[]');
+      const favorites = JSON.parse(localStorage.getItem('mi_favorites') || '[]');
+      setIsBookmarked(Array.isArray(bookmarks) && bookmarks.includes(novel.id));
+      setIsFavorited(Array.isArray(favorites) && favorites.includes(novel.id));
+    } catch {
+      setIsBookmarked(false);
+      setIsFavorited(false);
+    }
+  }, [novel?.id]);
+
+  useEffect(() => {
+    if (!novel?.id) {
+      setContinueChapterId(null);
+      return;
+    }
+    try {
+      const raw = localStorage.getItem('mi_reading_history');
+      const history = raw ? JSON.parse(raw) : [];
+      const rows = Array.isArray(history) ? history : [];
+      const match = rows.find((item) => String(item.novelId) === String(novel.id));
+      setContinueChapterId(match?.chapterId || null);
+    } catch {
+      setContinueChapterId(null);
+    }
+  }, [novel?.id]);
+
+  const showNotice = (text) => {
+    setActionNotice(text);
+    window.setTimeout(() => setActionNotice(''), 1500);
+  };
+
+  const handleToggleBookmark = () => {
+    if (!novel?.id) return;
+    const current = JSON.parse(localStorage.getItem('mi_bookmarks') || '[]');
+    const rows = Array.isArray(current) ? current : [];
+    const next = rows.includes(novel.id) ? rows.filter((id) => id !== novel.id) : [...rows, novel.id];
+    localStorage.setItem('mi_bookmarks', JSON.stringify(next));
+    const nextState = next.includes(novel.id);
+    setIsBookmarked(nextState);
+    showNotice(nextState ? 'Da danh dau truyen.' : 'Da bo danh dau.');
+  };
+
+  const handleToggleFavorite = async () => {
+    if (!novel?.id) return;
+    const current = JSON.parse(localStorage.getItem('mi_favorites') || '[]');
+    const rows = Array.isArray(current) ? current : [];
+    const next = rows.includes(novel.id) ? rows.filter((id) => id !== novel.id) : [...rows, novel.id];
+    localStorage.setItem('mi_favorites', JSON.stringify(next));
+    const nextState = next.includes(novel.id);
+    setIsFavorited(nextState);
+    showNotice(nextState ? 'Da them vao yeu thich.' : 'Da bo yeu thich.');
+
+    const currentLikes = Number(novel.likes || 0);
+    const nextLikes = nextState ? currentLikes + 1 : Math.max(currentLikes - 1, 0);
+    setNovel((prev) => (prev ? { ...prev, likes: nextLikes } : prev));
+    await supabase
+      .from('novels')
+      .update({ likes: nextLikes })
+      .eq('id', novel.id);
+  };
+
+  const handleShare = async () => {
+    const shareUrl = window.location.href;
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: novel?.title || 'MI Truyen',
+          text: `Doc truyện: ${novel?.title || ''}`,
+          url: shareUrl
+        });
+        showNotice('Da chia se.');
+        return;
+      }
+      await navigator.clipboard.writeText(shareUrl);
+      showNotice('Da copy link truyen.');
+    } catch {
+      showNotice('Khong the chia se luc nay.');
+    }
+  };
 
   const fetchNovelData = async () => {
     try {
@@ -196,6 +283,15 @@ function NovelDetail() {
 
                   {/* Action Buttons */}
                   <div className="flex flex-wrap justify-center sm:justify-start gap-2">
+                    {continueChapterId && (
+                      <Link
+                        to={`/chapter/${continueChapterId}`}
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-[hsl(var(--success))] text-white rounded-lg text-sm font-medium hover:opacity-90 transition-colors"
+                      >
+                        <BookOpen className="w-4 h-4" />
+                        Tiếp tục đọc
+                      </Link>
+                    )}
                     {chapters.length > 0 && (
                       <Link
                         to={`/chapter/${chapters[0].id}`}
@@ -205,18 +301,41 @@ function NovelDetail() {
                         Đọc từ đầu
                       </Link>
                     )}
-                    <button className="inline-flex items-center gap-2 px-4 py-2 border border-border text-foreground rounded-lg text-sm font-medium hover:bg-secondary transition-colors">
+                    <button
+                      type="button"
+                      onClick={handleToggleBookmark}
+                      className={`inline-flex items-center gap-2 px-4 py-2 border rounded-lg text-sm font-medium transition-colors ${
+                        isBookmarked
+                          ? 'border-accent text-accent bg-accent/10 hover:bg-accent/15'
+                          : 'border-border text-foreground hover:bg-secondary'
+                      }`}
+                    >
                       <Bookmark className="w-4 h-4" />
-                      Đánh dấu
+                      {isBookmarked ? 'Da danh dau' : 'Đánh dấu'}
                     </button>
-                    <button className="inline-flex items-center gap-2 px-4 py-2 border border-border text-foreground rounded-lg text-sm font-medium hover:bg-secondary transition-colors">
+                    <button
+                      type="button"
+                      onClick={handleToggleFavorite}
+                      className={`inline-flex items-center gap-2 px-4 py-2 border rounded-lg text-sm font-medium transition-colors ${
+                        isFavorited
+                          ? 'border-accent text-accent bg-accent/10 hover:bg-accent/15'
+                          : 'border-border text-foreground hover:bg-secondary'
+                      }`}
+                    >
                       <Heart className="w-4 h-4" />
-                      Yêu thích
+                      {isFavorited ? 'Da yeu thich' : 'Yêu thích'}
                     </button>
-                    <button className="inline-flex items-center gap-2 px-3 py-2 border border-border text-muted-foreground rounded-lg text-sm hover:bg-secondary transition-colors">
+                    <button
+                      type="button"
+                      onClick={handleShare}
+                      className="inline-flex items-center gap-2 px-3 py-2 border border-border text-muted-foreground rounded-lg text-sm hover:bg-secondary transition-colors"
+                    >
                       <Share2 className="w-4 h-4" />
                     </button>
                   </div>
+                  {actionNotice && (
+                    <p className="mt-2 text-xs text-accent">{actionNotice}</p>
+                  )}
                 </div>
               </div>
             </div>

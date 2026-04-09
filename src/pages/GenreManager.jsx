@@ -1,6 +1,19 @@
 import { useEffect, useMemo, useState } from "react";
-import { FolderTree, Save, Search, CheckSquare, Square } from "lucide-react";
+import { FolderTree, Save, Search, CheckSquare, Square, Shuffle } from "lucide-react";
 import { supabase, isSupabaseConfigured } from "../lib/supabase";
+
+const coverPool = [
+  "https://images.unsplash.com/photo-1509248961158-e54f6934749c?auto=format&fit=crop&w=900&q=80",
+  "https://images.unsplash.com/photo-1516589091380-5d8e87df6999?auto=format&fit=crop&w=900&q=80",
+  "https://images.unsplash.com/photo-1514477917009-389c76a86b68?auto=format&fit=crop&w=900&q=80",
+  "https://images.unsplash.com/photo-1520034475321-cbe63696469a?auto=format&fit=crop&w=900&q=80",
+  "https://images.unsplash.com/photo-1511512578047-dfb367046420?auto=format&fit=crop&w=900&q=80",
+  "https://images.unsplash.com/photo-1528747008803-4f5fd84aa3f7?auto=format&fit=crop&w=900&q=80"
+];
+
+function getRandomCover() {
+  return coverPool[Math.floor(Math.random() * coverPool.length)];
+}
 
 function GenreManager() {
   const [novels, setNovels] = useState([]);
@@ -12,6 +25,7 @@ function GenreManager() {
   const [selectedIds, setSelectedIds] = useState([]);
   const [onlyUncategorized, setOnlyUncategorized] = useState(false);
   const [batchSaving, setBatchSaving] = useState(false);
+  const [savingGenreId, setSavingGenreId] = useState(null);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
 
@@ -133,6 +147,22 @@ function GenreManager() {
     setTimeout(() => setNotice(""), 1600);
   };
 
+  const handleRandomizeGenreCover = async (genreId) => {
+    const cover = getRandomCover();
+    setSavingGenreId(genreId);
+    const { error: updateError } = await supabase
+      .from("genres")
+      .update({ image: cover })
+      .eq("id", genreId);
+    if (updateError) {
+      setError(updateError.message || "Failed to update genre cover.");
+      setSavingGenreId(null);
+      return;
+    }
+    setGenres((prev) => prev.map((g) => (g.id === genreId ? { ...g, image: cover } : g)));
+    setSavingGenreId(null);
+  };
+
   return (
     <div className="space-y-5">
       <div className="flex items-center gap-2">
@@ -207,6 +237,38 @@ function GenreManager() {
           >
             {batchSaving ? "Dang luu..." : "Cap nhat hang loat"}
           </button>
+        </div>
+      </div>
+
+      <div className="section-shell p-3">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-sm font-semibold text-foreground">Preview & random cover cho the loai</h2>
+          <span className="text-xs text-muted-foreground">Nhan nut Shuffle de doi anh nen</span>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+          {genres.map((genre) => (
+            <div key={`genre-preview-${genre.id}`} className="border border-border rounded-lg overflow-hidden bg-card">
+              <div className="h-20 bg-secondary">
+                <img
+                  src={genre.image || "/default-cover.jpg"}
+                  alt={genre.name}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <div className="p-2">
+                <p className="text-[11px] font-medium text-foreground line-clamp-1 mb-1">{genre.name}</p>
+                <button
+                  type="button"
+                  onClick={() => handleRandomizeGenreCover(genre.id)}
+                  disabled={savingGenreId === genre.id}
+                  className="w-full inline-flex items-center justify-center gap-1 text-[10px] px-2 py-1 rounded bg-secondary hover:bg-secondary/80 border border-border disabled:opacity-50"
+                >
+                  <Shuffle className="w-3 h-3" />
+                  {savingGenreId === genre.id ? "Saving..." : "Random"}
+                </button>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 

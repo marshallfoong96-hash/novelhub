@@ -31,6 +31,27 @@ function getGenreMeta(genre) {
   };
 }
 
+function normalize(value) {
+  return String(value || '').toLowerCase().trim();
+}
+
+function getGenreTheme(slug) {
+  const key = normalize(slug);
+  const themes = {
+    "kinh-di": "from-[#1f2937] via-[#111827] to-[#0b1020]",
+    horror: "from-[#1f2937] via-[#111827] to-[#0b1020]",
+    romance: "from-[#db2777] via-[#be185d] to-[#7e22ce]",
+    "tinh-yeu": "from-[#db2777] via-[#be185d] to-[#7e22ce]",
+    fantasy: "from-[#2563eb] via-[#4f46e5] to-[#7c3aed]",
+    "xuyen-khong": "from-[#0ea5e9] via-[#6366f1] to-[#8b5cf6]",
+    isekai: "from-[#0ea5e9] via-[#6366f1] to-[#8b5cf6]",
+    "do-thi": "from-[#0891b2] via-[#0284c7] to-[#1d4ed8]",
+    "co-dai": "from-[#d97706] via-[#b45309] to-[#7c2d12]",
+    "trinh-tham": "from-[#374151] via-[#111827] to-[#020617]"
+  };
+  return themes[key] || "from-[#334155] via-[#1e293b] to-[#0f172a]";
+}
+
 function Home() {
   const HOME_TABS = ['hot', 'new', 'full'];
   const [featuredNovels, setFeaturedNovels] = useState([]);
@@ -300,11 +321,15 @@ function Home() {
                     to={`/the-loai/${genre.slug}`}
                     className="relative h-28 rounded-lg overflow-hidden border border-border group"
                   >
-                    <img
-                      src={genre.image}
-                      alt={genre.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                    />
+                    {genre.image && genre.image !== '/default-cover.jpg' ? (
+                      <img
+                        src={genre.image}
+                        alt={genre.name}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                      />
+                    ) : (
+                      <div className={`w-full h-full bg-gradient-to-br ${getGenreTheme(genre.slug)}`} />
+                    )}
                     <div className="absolute inset-0 bg-black/35 flex items-center justify-center">
                       <span className="text-sm font-semibold text-white">{genre.name}</span>
                     </div>

@@ -15,6 +15,23 @@ function getGenreMeta(genre) {
   };
 }
 
+function getGenreTheme(slug) {
+  const key = normalize(slug);
+  const themes = {
+    "kinh-di": "from-[#1f2937] via-[#111827] to-[#0b1020]",
+    horror: "from-[#1f2937] via-[#111827] to-[#0b1020]",
+    romance: "from-[#db2777] via-[#be185d] to-[#7e22ce]",
+    "tinh-yeu": "from-[#db2777] via-[#be185d] to-[#7e22ce]",
+    fantasy: "from-[#2563eb] via-[#4f46e5] to-[#7c3aed]",
+    "xuyen-khong": "from-[#0ea5e9] via-[#6366f1] to-[#8b5cf6]",
+    isekai: "from-[#0ea5e9] via-[#6366f1] to-[#8b5cf6]",
+    "do-thi": "from-[#0891b2] via-[#0284c7] to-[#1d4ed8]",
+    "co-dai": "from-[#d97706] via-[#b45309] to-[#7c2d12]",
+    "trinh-tham": "from-[#374151] via-[#111827] to-[#020617]"
+  };
+  return themes[key] || "from-[#334155] via-[#1e293b] to-[#0f172a]";
+}
+
 function BrowseNovels({ mode = "all" }) {
   const { slug, range } = useParams();
   const [novels, setNovels] = useState([]);
@@ -233,14 +250,27 @@ function BrowseNovels({ mode = "all" }) {
   return (
     <div className="space-y-6">
       {mode === "category" && slug && (
-        <div className="relative overflow-hidden rounded-lg border border-border bg-card">
-          <img
-            src={activeGenre?.image || "/default-cover.jpg"}
-            alt={activeGenre?.name || slug}
-            className="w-full h-40 object-cover"
-          />
-          <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-            <h1 className="text-2xl font-bold text-white">{activeGenre?.name || slug}</h1>
+        <div className="relative overflow-hidden rounded-xl border border-border shadow-sm">
+          {activeGenre?.image && activeGenre.image !== "/default-cover.jpg" ? (
+            <img
+              src={activeGenre.image}
+              alt={activeGenre?.name || slug}
+              className="w-full h-44 object-cover"
+            />
+          ) : (
+            <div className={`h-44 bg-gradient-to-br ${getGenreTheme(activeGenre?.slug || slug)}`} />
+          )}
+
+          <div className="absolute inset-0 bg-gradient-to-r from-black/45 via-black/35 to-black/20" />
+
+          <div className="absolute -top-12 -right-12 w-48 h-48 rounded-full bg-white/10 blur-2xl" />
+          <div className="absolute -bottom-16 left-10 w-56 h-56 rounded-full bg-accent/25 blur-3xl" />
+
+          <div className="absolute inset-0 flex flex-col items-center justify-center px-4 text-center">
+            <p className="text-[11px] uppercase tracking-[0.25em] text-white/80 mb-2">Danh muc</p>
+            <h1 className="text-2xl md:text-3xl font-extrabold text-white drop-shadow-sm">
+              {activeGenre?.name || slug}
+            </h1>
           </div>
         </div>
       )}

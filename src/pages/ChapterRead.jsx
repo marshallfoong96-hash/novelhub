@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { supabase } from "../lib/supabase";
 import { AdBanner, AdInline, ShopeeDeals } from '../components/AdSpace';
 
@@ -11,7 +11,6 @@ import {
 
 export default function ChapterRead() {
   const { id } = useParams();
-  const navigate = useNavigate();
 
   const [chapter, setChapter] = useState(null);
   const [novel, setNovel] = useState(null);
@@ -24,8 +23,11 @@ export default function ChapterRead() {
   const [showSettings, setShowSettings] = useState(false);
   const [fontSize, setFontSize] = useState(18);
   const [lineHeight, setLineHeight] = useState(1.8);
+  const [contentWidth, setContentWidth] = useState(760);
+  const [readingTheme, setReadingTheme] = useState("light");
   const [readingProgress, setReadingProgress] = useState(0);
   const isAuthenticated = true;
+  const READER_PREFS_KEY = "mi_reader_prefs";
 
   const formatDate = (date) => {
     return new Date(date).toLocaleString();
@@ -42,6 +44,7 @@ export default function ChapterRead() {
   useEffect(() => {
     if (!chapter || !novel) return;
     const currentEntry = {
+      novelId: novel.id,
       chapterId: chapter.id,
       chapterNumber: chapter.chapter_number,
       chapterTitle: chapter.title,
@@ -64,6 +67,31 @@ export default function ChapterRead() {
   }, [chapter, novel]);
 
   useEffect(() => {
+    try {
+      const raw = localStorage.getItem(READER_PREFS_KEY);
+      const prefs = raw ? JSON.parse(raw) : null;
+      if (!prefs || typeof prefs !== "object") return;
+      if (typeof prefs.fontSize === "number") setFontSize(Math.min(30, Math.max(14, prefs.fontSize)));
+      if (typeof prefs.lineHeight === "number") setLineHeight(Math.min(2.8, Math.max(1.4, prefs.lineHeight)));
+      if (typeof prefs.contentWidth === "number") setContentWidth(Math.min(920, Math.max(620, prefs.contentWidth)));
+      if (typeof prefs.readingTheme === "string") setReadingTheme(prefs.readingTheme);
+    } catch (error) {
+      console.error("[v0] Could not load reader prefs", error);
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        READER_PREFS_KEY,
+        JSON.stringify({ fontSize, lineHeight, contentWidth, readingTheme })
+      );
+    } catch (error) {
+      console.error("[v0] Could not save reader prefs", error);
+    }
+  }, [fontSize, lineHeight, contentWidth, readingTheme]);
+
+  useEffect(() => {
     const handleScroll = () => {
       const scrollTop = window.scrollY;
       const docHeight = document.documentElement.scrollHeight - window.innerHeight;
@@ -79,17 +107,12 @@ export default function ChapterRead() {
     try {
       setLoading(true);
 
-      console.log("query id:", id); // ✅ 加這行
-
       // Fetch the chapter
       const { data: chapterData, error: chapterError } = await supabase
         .from("chapters")
         .select("*")
         .eq("id", parseInt(id))
         .single();
-
-      console.log("data:", chapterData);   // ✅ 加這行
-      console.log("error:", chapterError); // ✅ 加這行
 
       if (chapterError) {
         console.error('[v0] Error fetching chapter:', chapterError);
@@ -186,6 +209,12 @@ export default function ChapterRead() {
     );
   }
 
+  const themeClasses = {
+    light: "bg-card text-foreground border-border",
+    sepia: "bg-[#f6efe2] text-[#3f3122] border-[#e2d5bf]",
+    dark: "bg-[#111827] text-[#e5e7eb] border-[#374151]"
+  };
+
   return (
     <>
       {/* Reading Progress Bar */}
@@ -194,7 +223,7 @@ export default function ChapterRead() {
         style={{ width: `${readingProgress}%` }}
       />
 
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-4xl mx-auto pb-24">
         {/* Top Banner Ad */}
         <AdBanner type="leaderboard" className="hidden md:flex mb-4" />
         <AdBanner type="mobile" className="md:hidden mb-4" />
@@ -290,6 +319,47 @@ export default function ChapterRead() {
                     </button>
                   </div>
                 </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground">Bề rộng:</span>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => setContentWidth(Math.max(620, contentWidth - 40))}
+                      className="p-1.5 bg-secondary text-foreground rounded hover:bg-secondary/80 transition-colors"
+                      aria-label="Giảm bề rộng"
+                    >
+                      <Minus className="w-3.5 h-3.5" />
+                    </button>
+                    <span className="text-xs font-medium text-foreground w-12 text-center">{contentWidth}</span>
+                    <button
+                      onClick={() => setContentWidth(Math.min(920, contentWidth + 40))}
+                      className="p-1.5 bg-secondary text-foreground rounded hover:bg-secondary/80 transition-colors"
+                      aria-label="Tăng bề rộng"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className="text-xs text-muted-foreground mr-1">Nền:</span>
+                  {[
+                    { key: "light", label: "Sáng" },
+                    { key: "sepia", label: "Sepia" },
+                    { key: "dark", label: "Đêm" }
+                  ].map((theme) => (
+                    <button
+                      key={theme.key}
+                      type="button"
+                      onClick={() => setReadingTheme(theme.key)}
+                      className={`px-2 py-1 rounded text-[11px] border transition-colors ${
+                        readingTheme === theme.key
+                          ? "border-accent text-accent bg-accent/10"
+                          : "border-border text-muted-foreground hover:text-foreground hover:bg-secondary"
+                      }`}
+                    >
+                      {theme.label}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
           )}
@@ -332,11 +402,55 @@ export default function ChapterRead() {
           )}
         </div>
 
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40">
+          <div className="flex items-center gap-2 px-2 py-2 rounded-2xl border border-border bg-card/95 backdrop-blur shadow-lg">
+            <button
+              type="button"
+              onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+            >
+              <ArrowRight className="w-3.5 h-3.5 rotate-[-90deg]" />
+              Top
+            </button>
+            {prevChapter ? (
+              <Link
+                to={`/chapter/${prevChapter.id}`}
+                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+              >
+                <ChevronLeft className="w-3.5 h-3.5" />
+                Trước
+              </Link>
+            ) : (
+              <span className="px-3 py-2 text-xs text-muted-foreground/50">Trước</span>
+            )}
+            {novel && (
+              <Link
+                to={`/truyen/${novel.id}`}
+                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+              >
+                <List className="w-3.5 h-3.5" />
+                Mục lục
+              </Link>
+            )}
+            {nextChapter ? (
+              <Link
+                to={`/chapter/${nextChapter.id}`}
+                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs bg-accent text-accent-foreground hover:bg-accent/90 transition-colors"
+              >
+                Tiếp
+                <ChevronRight className="w-3.5 h-3.5" />
+              </Link>
+            ) : (
+              <span className="px-3 py-2 text-xs text-muted-foreground/50">Tiếp</span>
+            )}
+          </div>
+        </div>
+
         {/* Chapter Content */}
-        <div className="bg-card border border-border rounded-lg p-5 sm:p-6 md:p-8">
+        <div className={`border rounded-lg p-5 sm:p-6 md:p-8 transition-colors ${themeClasses[readingTheme] || themeClasses.light}`}>
           <article 
-            className="max-w-none text-foreground"
-            style={{ fontSize: `${fontSize}px`, lineHeight: lineHeight }}
+            className="max-w-none"
+            style={{ fontSize: `${fontSize}px`, lineHeight: lineHeight, maxWidth: `${contentWidth}px`, margin: "0 auto" }}
           >
             {(chapter.content?.split('\n') || []).map((paragraph, index) => (
               paragraph.trim() && (
