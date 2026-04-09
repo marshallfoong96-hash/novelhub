@@ -32,6 +32,7 @@ function getGenreMeta(genre) {
 }
 
 function Home() {
+  const HOME_TABS = ['hot', 'new', 'full'];
   const [featuredNovels, setFeaturedNovels] = useState([]);
   const [hotNovels, setHotNovels] = useState([]);
   const [newUpdates, setNewUpdates] = useState([]);
@@ -42,7 +43,7 @@ function Home() {
   const [activeRankTab, setActiveRankTab] = useState('day');
   const [activeHomeTab, setActiveHomeTab] = useState(() => {
     const saved = localStorage.getItem('mi_home_tab');
-    return saved || 'hot';
+    return saved && HOME_TABS.includes(saved) ? saved : 'hot';
   });
 
   useEffect(() => {
@@ -50,6 +51,10 @@ function Home() {
   }, []);
 
   useEffect(() => {
+    if (!HOME_TABS.includes(activeHomeTab)) {
+      setActiveHomeTab('hot');
+      return;
+    }
     localStorage.setItem('mi_home_tab', activeHomeTab);
   }, [activeHomeTab]);
 
@@ -184,31 +189,45 @@ function Home() {
               </div>
             </div>
 
-            {activeHomeTab === 'hot' && (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-                {hotNovels.slice(0, 12).map((novel) => (
-                  <NovelCard key={novel.id} novel={novel} showStatus variant="compact" />
-                ))}
-              </div>
-            )}
+            <div className="min-h-[360px]">
+              {activeHomeTab === 'hot' && (
+                hotNovels.length > 0 ? (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                    {hotNovels.slice(0, 12).map((novel) => (
+                      <NovelCard key={novel.id} novel={novel} showStatus variant="compact" />
+                    ))}
+                  </div>
+                ) : (
+                  <EmptyTabNotice />
+                )
+              )}
 
-            {activeHomeTab === 'new' && (
-              <div className="section-shell overflow-hidden">
-                <div className="divide-y divide-border">
-                  {newUpdates.slice(0, 20).map((novel) => (
-                    <UpdateRow key={novel.id} novel={novel} />
-                  ))}
-                </div>
-              </div>
-            )}
+              {activeHomeTab === 'new' && (
+                newUpdates.length > 0 ? (
+                  <div className="section-shell overflow-hidden">
+                    <div className="divide-y divide-border">
+                      {newUpdates.slice(0, 20).map((novel) => (
+                        <UpdateRow key={novel.id} novel={novel} />
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <EmptyTabNotice />
+                )
+              )}
 
-            {activeHomeTab === 'full' && (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-                {(completedNovels.length > 0 ? completedNovels : hotNovels.slice(0, 12)).map((novel) => (
-                  <NovelCard key={novel.id} novel={novel} showStatus variant="compact" />
-                ))}
-              </div>
-            )}
+              {activeHomeTab === 'full' && (
+                completedNovels.length > 0 ? (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                    {completedNovels.slice(0, 12).map((novel) => (
+                      <NovelCard key={novel.id} novel={novel} showStatus variant="compact" />
+                    ))}
+                  </div>
+                ) : (
+                  <EmptyTabNotice text="Chua co truyen full trong he thong." />
+                )
+              )}
+            </div>
           </section>
 
           {/* Another Inline Ad */}
@@ -521,6 +540,15 @@ function SectionHeader({ icon, title, subtitle, link }) {
           <ChevronRight className="w-3.5 h-3.5" />
         </Link>
       )}
+    </div>
+  );
+}
+
+function EmptyTabNotice({ text = "Dang cap nhat du lieu cho muc nay." }) {
+  return (
+    <div className="section-shell p-8 text-center">
+      <BookOpen className="w-10 h-10 mx-auto mb-2 text-muted-foreground" />
+      <p className="text-sm text-muted-foreground">{text}</p>
     </div>
   );
 }
