@@ -40,6 +40,30 @@ export default function ChapterRead() {
   }, [id]);
 
   useEffect(() => {
+    if (!chapter || !novel) return;
+    const currentEntry = {
+      chapterId: chapter.id,
+      chapterNumber: chapter.chapter_number,
+      chapterTitle: chapter.title,
+      title: novel.title,
+      coverUrl: novel.cover_url,
+      readAt: new Date().toISOString()
+    };
+
+    try {
+      const raw = localStorage.getItem("mi_reading_history");
+      const parsed = raw ? JSON.parse(raw) : [];
+      const withoutCurrent = (Array.isArray(parsed) ? parsed : []).filter(
+        (item) => String(item.chapterId) !== String(currentEntry.chapterId)
+      );
+      const next = [currentEntry, ...withoutCurrent].slice(0, 100);
+      localStorage.setItem("mi_reading_history", JSON.stringify(next));
+    } catch (error) {
+      console.error("[v0] Could not save reading history", error);
+    }
+  }, [chapter, novel]);
+
+  useEffect(() => {
     const handleScroll = () => {
       const scrollTop = window.scrollY;
       const docHeight = document.documentElement.scrollHeight - window.innerHeight;

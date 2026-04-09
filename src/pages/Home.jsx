@@ -40,10 +40,18 @@ function Home() {
   const [genres, setGenres] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeRankTab, setActiveRankTab] = useState('day');
+  const [activeHomeTab, setActiveHomeTab] = useState(() => {
+    const saved = localStorage.getItem('mi_home_tab');
+    return saved || 'hot';
+  });
 
   useEffect(() => {
     fetchData();
   }, []);
+
+  useEffect(() => {
+    localStorage.setItem('mi_home_tab', activeHomeTab);
+  }, [activeHomeTab]);
 
   const fetchData = async () => {
     try {
@@ -146,58 +154,82 @@ function Home() {
       <div className="grid lg:grid-cols-4 gap-6">
         {/* Main Content */}
         <div className="lg:col-span-3 space-y-8">
-          {/* Hot Novels */}
           <section>
-            <SectionHeader 
-              icon={<Flame className="w-5 h-5 text-accent" />}
-              title="Truyện Hot"
-              subtitle="Được đọc nhiều nhất"
-              link="/hot"
-            />
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-              {hotNovels.slice(0, 6).map((novel) => (
-                <NovelCard key={novel.id} novel={novel} showStatus variant="compact" />
-              ))}
-            </div>
-          </section>
-
-          {/* Inline Ad after hot novels */}
-          <AdInline />
-
-          {/* Recently Updated */}
-          <section>
-            <SectionHeader 
-              icon={<Clock className="w-5 h-5 text-accent" />}
-              title="Mới Cập Nhật"
-              subtitle="Chương mới nhất"
-              link="/truyen-moi"
-            />
-            <div className="bg-card border border-border rounded-lg overflow-hidden">
-              <div className="divide-y divide-border">
-                {newUpdates.slice(0, 20).map((novel) => (
-                  <UpdateRow key={novel.id} novel={novel} />
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <Zap className="w-5 h-5 text-accent" />
+                <div>
+                  <h2 className="text-base font-bold text-foreground">Khám phá truyện</h2>
+                  <p className="text-xs text-muted-foreground">Chuyển tab để xem nhanh theo nhu cầu</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-1 bg-secondary/60 p-1 rounded-xl border border-border">
+                {[
+                  { key: 'hot', label: 'Hot' },
+                  { key: 'new', label: 'Mới cập nhật' },
+                  { key: 'full', label: 'Truyện Full' }
+                ].map((tab) => (
+                  <button
+                    key={tab.key}
+                    onClick={() => setActiveHomeTab(tab.key)}
+                    className={`px-3 py-1.5 text-xs rounded-lg transition-colors font-medium ${
+                      activeHomeTab === tab.key
+                        ? 'bg-background text-foreground shadow-sm'
+                        : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
                 ))}
               </div>
             </div>
-          </section>
 
-          {/* Completed Novels */}
-          <section>
-            <SectionHeader 
-              icon={<CheckCircle className="w-5 h-5 text-[hsl(var(--success))]" />}
-              title="Truyện Full"
-              subtitle="Đã hoàn thành"
-              link="/truyen-full"
-            />
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-              {(completedNovels.length > 0 ? completedNovels : hotNovels.slice(0, 6)).map((novel) => (
-                <NovelCard key={novel.id} novel={novel} showStatus variant="compact" />
-              ))}
-            </div>
+            {activeHomeTab === 'hot' && (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                {hotNovels.slice(0, 12).map((novel) => (
+                  <NovelCard key={novel.id} novel={novel} showStatus variant="compact" />
+                ))}
+              </div>
+            )}
+
+            {activeHomeTab === 'new' && (
+              <div className="section-shell overflow-hidden">
+                <div className="divide-y divide-border">
+                  {newUpdates.slice(0, 20).map((novel) => (
+                    <UpdateRow key={novel.id} novel={novel} />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {activeHomeTab === 'full' && (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                {(completedNovels.length > 0 ? completedNovels : hotNovels.slice(0, 12)).map((novel) => (
+                  <NovelCard key={novel.id} novel={novel} showStatus variant="compact" />
+                ))}
+              </div>
+            )}
           </section>
 
           {/* Another Inline Ad */}
           <AdInline />
+
+          {/* Scrolling Feed Section */}
+          <section>
+            <SectionHeader
+              icon={<TrendingUp className="w-5 h-5 text-accent" />}
+              title="Dong cap nhat lien tuc"
+              subtitle="Phong cach cuon trang nhu cac web truyen lon"
+              link="/truyen-moi"
+            />
+            <div className="section-shell overflow-hidden">
+              <div className="max-h-[560px] overflow-y-auto divide-y divide-border">
+                {newUpdates.map((novel) => (
+                  <UpdateRow key={`stream-${novel.id}`} novel={novel} />
+                ))}
+              </div>
+            </div>
+          </section>
 
           {/* Genre Grid */}
           <section>
@@ -207,7 +239,7 @@ function Home() {
               subtitle="Khám phá theo sở thích"
               link="/the-loai"
             />
-            <div className="bg-card border border-border rounded-lg p-4">
+            <div className="section-shell p-4">
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 {genres.map((genre) => (
                   <Link
@@ -233,7 +265,7 @@ function Home() {
         {/* Sidebar */}
         <aside className="lg:col-span-1 space-y-6">
           {/* Rankings */}
-          <div className="bg-card border border-border rounded-lg overflow-hidden sticky top-20">
+          <div className="section-shell overflow-hidden sticky top-20">
             <div className="p-3 border-b border-border bg-secondary/30">
               <div className="flex items-center gap-2">
                 <Crown className="w-4 h-4 text-[hsl(var(--warning))]" />
@@ -342,7 +374,7 @@ function HeroSection({ featuredNovels }) {
   const featured = featuredNovels[currentSlide];
 
   return (
-    <section className="relative bg-card border border-border rounded-lg overflow-hidden">
+    <section className="relative section-shell overflow-hidden">
       <div className="grid md:grid-cols-2 gap-0">
         {/* Featured Novel Image */}
         <div className="relative aspect-[4/3] md:aspect-auto md:h-[320px]">

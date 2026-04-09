@@ -199,3 +199,24 @@ html {
 .reading-progress {
   @apply fixed top-0 left-0 h-1 bg-accent z-50 transition-all duration-150;
 }
+
+/* UI polish helpers */
+.top-nav-pill {
+  @apply px-3 py-1.5 text-sm font-medium rounded-xl transition-all duration-200 flex items-center gap-1.5;
+}
+
+.top-nav-pill-active {
+  @apply text-accent bg-accent/10 shadow-sm;
+}
+
+.top-nav-pill-idle {
+  @apply text-muted-foreground hover:text-foreground hover:bg-secondary;
+}
+
+.dropdown-surface {
+  @apply bg-card/95 backdrop-blur-xl border border-border rounded-xl shadow-2xl;
+}
+
+.section-shell {
+  @apply bg-card border border-border rounded-xl shadow-sm;
+}

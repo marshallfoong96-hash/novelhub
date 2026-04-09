@@ -10,7 +10,7 @@ function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isDark, setIsDark] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
-  const [showGenresMenu, setShowGenresMenu] = useState(false);
+  const [openMenu, setOpenMenu] = useState('');
   const [genres, setGenres] = useState([]);
   const { user, isAuthenticated, logout } = useAuth();
   const location = useLocation();
@@ -34,7 +34,7 @@ function Header() {
   useEffect(() => {
     setIsMenuOpen(false);
     setShowSearch(false);
-    setShowGenresMenu(false);
+    setOpenMenu('');
   }, [location.pathname]);
 
   useEffect(() => {
@@ -69,6 +69,12 @@ function Header() {
     { to: '/truyen-full', label: 'Truyen Full' },
     { to: '/truyen-dang-ra', label: 'Truyen dang tien hanh' }
   ];
+  const chapterRangeLinks = [
+    { to: '/so-chuong/duoi-100', label: 'Duoi 100 chuong' },
+    { to: '/so-chuong/100-500', label: '100 - 500 chuong' },
+    { to: '/so-chuong/500-1000', label: '500 - 1000 chuong' },
+    { to: '/so-chuong/tren-1000', label: 'Tren 1000 chuong' }
+  ];
 
   const genreColumns = [[], [], [], []];
   genres.forEach((genre, index) => {
@@ -78,7 +84,7 @@ function Header() {
   return (
     <>
       {/* Announcement Bar */}
-      <div className="bg-accent text-accent-foreground text-xs py-1.5 text-center overflow-hidden">
+      <div className="bg-gradient-to-r from-accent to-[#f43f7d] text-accent-foreground text-xs py-1.5 text-center overflow-hidden shadow-sm">
         <div className="animate-marquee whitespace-nowrap inline-block">
           <span className="mx-8">Chao mung den MI Truyen - Nen tang doc truyen online hang dau</span>
           <span className="mx-8">Cập nhật hàng nghìn truyện mới mỗi ngày</span>
@@ -98,7 +104,7 @@ function Header() {
           <div className="flex items-center justify-between h-14">
             {/* Logo */}
             <Link to="/" className="flex items-center gap-2 group flex-shrink-0">
-              <div className="w-8 h-8 bg-accent rounded-lg flex items-center justify-center group-hover:scale-105 transition-transform">
+              <div className="w-8 h-8 bg-accent rounded-xl flex items-center justify-center group-hover:scale-105 transition-transform shadow-md">
                 <Sparkles className="w-4 h-4 text-accent-foreground" />
               </div>
               <span className="text-lg font-bold text-foreground hidden sm:block">
@@ -107,47 +113,43 @@ function Header() {
             </Link>
 
             {/* Desktop Navigation */}
-            <nav className="hidden lg:flex items-center gap-1">
+            <nav className="hidden lg:flex items-center gap-1.5">
               {navLinks.map((link) => (
                 <Link
                   key={link.to}
                   to={link.to}
-                  className={`px-3 py-1.5 text-sm font-medium rounded transition-colors flex items-center gap-1.5 ${
+                  className={`top-nav-pill ${
                     location.pathname === link.to
-                      ? 'text-accent bg-accent/10'
-                      : 'text-muted-foreground hover:text-foreground hover:bg-secondary'
+                      ? 'top-nav-pill-active'
+                      : 'top-nav-pill-idle'
                   }`}
                 >
                   {link.icon && <link.icon className="w-3.5 h-3.5" />}
                   {link.label}
                 </Link>
               ))}
-              <div
-                className="relative"
-                onMouseEnter={() => setShowGenresMenu(true)}
-                onMouseLeave={() => setShowGenresMenu(false)}
-              >
+              <div className="relative" onMouseEnter={() => setOpenMenu('danh-sach')} onMouseLeave={() => setOpenMenu('')}>
                 <button
                   type="button"
-                  className={`px-3 py-1.5 text-sm font-medium rounded transition-colors flex items-center gap-1.5 ${
-                    location.pathname.startsWith('/the-loai')
-                      ? 'text-accent bg-accent/10'
-                      : 'text-muted-foreground hover:text-foreground hover:bg-secondary'
+                  className={`top-nav-pill ${
+                    location.pathname.startsWith('/the-loai') || location.pathname.startsWith('/hot') || location.pathname.startsWith('/truyen-')
+                      ? 'top-nav-pill-active'
+                      : 'top-nav-pill-idle'
                   }`}
                 >
                   <BookOpen className="w-3.5 h-3.5" />
-                  The loai
-                  <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showGenresMenu ? 'rotate-180' : ''}`} />
+                  Danh sach
+                  <ChevronDown className={`w-3.5 h-3.5 transition-transform ${openMenu === 'danh-sach' ? 'rotate-180' : ''}`} />
                 </button>
 
-                {showGenresMenu && (
-                  <div className="absolute top-full left-0 mt-2 w-[760px] bg-card border border-border rounded-lg shadow-xl p-4 z-50">
+                {openMenu === 'danh-sach' && (
+                  <div className="absolute top-full left-0 mt-2 w-[760px] dropdown-surface p-4 z-50">
                     <div className="grid grid-cols-4 gap-3 mb-3">
                       {quickCategoryLinks.map((item) => (
                         <Link
                           key={item.to}
                           to={item.to}
-                          className="text-sm font-medium text-foreground hover:text-accent transition-colors"
+                          className="text-sm font-semibold text-foreground hover:text-accent transition-colors"
                         >
                           {item.label}
                         </Link>
@@ -171,6 +173,70 @@ function Header() {
                   </div>
                 )}
               </div>
+
+              <div className="relative" onMouseEnter={() => setOpenMenu('chapter-range')} onMouseLeave={() => setOpenMenu('')}>
+                <button
+                  type="button"
+                  className={`top-nav-pill ${
+                    location.pathname.startsWith('/so-chuong')
+                      ? 'top-nav-pill-active'
+                      : 'top-nav-pill-idle'
+                  }`}
+                >
+                  <BookOpen className="w-3.5 h-3.5" />
+                  Phan loai theo Chuong
+                  <ChevronDown className={`w-3.5 h-3.5 transition-transform ${openMenu === 'chapter-range' ? 'rotate-180' : ''}`} />
+                </button>
+                {openMenu === 'chapter-range' && (
+                  <div className="absolute top-full left-0 mt-2 w-64 dropdown-surface p-3 z-50">
+                    <div className="space-y-2">
+                      {chapterRangeLinks.map((item) => (
+                        <Link
+                          key={item.to}
+                          to={item.to}
+                          className="block text-sm font-medium text-foreground hover:text-accent transition-colors"
+                        >
+                          {item.label}
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="relative" onMouseEnter={() => setOpenMenu('customize')} onMouseLeave={() => setOpenMenu('')}>
+                <button
+                  type="button"
+                  className={`top-nav-pill ${openMenu === 'customize' ? 'top-nav-pill-active' : 'top-nav-pill-idle'}`}
+                >
+                  <Moon className="w-3.5 h-3.5" />
+                  Tuy chinh
+                  <ChevronDown className={`w-3.5 h-3.5 transition-transform ${openMenu === 'customize' ? 'rotate-180' : ''}`} />
+                </button>
+                {openMenu === 'customize' && (
+                  <div className="absolute top-full left-0 mt-2 w-56 dropdown-surface p-3 z-50">
+                    <div className="space-y-2">
+                      <button
+                        type="button"
+                        onClick={() => setIsDark(false)}
+                        className="block w-full text-left text-sm font-medium text-foreground hover:text-accent transition-colors"
+                      >
+                        Mau nen sang
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setIsDark(true)}
+                        className="block w-full text-left text-sm font-medium text-foreground hover:text-accent transition-colors"
+                      >
+                        Mau nen toi
+                      </button>
+                      <Link to="/chinh-sach" className="block text-sm font-medium text-foreground hover:text-accent transition-colors">
+                        Chinh sach
+                      </Link>
+                    </div>
+                  </div>
+                )}
+              </div>
             </nav>
 
             {/* Right Side Actions */}
@@ -184,7 +250,7 @@ function Header() {
                     placeholder="Tìm truyện..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-48 lg:w-56 pl-8 pr-3 py-1.5 bg-secondary text-foreground placeholder:text-muted-foreground border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent focus:bg-background transition-all"
+                    className="w-48 lg:w-56 pl-8 pr-3 py-1.5 bg-secondary/80 text-foreground placeholder:text-muted-foreground border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent focus:bg-background transition-all"
                   />
                 </div>
               </form>
@@ -314,6 +380,18 @@ function Header() {
                     {link.label}
                   </Link>
                 ))}
+                <Link
+                  to="/so-chuong/duoi-100"
+                  onClick={() => setIsMenuOpen(false)}
+                  className={`flex items-center gap-2 px-4 py-3 text-sm font-medium rounded-lg transition-colors ${
+                    location.pathname.startsWith('/so-chuong')
+                      ? 'text-accent bg-accent/10'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-secondary'
+                  }`}
+                >
+                  <BookOpen className="w-4 h-4" />
+                  Phan loai chuong
+                </Link>
                 <Link
                   to="/truyen-dang-ra"
                   onClick={() => setIsMenuOpen(false)}
