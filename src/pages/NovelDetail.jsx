@@ -9,6 +9,7 @@ import { AdBanner, AdSidebar, AdInline, ShopeeDeals } from '../components/AdSpac
 function NovelDetail() {
   const { slug } = useParams(); // This is now the novel ID
   const [novel, setNovel] = useState(null);
+  const [relatedNovels, setRelatedNovels] = useState([]);
   const [chapters, setChapters] = useState([]);
   const [comments, setComments] = useState([]);
   const [newComment, setNewComment] = useState('');
@@ -38,6 +39,44 @@ function NovelDetail() {
       }
 
       setNovel(novelData);
+
+      const { data: genresData } = await supabase
+        .from("genres")
+        .select("*");
+
+      const normalize = (value) => String(value || '').toLowerCase().trim();
+      const getNovelGenreSlug = (row) => {
+        const directSlug = normalize(row.genre_slug);
+        if (directSlug) return directSlug;
+
+        const byId = (genresData || []).find((genre) => String(genre.id) === String(row.genre_id));
+        if (byId?.slug) return normalize(byId.slug);
+
+        const raw = normalize(row.genre || row.category || row.tags);
+        const matched = (genresData || []).find((genre) => {
+          const slugValue = normalize(genre.slug);
+          const nameValue = normalize(genre.name);
+          return (slugValue && raw.includes(slugValue)) || (nameValue && raw.includes(nameValue));
+        });
+        return normalize(matched?.slug);
+      };
+
+      const currentGenreSlug = getNovelGenreSlug(novelData);
+      if (currentGenreSlug) {
+        const { data: allNovels } = await supabase
+          .from('novels')
+          .select('*')
+          .neq('id', parseInt(slug))
+          .order('view_count', { ascending: false })
+          .limit(100);
+
+        const sameGenre = (allNovels || [])
+          .filter((item) => getNovelGenreSlug(item) === currentGenreSlug)
+          .slice(0, 6);
+        setRelatedNovels(sameGenre);
+      } else {
+        setRelatedNovels([]);
+      }
 
       // Fetch chapters for this novel
       const { data: chaptersData, error: chaptersError } = await supabase
@@ -208,6 +247,31 @@ function NovelDetail() {
 
           {/* Inline Ad */}
           <AdInline />
+
+          {relatedNovels.length > 0 && (
+            <section className="bg-card border border-border rounded-lg p-4">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-base font-semibold text-foreground">Cung the loai</h3>
+                <Link to="/the-loai" className="text-xs text-accent hover:underline">Xem the loai</Link>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+                {relatedNovels.map((item) => (
+                  <Link key={item.id} to={`/truyen/${item.id}`} className="group">
+                    <div className="aspect-[2/3] rounded overflow-hidden bg-secondary mb-1.5">
+                      <img
+                        src={item.cover_url || '/default-cover.jpg'}
+                        alt={item.title}
+                        className="w-full h-full object-contain group-hover:scale-105 transition-transform"
+                      />
+                    </div>
+                    <p className="text-xs text-foreground line-clamp-2 group-hover:text-accent transition-colors">
+                      {item.title}
+                    </p>
+                  </Link>
+                ))}
+              </div>
+            </section>
+          )}
 
           {/* Tabs */}
           <div className="bg-card border border-border rounded-lg overflow-hidden">

@@ -12,6 +12,15 @@ export const authAPI = {
     return await supabase.auth.signInWithPassword({ email, password });
   },
 
+  loginWithGoogle: async () => {
+    return await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: window.location.origin
+      }
+    });
+  },
+
   getMe: async () => {
     return await supabase.auth.getUser();
   }

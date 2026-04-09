@@ -53,11 +53,30 @@ export const AuthProvider = ({ children }) => {
     };
   };
 
+  const loginWithGoogle = async () => {
+    const { error } = await authAPI.loginWithGoogle();
+
+    if (error) {
+      return {
+        success: false,
+        message: error.message || 'Google login failed'
+      };
+    }
+
+    return { success: true };
+  };
+
   // =====================
   // 註冊
   // =====================
-  const register = async (email, password) => {
-    const { data, error } = await authAPI.register(email, password);
+  const register = async (username, email, password) => {
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: { username }
+      }
+    });
 
     if (error) {
       return {
@@ -87,6 +106,7 @@ export const AuthProvider = ({ children }) => {
     isAuthenticated: !!user,
     loading,
     login,
+    loginWithGoogle,
     register,
     logout
   };

@@ -24,6 +24,13 @@ import NovelCard from '../components/NovelCard';
 import { AdBanner, AdSidebar, ShopeeDeals, AdInline } from '../components/AdSpace';
 import { formatNumber, formatDate } from '../utils/helpers';
 
+function getGenreMeta(genre) {
+  return {
+    ...genre,
+    image: genre.image || genre.cover_url || genre.banner_url || '/default-cover.jpg'
+  };
+}
+
 function Home() {
   const [featuredNovels, setFeaturedNovels] = useState([]);
   const [hotNovels, setHotNovels] = useState([]);
@@ -33,8 +40,6 @@ function Home() {
   const [genres, setGenres] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeRankTab, setActiveRankTab] = useState('day');
-  const [novels, setNovels] = useState([]);
-  const [latestNovels, setLatestNovels] = useState([]);
 
   useEffect(() => {
     fetchData();
@@ -52,25 +57,55 @@ function Home() {
 
       const { data: novels, error } = await supabase
         .from("novels")
-        .select("*");
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(120);
+      const { data: genresData, error: genresError } = await supabase
+        .from("genres")
+        .select("*")
+        .order("name", { ascending: true });
+
+      if (genresError) {
+        console.error(genresError);
+      }
+
 
       if (error) {
         console.error(error);
         return;
       }
 
-      setHotNovels(novels || []);
-      setNewUpdates(novels || []);
-      setGenres([]);
-      setCompletedNovels((novels || []).slice(0, 6));
+      const novelIds = (novels || []).map((novel) => novel.id);
+      const { data: chapterRows } = await supabase
+        .from("chapters")
+        .select("id,novel_id,chapter_number")
+        .in("novel_id", novelIds)
+        .order("chapter_number", { ascending: true });
 
-      setRankings({
-        day: novels || [],
-        week: novels || [],
-        month: novels || []
+      const firstChapterMap = {};
+      (chapterRows || []).forEach((chapter) => {
+        if (!firstChapterMap[chapter.novel_id]) {
+          firstChapterMap[chapter.novel_id] = chapter.id;
+        }
       });
 
-      setFeaturedNovels((novels || []).slice(0, 5));
+      const novelsWithFirstChapter = (novels || []).map((novel) => ({
+        ...novel,
+        first_chapter_id: firstChapterMap[novel.id] || null
+      }));
+
+      setHotNovels(novelsWithFirstChapter);
+      setNewUpdates(novelsWithFirstChapter);
+      setGenres((genresData || []).map(getGenreMeta));
+      setCompletedNovels(novelsWithFirstChapter.slice(0, 6));
+
+      setRankings({
+        day: novelsWithFirstChapter,
+        week: novelsWithFirstChapter,
+        month: novelsWithFirstChapter
+      });
+
+      setFeaturedNovels(novelsWithFirstChapter.slice(0, 5));
 
     } catch (error) {
       console.error(error);
@@ -134,7 +169,7 @@ function Home() {
             />
             <div className="bg-card border border-border rounded-lg overflow-hidden">
               <div className="divide-y divide-border">
-                {newUpdates.slice(0, 10).map((novel) => (
+                {newUpdates.slice(0, 20).map((novel) => (
                   <UpdateRow key={novel.id} novel={novel} />
                 ))}
               </div>
@@ -168,14 +203,21 @@ function Home() {
               link="/the-loai"
             />
             <div className="bg-card border border-border rounded-lg p-4">
-              <div className="flex flex-wrap gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 {genres.map((genre) => (
                   <Link
                     key={genre.id}
                     to={`/the-loai/${genre.slug}`}
-                    className="category-tag"
+                    className="relative h-28 rounded-lg overflow-hidden border border-border group"
                   >
-                    {genre.name}
+                    <img
+                      src={genre.image}
+                      alt={genre.name}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                    />
+                    <div className="absolute inset-0 bg-black/35 flex items-center justify-center">
+                      <span className="text-sm font-semibold text-white">{genre.name}</span>
+                    </div>
                   </Link>
                 ))}
               </div>
@@ -280,7 +322,7 @@ function HeroSection({ featuredNovels }) {
     return (
       <section className="bg-card border border-border rounded-lg p-8 text-center">
         <BookOpen className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-        <h2 className="text-xl font-bold text-foreground mb-2">Chào mừng đến NovelHub</h2>
+        <h2 className="text-xl font-bold text-foreground mb-2">Chao mung den MI Truyen</h2>
         <p className="text-muted-foreground">Khám phá thế giới tiểu thuyết hấp dẫn</p>
       </section>
     );
@@ -344,7 +386,9 @@ function HeroSection({ featuredNovels }) {
           </div>
           <div className="flex items-center gap-3">
             <Link
-              to={`/truyen/${featured?.id}/chuong/1`}
+              to={featured?.first_chapter_id || featured?.chapter_1_id || featured?.firstChapterId
+                ? `/chapter/${featured?.first_chapter_id || featured?.chapter_1_id || featured?.firstChapterId}`
+                : `/truyen/${featured?.id}`}
               className="inline-flex items-center gap-2 px-4 py-2.5 bg-accent text-accent-foreground rounded-lg text-sm font-medium hover:bg-accent/90 transition-colors"
             >
               <BookOpen className="w-4 h-4" />

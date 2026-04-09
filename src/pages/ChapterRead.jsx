@@ -84,6 +84,16 @@ export default function ChapterRead() {
 
         if (!novelError) {
           setNovel(novelData);
+
+          if (novelData?.id) {
+            const currentViewCount = novelData.view_count || 0;
+            const nextViewCount = currentViewCount + 1;
+            await supabase
+              .from("novels")
+              .update({ view_count: nextViewCount })
+              .eq("id", novelData.id);
+            setNovel({ ...novelData, view_count: nextViewCount });
+          }
         }
 
         // Fetch all chapters for navigation

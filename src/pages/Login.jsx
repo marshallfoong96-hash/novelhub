@@ -10,7 +10,7 @@ function Login() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   
-  const { login } = useAuth();
+  const { login, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -33,6 +33,16 @@ function Login() {
     }
   };
 
+  const handleGoogleLogin = async () => {
+    setError('');
+    setLoading(true);
+    const result = await loginWithGoogle();
+    if (!result.success) {
+      setError(result.message);
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-[80vh] flex items-center justify-center py-8 px-4">
       <div className="w-full max-w-sm">
@@ -42,7 +52,7 @@ function Login() {
             <div className="w-9 h-9 bg-accent rounded-lg flex items-center justify-center">
               <Sparkles className="w-5 h-5 text-accent-foreground" />
             </div>
-            <span className="text-xl font-bold text-foreground">NovelHub</span>
+            <span className="text-xl font-bold text-foreground">MI Truyen</span>
           </Link>
           <h1 className="text-xl font-bold text-foreground">Chào mừng trở lại</h1>
           <p className="text-muted-foreground text-sm mt-1">Đăng nhập để tiếp tục đọc truyện</p>
@@ -57,6 +67,17 @@ function Login() {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
+            <button
+              type="button"
+              onClick={handleGoogleLogin}
+              disabled={loading}
+              className="w-full py-2.5 border border-border rounded-lg text-sm font-medium hover:bg-secondary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Continue with Google
+            </button>
+
+            <div className="text-center text-xs text-muted-foreground">hoặc</div>
+
             <div>
               <label className="block text-sm font-medium text-foreground mb-1.5">
                 Email
@@ -130,7 +151,7 @@ function Login() {
         {/* Demo Credentials */}
         <div className="mt-4 p-3 bg-secondary/50 border border-border rounded-lg">
           <p className="text-xs text-muted-foreground text-center">
-            <span className="font-medium">Demo:</span> admin@novelhub.com / admin123
+            <span className="font-medium">Demo:</span> admin@mitruyen.com / admin123
           </p>
         </div>
       </div>

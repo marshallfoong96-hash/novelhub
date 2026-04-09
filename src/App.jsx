@@ -6,6 +6,8 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import NovelDetail from './pages/NovelDetail';
 import ChapterRead from './pages/ChapterRead';
+import BrowseNovels from './pages/BrowseNovels';
+import { AboutPage, PrivacyPage, TermsPage, ContactPage } from './pages/InfoPage';
 import { Sparkles, BookOpen, Users, PenTool, Mail, Github, Facebook, ExternalLink } from 'lucide-react';
 import { AdBanner } from './components/AdSpace';
 
@@ -22,6 +24,15 @@ function App() {
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
               <Route path="/truyen/:slug" element={<NovelDetail />} />
+              <Route path="/hot" element={<BrowseNovels mode="hot" />} />
+              <Route path="/truyen-moi" element={<BrowseNovels mode="recent" />} />
+              <Route path="/truyen-full" element={<BrowseNovels mode="completed" />} />
+              <Route path="/the-loai" element={<BrowseNovels mode="all" />} />
+              <Route path="/the-loai/:slug" element={<BrowseNovels mode="category" />} />
+              <Route path="/gioi-thieu" element={<AboutPage />} />
+              <Route path="/chinh-sach" element={<PrivacyPage />} />
+              <Route path="/terms" element={<TermsPage />} />
+              <Route path="/lien-he" element={<ContactPage />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </main>
@@ -64,9 +75,9 @@ function Footer() {
       { label: 'Thể loại', to: '/the-loai' },
     ],
     create: [
-      { label: 'Viết truyện AI', to: '/truyen-sang-tac' },
-      { label: 'Đội nhóm', to: '/team' },
-      { label: 'Truyện Audio', to: '/audio' },
+      { label: 'Truyện Hot', to: '/hot' },
+      { label: 'Mới cập nhật', to: '/truyen-moi' },
+      { label: 'Truyện Full', to: '/truyen-full' },
     ],
     company: [
       { label: 'Giới thiệu', to: '/gioi-thieu' },
@@ -76,7 +87,7 @@ function Footer() {
     ],
     partners: [
       { label: 'Shopee', href: 'https://shopee.vn', external: true },
-      { label: 'Google Ads', href: '#', external: true },
+      { label: 'Google Ads', href: 'https://support.google.com/adsense/answer/1348695', external: true },
     ],
   };
 
@@ -96,7 +107,7 @@ function Footer() {
               <div className="w-8 h-8 bg-accent rounded-lg flex items-center justify-center">
                 <Sparkles className="w-4 h-4 text-accent-foreground" />
               </div>
-              <span className="text-lg font-bold text-foreground">NovelHub</span>
+              <span className="text-lg font-bold text-foreground">MI Truyen</span>
             </Link>
             <p className="text-muted-foreground text-xs max-w-xs mb-4 leading-relaxed">
               Nền tảng đọc truyện online hàng đầu với hàng nghìn tác phẩm hay. 
@@ -122,7 +133,7 @@ function Footer() {
                 <Github className="w-4 h-4" />
               </a>
               <a 
-                href="mailto:contact@novelhub.com" 
+                href="mailto:contact@mitruyen.com" 
                 className="w-8 h-8 flex items-center justify-center bg-secondary text-muted-foreground hover:text-foreground hover:bg-accent/10 rounded-lg transition-colors"
                 aria-label="Email"
               >
@@ -218,7 +229,7 @@ function Footer() {
         {/* Bottom Bar */}
         <div className="py-4 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-3">
           <p className="text-[10px] text-muted-foreground">
-            © {currentYear} NovelHub. All rights reserved.
+            © {currentYear} MI Truyen. All rights reserved.
           </p>
           <div className="flex items-center gap-4 text-[10px] text-muted-foreground">
             <Link to="/chinh-sach" className="hover:text-foreground transition-colors">

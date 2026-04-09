@@ -53,10 +53,10 @@ function Header() {
       {/* Announcement Bar */}
       <div className="bg-accent text-accent-foreground text-xs py-1.5 text-center overflow-hidden">
         <div className="animate-marquee whitespace-nowrap inline-block">
-          <span className="mx-8">Chào mừng đến NovelHub - Nền tảng đọc truyện online hàng đầu</span>
+          <span className="mx-8">Chao mung den MI Truyen - Nen tang doc truyen online hang dau</span>
           <span className="mx-8">Cập nhật hàng nghìn truyện mới mỗi ngày</span>
           <span className="mx-8">Đăng ký tài khoản để lưu truyện yêu thích</span>
-          <span className="mx-8">Chào mừng đến NovelHub - Nền tảng đọc truyện online hàng đầu</span>
+          <span className="mx-8">Chao mung den MI Truyen - Nen tang doc truyen online hang dau</span>
         </div>
       </div>
 
@@ -75,7 +75,7 @@ function Header() {
                 <Sparkles className="w-4 h-4 text-accent-foreground" />
               </div>
               <span className="text-lg font-bold text-foreground hidden sm:block">
-                NovelHub
+                MI Truyen
               </span>
             </Link>
 
