@@ -15,6 +15,12 @@ function getGenreMeta(genre) {
   };
 }
 
+function chunkArray(items, size) {
+  const out = [];
+  for (let i = 0; i < items.length; i += size) out.push(items.slice(i, i + size));
+  return out;
+}
+
 function getGenreTheme(slug) {
   const key = normalize(slug);
   const themes = {
@@ -46,6 +52,8 @@ function BrowseNovels({ mode = "all" }) {
   const [chapterCounts, setChapterCounts] = useState({});
   const sentinelRef = useRef(null);
   const PAGE_SIZE = 24;
+  /** null = category list not loaded yet; [] = loaded, no novels */
+  const [categorySortedIds, setCategorySortedIds] = useState(null);
 
   useEffect(() => {
     const fetchGenres = async () => {
@@ -87,12 +95,8 @@ function BrowseNovels({ mode = "all" }) {
     if (mode === "ongoing") {
       query = query.eq("status", "ongoing");
     }
-    if (mode === "category" && activeGenre?.id) {
-      query = query.eq("genre_id", activeGenre.id);
-    }
-
     return query;
-  }, [mode, activeGenre]);
+  }, [mode]);
 
   const matchChapterRange = useCallback((count) => {
     if (range === "duoi-100") return count < 100;
@@ -103,6 +107,41 @@ function BrowseNovels({ mode = "all" }) {
   }, [range]);
 
   const fetchPage = useCallback(async (pageIndex, replace = false) => {
+    if (mode === "category" && activeGenre?.id) {
+      if (categorySortedIds == null) {
+        setLoadingMore(false);
+        return;
+      }
+      const from = pageIndex * PAGE_SIZE;
+      const sliceIds = categorySortedIds.slice(from, from + PAGE_SIZE);
+      if (sliceIds.length === 0) {
+        setNovels((prev) => (replace ? [] : prev));
+        setHasMore(false);
+        setPage(pageIndex);
+        setLoading(false);
+        setLoadingMore(false);
+        return;
+      }
+      const { data, error: fetchError } = await supabase
+        .from("novels")
+        .select("*")
+        .in("id", sliceIds);
+      if (fetchError) {
+        setError(fetchError.message || "Failed to load novels.");
+        setLoading(false);
+        setLoadingMore(false);
+        return;
+      }
+      const rows = data || [];
+      const ordered = sliceIds.map((id) => rows.find((n) => n.id === id)).filter(Boolean);
+      setNovels((prev) => (replace ? ordered : [...prev, ...ordered]));
+      setHasMore(from + sliceIds.length < categorySortedIds.length);
+      setPage(pageIndex);
+      setLoading(false);
+      setLoadingMore(false);
+      return;
+    }
+
     if (mode === "chapterRange") {
       const from = pageIndex * PAGE_SIZE;
       const to = from + PAGE_SIZE;
@@ -124,6 +163,7 @@ function BrowseNovels({ mode = "all" }) {
     }
 
     if (mode === "category" && slug && !activeGenre) {
+      if (genres.length === 0) return;
       setLoading(false);
       setLoadingMore(false);
       setHasMore(false);
@@ -148,10 +188,78 @@ function BrowseNovels({ mode = "all" }) {
     setPage(pageIndex);
     setLoading(false);
     setLoadingMore(false);
-  }, [buildQuery, mode, slug, activeGenre, chapterRangePool]);
+  }, [buildQuery, mode, slug, activeGenre, chapterRangePool, categorySortedIds, genres.length]);
+
+  useEffect(() => {
+    if (mode !== "category") {
+      setCategorySortedIds(null);
+      return;
+    }
+    if (mode === "category" && slug && genres.length === 0) return;
+    if (!activeGenre?.id || !isSupabaseConfigured || !supabase) {
+      setCategorySortedIds([]);
+      setNovels([]);
+      setHasMore(false);
+      setLoading(false);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      setCategorySortedIds(null);
+      setLoading(true);
+      setError("");
+      setNovels([]);
+      setHasMore(true);
+      const merged = new Set();
+      const { data: junctionRows, error: junctionError } = await supabase
+        .from("novel_genres")
+        .select("novel_id")
+        .eq("genre_id", activeGenre.id);
+      if (!junctionError && junctionRows) {
+        junctionRows.forEach((row) => merged.add(row.novel_id));
+      }
+      const { data: directRows } = await supabase.from("novels").select("id").eq("genre_id", activeGenre.id);
+      (directRows || []).forEach((row) => merged.add(row.id));
+      const ids = [...merged];
+      if (ids.length === 0) {
+        if (!cancelled) {
+          setCategorySortedIds([]);
+          setNovels([]);
+          setHasMore(false);
+          setLoading(false);
+        }
+        return;
+      }
+      const chunks = chunkArray(ids, 120);
+      const minimal = [];
+      for (const part of chunks) {
+        const { data: metaRows, error: metaError } = await supabase
+          .from("novels")
+          .select("id,created_at,view_count")
+          .in("id", part);
+        if (metaError) {
+          if (!cancelled) {
+            setError(metaError.message || "Failed to load category novels.");
+            setCategorySortedIds([]);
+            setLoading(false);
+          }
+          return;
+        }
+        minimal.push(...(metaRows || []));
+      }
+      minimal.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+      const sortedIds = minimal.map((m) => m.id);
+      if (cancelled) return;
+      setCategorySortedIds(sortedIds);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [mode, slug, activeGenre?.id, genres.length]);
 
   useEffect(() => {
     if (mode === "category" && slug && genres.length === 0) return;
+    if (mode === "category") return;
     setError("");
     setLoading(true);
     setLoadingMore(false);
@@ -161,6 +269,13 @@ function BrowseNovels({ mode = "all" }) {
       fetchPage(0, true);
     }
   }, [mode, slug, range, genres.length, fetchPage]);
+
+  useEffect(() => {
+    if (mode !== "category") return;
+    if (!activeGenre?.id) return;
+    if (categorySortedIds == null) return;
+    fetchPage(0, true);
+  }, [mode, activeGenre?.id, categorySortedIds, fetchPage]);
 
   useEffect(() => {
     const fetchChapterRangePool = async () => {

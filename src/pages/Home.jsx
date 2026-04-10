@@ -12,10 +12,8 @@ import {
   Zap,
   PenTool,
   ArrowRight,
-  Star,
   Crown,
   CheckCircle,
-  BookMarked,
   History,
   Heart
 } from 'lucide-react';
@@ -194,9 +192,6 @@ function Home() {
 
       {/* Hero Section with Featured Novels */}
       <HeroSection featuredNovels={featuredNovels} />
-
-      {/* Quick Stats */}
-      <QuickStats />
 
       {/* Main Content with Sidebar */}
       <div className="grid lg:grid-cols-4 gap-6">
@@ -552,30 +547,6 @@ function HeroSection({ featuredNovels }) {
           ))}
         </div>
       )}
-    </section>
-  );
-}
-
-function QuickStats() {
-  const stats = [
-    { value: '10K+', label: 'Truyện', icon: BookOpen, color: 'text-accent' },
-    { value: '500K+', label: 'Chương', icon: BookMarked, color: 'text-[hsl(var(--success))]' },
-    { value: '1M+', label: 'Lượt đọc', icon: Eye, color: 'text-[hsl(var(--warning))]' },
-    { value: '50K+', label: 'Thành viên', icon: Star, color: 'text-accent' },
-  ];
-
-  return (
-    <section className="grid grid-cols-2 md:grid-cols-4 gap-3">
-      {stats.map((stat, index) => (
-        <div 
-          key={index}
-          className="bg-card border border-border rounded-lg p-4 text-center hover:border-accent/30 transition-colors"
-        >
-          <stat.icon className={`w-5 h-5 mx-auto mb-2 ${stat.color}`} />
-          <div className="text-lg font-bold text-foreground">{stat.value}</div>
-          <div className="text-xs text-muted-foreground">{stat.label}</div>
-        </div>
-      ))}
     </section>
   );
 }

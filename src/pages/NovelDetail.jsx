@@ -127,17 +127,45 @@ function NovelDetail() {
 
       setNovel(novelData);
 
-      const currentGenreId = novelData?.genre_id || null;
-      if (currentGenreId) {
-        const { data: allNovels } = await supabase
-          .from('novels')
-          .select('*')
-          .neq('id', parseInt(slug))
-          .eq('genre_id', currentGenreId)
-          .order('view_count', { ascending: false })
-          .limit(6);
+      const novelId = parseInt(slug);
+      let primaryGenreId = novelData?.genre_id || null;
+      const { data: ngForNovel, error: ngForNovelErr } = await supabase
+        .from('novel_genres')
+        .select('genre_id')
+        .eq('novel_id', novelId)
+        .limit(1);
+      if (!primaryGenreId && !ngForNovelErr && ngForNovel?.[0]?.genre_id) {
+        primaryGenreId = ngForNovel[0].genre_id;
+      }
 
-        setRelatedNovels(allNovels || []);
+      if (primaryGenreId) {
+        const merged = new Set();
+        const { data: junctionRows, error: junctionError } = await supabase
+          .from('novel_genres')
+          .select('novel_id')
+          .eq('genre_id', primaryGenreId);
+        if (!junctionError && junctionRows) {
+          junctionRows.forEach((row) => merged.add(row.novel_id));
+        }
+        const { data: directRows } = await supabase
+          .from('novels')
+          .select('id')
+          .eq('genre_id', primaryGenreId);
+        (directRows || []).forEach((row) => merged.add(row.id));
+        merged.delete(novelId);
+        const candidateIds = [...merged];
+        if (candidateIds.length === 0) {
+          setRelatedNovels([]);
+        } else {
+          const capped = candidateIds.slice(0, 48);
+          const { data: relatedRows } = await supabase
+            .from('novels')
+            .select('*')
+            .in('id', capped);
+          const rows = relatedRows || [];
+          rows.sort((a, b) => (b.view_count || 0) - (a.view_count || 0));
+          setRelatedNovels(rows.slice(0, 6));
+        }
       } else {
         setRelatedNovels([]);
       }
