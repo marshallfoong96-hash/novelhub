@@ -4,7 +4,6 @@ import {
   Eye,
   BookOpen,
   User,
-  Clock,
   MessageSquare,
   ArrowRight,
   CheckCircle,
@@ -16,6 +15,7 @@ import {
   DollarSign,
   Sparkles,
   AlertCircle,
+  Bell,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
@@ -41,6 +41,7 @@ function NovelDetail() {
   const [continueChapterId, setContinueChapterId] = useState(null);
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [isFavorited, setIsFavorited] = useState(false);
+  const [isFollowing, setIsFollowing] = useState(false);
   const [actionNotice, setActionNotice] = useState('');
   const [novelGenres, setNovelGenres] = useState([]);
   const [showDescExpanded, setShowDescExpanded] = useState(false);
@@ -60,11 +61,14 @@ function NovelDetail() {
     try {
       const bookmarks = JSON.parse(localStorage.getItem('mi_bookmarks') || '[]');
       const favorites = JSON.parse(localStorage.getItem('mi_favorites') || '[]');
+      const follows = JSON.parse(localStorage.getItem('mi_follows') || '[]');
       setIsBookmarked(Array.isArray(bookmarks) && bookmarks.includes(novel.id));
       setIsFavorited(Array.isArray(favorites) && favorites.includes(novel.id));
+      setIsFollowing(Array.isArray(follows) && follows.includes(novel.id));
     } catch {
       setIsBookmarked(false);
       setIsFavorited(false);
+      setIsFollowing(false);
     }
   }, [novel?.id]);
 
@@ -167,6 +171,38 @@ function NovelDetail() {
     showNotice('Đang mở email báo lỗi…');
   };
 
+  const handleToggleFollow = async () => {
+    if (!novel?.id) return;
+    const id = novel.id;
+    let list = JSON.parse(localStorage.getItem('mi_follows') || '[]');
+    if (!Array.isArray(list)) list = [];
+    const willFollow = !list.includes(id);
+    const next = willFollow ? [...list, id] : list.filter((x) => x !== id);
+    localStorage.setItem('mi_follows', JSON.stringify(next));
+    setIsFollowing(willFollow);
+
+    const delta = willFollow ? 1 : -1;
+    const prevFc = Number(novel.follow_count ?? 0);
+    const optimistic = Math.max(0, prevFc + delta);
+    setNovel((p) => (p ? { ...p, follow_count: optimistic } : p)); // optimistic; RPC sẽ chỉnh lại nếu thành công
+
+    const { data: rpcVal, error } = await supabase.rpc('adjust_novel_follow_count', {
+      p_novel_id: id,
+      p_delta: delta,
+    });
+    if (error) {
+      console.warn('[NovelDetail] adjust_novel_follow_count:', error);
+      showNotice(
+        'Đã lưu theo dõi trên trình duyệt. Chạy SQL `add_novel_follow_count_and_rpc.sql` trên Supabase để lưu số người theo dõi chung.'
+      );
+      return;
+    }
+    if (rpcVal != null) {
+      setNovel((p) => (p ? { ...p, follow_count: Number(rpcVal) } : p));
+    }
+    showNotice(willFollow ? 'Đã theo dõi truyện.' : 'Đã bỏ theo dõi.');
+  };
+
   const fetchNovelData = async () => {
     try {
       setLoading(true);
@@ -187,22 +223,29 @@ function NovelDetail() {
 
       setNovel(novelData);
 
-      const novelId = parseInt(slug);
-      const { data: ngAll, error: ngAllErr } = await supabase
+      const novelId = parseInt(slug, 10);
+
+      /**
+       * Chỉ dùng 2 truy vấn đơn: `novel_genres` → id, rồi `genres` → tên.
+       * (Không embed `genres(...)` — tránh lỗi khi thiếu FK hoặc RLS lồng nhau.)
+       * Nếu Table Editor có dữ liệu mà API trả 0 dòng: chạy `enable_novel_genres_public_read.sql` trên Supabase.
+       */
+      const { data: ngRows, error: ngErr } = await supabase
         .from('novel_genres')
         .select('genre_id')
         .eq('novel_id', novelId);
+      if (ngErr) {
+        console.error('[v0] novel_genres:', ngErr);
+      }
 
-      /** Một cột `novels.genre_id` chỉ lưu được 1 id; nhiều thể loại nằm ở `novel_genres`. Gộp cả hai để hiển thị đủ. */
       const genreIdSet = new Set();
+      (ngRows || []).forEach((r) => {
+        if (r.genre_id != null && r.genre_id !== '') genreIdSet.add(Number(r.genre_id));
+      });
       if (novelData.genre_id != null && novelData.genre_id !== '') {
         genreIdSet.add(Number(novelData.genre_id));
       }
-      if (!ngAllErr && ngAll) {
-        ngAll.forEach((row) => {
-          if (row.genre_id != null && row.genre_id !== '') genreIdSet.add(Number(row.genre_id));
-        });
-      }
+
       const mergedGenreIds = [...genreIdSet];
       if (mergedGenreIds.length === 0) {
         setNovelGenres([]);
@@ -212,19 +255,26 @@ function NovelDetail() {
           .select('id,name,slug')
           .in('id', mergedGenreIds);
         if (genresLookupErr) {
-          console.error('[v0] Error fetching genres for novel:', genresLookupErr);
+          console.error('[v0] genres for novel:', genresLookupErr);
           setNovelGenres([]);
         } else {
-          const sorted = (genreRows || [])
-            .slice()
-            .sort((a, b) => String(a.name).localeCompare(String(b.name), 'vi'));
+          const byId = new Map((genreRows || []).map((g) => [Number(g.id), g]));
+          const sorted = mergedGenreIds
+            .map((gid) => {
+              const g = byId.get(gid);
+              if (g) return g;
+              return { id: gid, name: `Thể loại #${gid}`, slug: null };
+            })
+            .sort((a, b) =>
+              String(a.name || '').localeCompare(String(b.name || ''), 'vi')
+            );
           setNovelGenres(sorted);
         }
       }
 
       let primaryGenreId = novelData?.genre_id || null;
-      if (!primaryGenreId && !ngAllErr && ngAll?.[0]?.genre_id) {
-        primaryGenreId = ngAll[0].genre_id;
+      if (!primaryGenreId && ngRows?.[0]?.genre_id != null) {
+        primaryGenreId = ngRows[0].genre_id;
       }
 
       if (primaryGenreId) {
@@ -355,29 +405,86 @@ function NovelDetail() {
                 </div>
 
                 <div className="flex-1 min-w-0 text-center md:text-left flex flex-col">
-                  <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight text-balance leading-tight mb-2">
+                  <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight text-balance leading-tight mb-4">
                     {novel.title}
                   </h1>
 
-                  {novelGenres.length > 0 && (
-                    <div className={`text-center md:text-left ${descriptionText ? 'mb-3' : 'mb-4'}`}>
-                      <div className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
-                        <Tag className="w-3.5 h-3.5 text-accent shrink-0" aria-hidden />
-                        Thể loại
-                      </div>
-                      <div className="flex flex-wrap justify-center md:justify-start gap-2">
-                        {novelGenres.map((g) => (
-                          <Link
-                            key={g.id}
-                            to={genreBrowsePath(g)}
-                            className="inline-flex items-center rounded-full border border-accent/35 bg-accent/[0.08] px-3 py-1.5 text-xs font-medium text-accent transition hover:bg-accent/15 hover:border-accent/55"
-                          >
-                            {g.name}
-                          </Link>
-                        ))}
-                      </div>
+                  <dl className="mb-4 space-y-2 text-left text-sm">
+                    <div className="flex flex-wrap gap-x-2 gap-y-1">
+                      <dt className="text-muted-foreground shrink-0">Cập nhật:</dt>
+                      <dd className="min-w-0 text-foreground">
+                        {formatDate(novel.updated_at || novel.created_at)}
+                      </dd>
                     </div>
-                  )}
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                      <dt className="text-muted-foreground shrink-0">Loại:</dt>
+                      <dd>
+                        <span className="inline-flex rounded-md border border-blue-500/40 bg-blue-500/10 px-2 py-0.5 text-xs font-medium text-blue-700 dark:text-blue-300">
+                          Truyện chữ
+                        </span>
+                      </dd>
+                    </div>
+                    {authorLabel ? (
+                      <div className="flex flex-wrap gap-x-2 gap-y-1">
+                        <dt className="text-muted-foreground shrink-0">Tác giả:</dt>
+                        <dd className="min-w-0 text-foreground">{authorLabel}</dd>
+                      </div>
+                    ) : null}
+                    <div className="flex flex-wrap gap-x-2 gap-y-1.5">
+                      <dt className="text-muted-foreground shrink-0 pt-0.5">
+                        <Tag className="inline h-3.5 w-3.5 text-accent" aria-hidden /> Thể loại:
+                      </dt>
+                      <dd className="min-w-0 flex-1">
+                        {novelGenres.length > 0 ? (
+                          <div className="flex flex-wrap gap-1.5">
+                            {novelGenres.map((g) => (
+                              <Link
+                                key={g.id}
+                                to={genreBrowsePath(g)}
+                                className="inline-flex items-center rounded border border-foreground/25 bg-background px-2 py-0.5 text-xs font-medium text-foreground transition hover:border-accent hover:text-accent"
+                              >
+                                {g.name != null && String(g.name).trim() !== ''
+                                  ? g.name
+                                  : `#${g.id}`}
+                              </Link>
+                            ))}
+                          </div>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">—</span>
+                        )}
+                      </dd>
+                    </div>
+                    <div className="flex flex-wrap gap-x-2 gap-y-1">
+                      <dt className="text-muted-foreground shrink-0">Lượt xem:</dt>
+                      <dd className="text-foreground">{formatNumber(novel.view_count || 0)}</dd>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                      <dt className="text-muted-foreground shrink-0">Yêu thích:</dt>
+                      <dd className="inline-flex items-center gap-1 text-foreground">
+                        <Heart className="h-3.5 w-3.5 text-accent" aria-hidden />
+                        {formatNumber(novel.likes ?? 0)}
+                      </dd>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                      <dt className="text-muted-foreground shrink-0">Lượt theo dõi:</dt>
+                      <dd className="inline-flex items-center gap-1 text-foreground">
+                        <Bell className="h-3.5 w-3.5 text-accent" aria-hidden />
+                        {formatNumber(novel.follow_count ?? 0)}
+                      </dd>
+                    </div>
+                    <div className="flex flex-wrap gap-x-2 gap-y-1">
+                      <dt className="text-muted-foreground shrink-0">Số chương:</dt>
+                      <dd className="text-foreground">{chapters.length}</dd>
+                    </div>
+                    {novel.status && (
+                      <div className="flex flex-wrap gap-x-2 gap-y-1">
+                        <dt className="text-muted-foreground shrink-0">Trạng thái:</dt>
+                        <dd className="text-foreground">
+                          {novel.status === 'completed' ? 'Đã đủ bộ' : 'Đang tiến hành'}
+                        </dd>
+                      </div>
+                    )}
+                  </dl>
 
                   {descriptionText ? (
                     <div className="mb-4">
@@ -400,38 +507,6 @@ function NovelDetail() {
                       )}
                     </div>
                   ) : null}
-
-                  <div className="flex flex-wrap justify-center md:justify-start gap-2 mb-5">
-                    {authorLabel ? (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-secondary/80 text-xs text-muted-foreground max-w-full">
-                        <User className="w-3.5 h-3.5 shrink-0" />
-                        <span className="truncate">{authorLabel}</span>
-                      </span>
-                    ) : null}
-                    {novel.status && (
-                      <span
-                        className={`inline-flex items-center px-2.5 py-1 text-xs font-medium rounded-full ${
-                          novel.status === 'completed'
-                            ? 'bg-[hsl(var(--success))]/15 text-[hsl(var(--success))]'
-                            : 'bg-accent/12 text-accent'
-                        }`}
-                      >
-                        {novel.status === 'completed' ? 'Hoàn thành' : 'Đang tiến hành'}
-                      </span>
-                    )}
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-secondary/80 text-xs text-muted-foreground">
-                      <BookOpen className="w-3.5 h-3.5" />
-                      {chapters.length} chương
-                    </span>
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-secondary/80 text-xs text-muted-foreground">
-                      <Eye className="w-3.5 h-3.5" />
-                      {formatNumber(novel.view_count || 0)} lượt xem
-                    </span>
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-secondary/80 text-xs text-muted-foreground">
-                      <Clock className="w-3.5 h-3.5" />
-                      {formatDate(novel.created_at)}
-                    </span>
-                  </div>
 
                   <div className="mt-auto flex w-full flex-col gap-2 pt-2">
                     <div className="flex flex-wrap justify-center gap-2 md:justify-start">
@@ -494,6 +569,18 @@ function NovelDetail() {
                           Đọc chương mới nhất
                         </Link>
                       )}
+                      <button
+                        type="button"
+                        onClick={handleToggleFollow}
+                        className={`inline-flex items-center gap-2 rounded-xl px-3.5 py-2.5 text-sm font-semibold transition ${
+                          isFollowing
+                            ? 'bg-blue-600 text-white shadow-sm hover:bg-blue-700'
+                            : 'border-2 border-blue-600 bg-background text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-950/40'
+                        }`}
+                      >
+                        <Bell className="h-4 w-4 shrink-0" aria-hidden />
+                        {isFollowing ? 'Đang theo dõi' : 'Theo dõi'}
+                      </button>
                     </div>
                     <div className="flex flex-wrap justify-center md:justify-start">
                       <button
