@@ -10,8 +10,7 @@ import BrowseNovels from './pages/BrowseNovels';
 import ReadingHistory from './pages/ReadingHistory';
 import GenreManager from './pages/GenreManager';
 import { AboutPage, PrivacyPage, TermsPage, ContactPage } from './pages/InfoPage';
-import { Sparkles, BookOpen, Users, PenTool, Mail, Github, Facebook, ExternalLink } from 'lucide-react';
-import { AdBanner } from './components/AdSpace';
+import { Sparkles, BookOpen, Users, PenTool, Mail, Github, Facebook } from 'lucide-react';
 
 function App() {
   return (
@@ -91,22 +90,13 @@ function Footer() {
       { label: 'Điều khoản', to: '/terms' },
       { label: 'Liên hệ', to: '/lien-he' },
     ],
-    partners: [
-      { label: 'Shopee', href: 'https://shopee.vn', external: true },
-      { label: 'Google Ads', href: 'https://support.google.com/adsense/answer/1348695', external: true },
-    ],
   };
 
   return (
     <footer className="border-t border-border bg-card mt-auto">
-      {/* Footer Ad Banner */}
-      <div className="max-w-7xl mx-auto px-4 py-4">
-        <AdBanner type="horizontal" className="hidden md:flex" />
-      </div>
-
       <div className="max-w-7xl mx-auto px-4">
         {/* Main Footer */}
-        <div className="py-8 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-8">
+        <div className="py-8 grid grid-cols-2 md:grid-cols-4 gap-8">
           {/* Brand */}
           <div className="col-span-2 md:col-span-4 lg:col-span-1">
             <Link to="/" className="flex items-center gap-2 mb-3">
@@ -203,29 +193,6 @@ function Footer() {
                   >
                     {link.label}
                   </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Partners */}
-          <div className="hidden lg:block">
-            <h4 className="font-semibold text-foreground text-sm mb-3 flex items-center gap-1.5">
-              <ExternalLink className="w-3.5 h-3.5 text-accent" />
-              Đối tác
-            </h4>
-            <ul className="space-y-2">
-              {footerLinks.partners.map((link) => (
-                <li key={link.label}>
-                  <a 
-                    href={link.href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1"
-                  >
-                    {link.label}
-                    <ExternalLink className="w-2.5 h-2.5" />
-                  </a>
                 </li>
               ))}
             </ul>

@@ -19,7 +19,6 @@ import {
 } from 'lucide-react';
 
 import NovelCard from '../components/NovelCard';
-import { AdBanner, AdSidebar, ShopeeDeals, AdInline } from '../components/AdSpace';
 import { formatNumber, formatDate } from '../utils/helpers';
 
 function getGenreMeta(genre) {
@@ -186,10 +185,6 @@ function Home() {
 
   return (
     <div className="space-y-8">
-      {/* Top Banner Ad */}
-      <AdBanner type="leaderboard" className="hidden md:flex" />
-      <AdBanner type="mobile" className="md:hidden" />
-
       {/* Hero Section with Featured Novels */}
       <HeroSection featuredNovels={featuredNovels} />
 
@@ -279,9 +274,6 @@ function Home() {
               )}
             </div>
           </section>
-
-          {/* Another Inline Ad */}
-          <AdInline />
 
           {/* Scrolling Feed Section */}
           <section>
@@ -399,17 +391,8 @@ function Home() {
 
           {/* Top Views Section */}
           <TopViewsSection novels={hotNovels} />
-
-          {/* Sidebar Ad */}
-          <AdSidebar />
-          
-          {/* Shopee Affiliate */}
-          <ShopeeDeals />
         </aside>
       </div>
-
-      {/* Bottom Banner Ad */}
-      <AdBanner type="large" />
 
       {/* CTA Section */}
       <CTASection />

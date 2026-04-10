@@ -61,7 +61,14 @@
   body {
     @apply bg-background text-foreground antialiased;
     font-feature-settings: "rlig" 1, "calt" 1;
+    font-family: "Be Vietnam Pro", system-ui, sans-serif;
   }
+}
+
+/* Top announcement: readable, no slug-like hyphen spam */
+.site-announcement-bar {
+  font-family: "Be Vietnam Pro", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
 
 /* Custom scrollbar */

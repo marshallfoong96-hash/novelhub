@@ -382,8 +382,8 @@ function BrowseNovels({ mode = "all" }) {
           <div className="absolute -bottom-16 left-10 w-56 h-56 rounded-full bg-accent/25 blur-3xl" />
 
           <div className="absolute inset-0 flex flex-col items-center justify-center px-4 text-center">
-            <p className="text-[11px] uppercase tracking-[0.25em] text-white/80 mb-2">Danh muc</p>
-            <h1 className="text-2xl md:text-3xl font-extrabold text-white drop-shadow-sm">
+            <p className="text-[11px] uppercase tracking-[0.35em] text-white/85 mb-2 font-semibold">Thể loại</p>
+            <h1 className="text-2xl md:text-4xl font-bold text-white drop-shadow-md tracking-tight">
               {activeGenre?.name || slug}
             </h1>
           </div>

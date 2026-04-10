@@ -4,7 +4,6 @@ import { Eye, BookOpen, User, Clock, MessageSquare, ArrowRight, CheckCircle, Sen
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { formatNumber, formatDate } from '../utils/helpers';
-import { AdBanner, AdSidebar, AdInline, ShopeeDeals } from '../components/AdSpace';
 
 function NovelDetail() {
   const { slug } = useParams(); // This is now the novel ID
@@ -236,9 +235,6 @@ function NovelDetail() {
 
   return (
     <div className="space-y-6">
-      {/* Top Banner Ad */}
-      <AdBanner type="leaderboard" className="hidden md:flex" />
-
       {/* Breadcrumb */}
       <nav className="flex items-center gap-2 text-xs text-muted-foreground">
         <Link to="/" className="hover:text-foreground transition-colors">Trang chủ</Link>
@@ -246,10 +242,7 @@ function NovelDetail() {
         <span className="text-foreground line-clamp-1">{novel.title}</span>
       </nav>
 
-      {/* Main Content with Sidebar */}
-      <div className="grid lg:grid-cols-4 gap-6">
-        {/* Main Content */}
-        <div className="lg:col-span-3 space-y-6">
+      <div className="max-w-5xl mx-auto space-y-6">
           {/* Novel Header */}
           <div className="bg-card border border-border rounded-lg overflow-hidden">
             <div className="p-4 sm:p-6">
@@ -369,14 +362,11 @@ function NovelDetail() {
             </div>
           </div>
 
-          {/* Inline Ad */}
-          <AdInline />
-
           {relatedNovels.length > 0 && (
             <section className="bg-card border border-border rounded-lg p-4">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-base font-semibold text-foreground">Cung the loai</h3>
-                <Link to="/the-loai" className="text-xs text-accent hover:underline">Xem the loai</Link>
+                <h3 className="text-base font-semibold text-foreground">Cùng thể loại</h3>
+                <Link to="/the-loai" className="text-xs text-accent hover:underline">Xem thể loại</Link>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
                 {relatedNovels.map((item) => (
@@ -532,13 +522,6 @@ function NovelDetail() {
               )}
             </div>
           </div>
-        </div>
-
-        {/* Sidebar */}
-        <aside className="lg:col-span-1 space-y-4">
-          <ShopeeDeals novelTitle={novel.title} />
-          <AdSidebar />
-        </aside>
       </div>
     </div>
   );

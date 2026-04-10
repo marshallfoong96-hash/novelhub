@@ -23,15 +23,15 @@ function Header() {
   const navigate = useNavigate();
 
   const monkeyDGenres = [
-    'Bach Hop', 'BE', 'Binh Luan Cot Truyen', 'Chua Lanh', 'Co Dai', 'Cung Dau', 'Cuoi Truoc Yeu Sau',
-    'Cuong Thu Hao Doat', 'Di Nang', 'Duong The', 'Dam My', 'Dien Van', 'Do Thi', 'Doan Van', 'Doc Tam',
-    'Ga Thay', 'Gia Dau', 'Gia Dinh', 'Guong Vo Khong Lanh', 'Guong Vo Lai Lanh', 'Hai Huoc', 'Hanh Dong',
-    'Hao Mon The Gia', 'HE', 'He Thong', 'Hien Dai', 'Hoan Doi Than Xac', 'Hoc Ba', 'Hoc Duong',
-    'Hu Cau Ky Ao', 'Huyen Huyen', 'Khong CP', 'Kinh Di', 'Linh Di', 'Mat The', 'My Thuc', 'Ngon Tinh',
-    'Ngot', 'Nguoc', 'Nguoc Luyen Tan Tam', 'Nguoc Nam', 'Nguoc Nu', 'Nhan Thu', 'Nien Dai', 'Nu Cuong',
-    'OE', 'Phep Thuat', 'Phieu Luu', 'Phuong Dong', 'Phuong Tay', 'Quy Tac', 'Sang Van', 'SE', 'Showbiz',
-    'Sung', 'Thanh Xuan Vuon Truong', 'Thuc Tinh Nhan Vat', 'Tien Hiep', 'Tieu Thuyet', 'Tong Tai',
-    'Tra Thu', 'Trinh Tham', 'Trong Sinh', 'Truy The', 'Truyen Cam Hung', 'Va Mat', 'Vo Tri', 'Xuyen Khong', 'Xuyen Sach'
+    'Bách hợp', 'BE', 'Bình luận cốt truyện', 'Chữa lành', 'Cổ đại', 'Cung đấu', 'Cưới trước yêu sau',
+    'Cường thủ hào đoạt', 'Dị năng', 'Dưỡng thê', 'Đam mỹ', 'Điền văn', 'Đô thị', 'Đoản văn', 'Độc tâm',
+    'Gả thay', 'Giả đấu', 'Gia đình', 'Gương vỡ không lành', 'Gương vỡ lại lành', 'Hài hước', 'Hành động',
+    'Hào môn thế gia', 'HE', 'Hệ thống', 'Hiện đại', 'Hoán đổi thân xác', 'Học bá', 'Học đường',
+    'Hư cấu kỳ ảo', 'Huyền huyền', 'Không CP', 'Kinh dị', 'Linh dị', 'Mạt thế', 'Mỹ thực', 'Ngôn tình',
+    'Ngọt', 'Ngược', 'Ngược luyến tận tâm', 'Ngược nam', 'Ngược nữ', 'Nhân thú', 'Niên đại', 'Nữ cường',
+    'OE', 'Phép thuật', 'Phiêu lưu', 'Phương Đông', 'Phương Tây', 'Quy tắc', 'Sảng văn', 'SE', 'Showbiz',
+    'Sủng', 'Thanh xuân vườn trường', 'Thức tỉnh nhân vật', 'Tiên hiệp', 'Tiểu thuyết', 'Tổng tài',
+    'Trả thù', 'Trinh thám', 'Trọng sinh', 'Truy thê', 'Truyền cảm hứng', 'Vả mặt', 'Vô tri', 'Xuyên không', 'Xuyên sách'
   ];
 
   useEffect(() => {
@@ -153,16 +153,16 @@ function Header() {
   ];
 
   const quickCategoryLinks = [
-    { to: '/hot', label: 'Truyen Hot' },
-    { to: '/truyen-moi', label: 'Truyen moi cap nhat' },
-    { to: '/truyen-full', label: 'Truyen Full' },
-    { to: '/truyen-dang-ra', label: 'Truyen dang tien hanh' }
+    { to: '/hot', label: 'Truyện hot' },
+    { to: '/truyen-moi', label: 'Mới cập nhật' },
+    { to: '/truyen-full', label: 'Truyện full' },
+    { to: '/truyen-dang-ra', label: 'Đang tiến hành' }
   ];
   const chapterRangeLinks = [
-    { to: '/so-chuong/duoi-100', label: 'Duoi 100 chuong' },
-    { to: '/so-chuong/100-500', label: '100 - 500 chuong' },
-    { to: '/so-chuong/500-1000', label: '500 - 1000 chuong' },
-    { to: '/so-chuong/tren-1000', label: 'Tren 1000 chuong' }
+    { to: '/so-chuong/duoi-100', label: 'Dưới 100 chương' },
+    { to: '/so-chuong/100-500', label: 'Từ 100 đến 500 chương' },
+    { to: '/so-chuong/500-1000', label: 'Từ 500 đến 1000 chương' },
+    { to: '/so-chuong/tren-1000', label: 'Trên 1000 chương' }
   ];
   const toSlug = (value) =>
     String(value || '')
@@ -213,12 +213,12 @@ function Header() {
   return (
     <>
       {/* Announcement Bar */}
-      <div className="bg-gradient-to-r from-accent to-[#f43f7d] text-accent-foreground text-xs py-1.5 text-center overflow-hidden shadow-sm">
-        <div className="animate-marquee whitespace-nowrap inline-block">
-          <span className="mx-8">Chao mung den MI Truyen - Nen tang doc truyen online hang dau</span>
-          <span className="mx-8">Cập nhật hàng nghìn truyện mới mỗi ngày</span>
-          <span className="mx-8">Đăng ký tài khoản để lưu truyện yêu thích</span>
-          <span className="mx-8">Chao mung den MI Truyen - Nen tang doc truyen online hang dau</span>
+      <div className="site-announcement-bar bg-gradient-to-r from-accent via-[#e11d48] to-[#f43f7d] text-white py-2 text-center overflow-hidden shadow-sm">
+        <div className="animate-marquee whitespace-nowrap inline-block font-semibold tracking-wide text-[13px] sm:text-sm">
+          <span className="mx-10">Chào mừng đến MI Truyện — nền tảng đọc truyện trực tuyến</span>
+          <span className="mx-10">Cập nhật liên tục nhiều tác phẩm mới mỗi ngày</span>
+          <span className="mx-10">Đăng ký để lưu truyện yêu thích và đồng bộ lịch sử đọc</span>
+          <span className="mx-10">Chào mừng đến MI Truyện — nền tảng đọc truyện trực tuyến</span>
         </div>
       </div>
 
@@ -267,7 +267,7 @@ function Header() {
                   }`}
                 >
                   <BookOpen className="w-3.5 h-3.5" />
-                  Danh sach
+                  Danh sách
                   <ChevronDown className={`w-3.5 h-3.5 transition-transform ${openMenu === 'danh-sach' ? 'rotate-180' : ''}`} />
                 </button>
 
@@ -313,7 +313,7 @@ function Header() {
                   }`}
                 >
                   <BookOpen className="w-3.5 h-3.5" />
-                  Phan loai theo Chuong
+                  Phân loại theo chương
                   <ChevronDown className={`w-3.5 h-3.5 transition-transform ${openMenu === 'chapter-range' ? 'rotate-180' : ''}`} />
                 </button>
                 {openMenu === 'chapter-range' && (
@@ -339,7 +339,7 @@ function Header() {
                   className={`top-nav-pill ${openMenu === 'customize' ? 'top-nav-pill-active' : 'top-nav-pill-idle'}`}
                 >
                   <Moon className="w-3.5 h-3.5" />
-                  Tuy chinh
+                  Tùy chỉnh
                   <ChevronDown className={`w-3.5 h-3.5 transition-transform ${openMenu === 'customize' ? 'rotate-180' : ''}`} />
                 </button>
                 {openMenu === 'customize' && (
@@ -350,20 +350,20 @@ function Header() {
                         onClick={() => setIsDark(false)}
                         className="block w-full text-left text-sm font-medium text-foreground hover:text-accent transition-colors"
                       >
-                        Mau nen sang
+                        Màu nền sáng
                       </button>
                       <button
                         type="button"
                         onClick={() => setIsDark(true)}
                         className="block w-full text-left text-sm font-medium text-foreground hover:text-accent transition-colors"
                       >
-                        Mau nen toi
+                        Màu nền tối
                       </button>
                       <Link to="/chinh-sach" className="block text-sm font-medium text-foreground hover:text-accent transition-colors">
-                        Chinh sach
+                        Chính sách
                       </Link>
                       <Link to="/quan-ly-the-loai" className="block text-sm font-medium text-foreground hover:text-accent transition-colors">
-                        Quan ly the loai
+                        Quản lý thể loại
                       </Link>
                     </div>
                   </div>
@@ -390,11 +390,11 @@ function Header() {
                   {showSearchDropdown && (
                     <div className="absolute top-full mt-2 w-full min-w-[340px] max-h-[420px] overflow-y-auto dropdown-surface p-2 z-50">
                       {searchLoading ? (
-                        <p className="text-xs text-muted-foreground p-2">Dang tim...</p>
+                        <p className="text-xs text-muted-foreground p-2">Đang tìm...</p>
                       ) : searchResults.length === 0 ? (
                         hotSuggestions.length > 0 ? (
                           <div>
-                            <p className="text-[11px] text-muted-foreground px-2 py-1">Khong tim thay. Goi y truyen hot:</p>
+                            <p className="text-[11px] text-muted-foreground px-2 py-1">Không tìm thấy. Gợi ý truyện hot:</p>
                             <div className="space-y-1">
                               {hotSuggestions.map((item) => (
                                 <Link
@@ -419,7 +419,7 @@ function Header() {
                             </div>
                           </div>
                         ) : (
-                          <p className="text-xs text-muted-foreground p-2">Khong co ket qua phu hop.</p>
+                          <p className="text-xs text-muted-foreground p-2">Không có kết quả phù hợp.</p>
                         )
                       ) : (
                         <div className="space-y-1">
@@ -553,11 +553,11 @@ function Header() {
               {(searchLoading || searchQuery.trim() || searchResults.length > 0) && (
                 <div className="mt-2 bg-card border border-border rounded-lg max-h-72 overflow-y-auto">
                   {searchLoading ? (
-                    <p className="text-xs text-muted-foreground p-3">Dang tim...</p>
+                    <p className="text-xs text-muted-foreground p-3">Đang tìm...</p>
                   ) : searchResults.length === 0 ? (
                     hotSuggestions.length > 0 ? (
                       <div>
-                        <p className="text-[11px] text-muted-foreground px-3 py-2">Khong tim thay. Goi y truyen hot:</p>
+                        <p className="text-[11px] text-muted-foreground px-3 py-2">Không tìm thấy. Gợi ý truyện hot:</p>
                         <div className="divide-y divide-border">
                           {hotSuggestions.map((item) => (
                             <Link
@@ -585,7 +585,7 @@ function Header() {
                         </div>
                       </div>
                     ) : (
-                      <p className="text-xs text-muted-foreground p-3">Khong co ket qua phu hop.</p>
+                      <p className="text-xs text-muted-foreground p-3">Không có kết quả phù hợp.</p>
                     )
                   ) : (
                     <div className="divide-y divide-border">
@@ -642,16 +642,16 @@ function Header() {
                   </Link>
                 ))}
                 <Link
-                  to="/so-chuong/duoi-100"
+                  to="/the-loai"
                   onClick={() => setIsMenuOpen(false)}
                   className={`flex items-center gap-2 px-4 py-3 text-sm font-medium rounded-lg transition-colors ${
-                    location.pathname.startsWith('/so-chuong')
+                    location.pathname.startsWith('/the-loai')
                       ? 'text-accent bg-accent/10'
                       : 'text-muted-foreground hover:text-foreground hover:bg-secondary'
                   }`}
                 >
                   <BookOpen className="w-4 h-4" />
-                  Phan loai chuong
+                  Thể loại
                 </Link>
                 <Link
                   to="/truyen-dang-ra"
@@ -663,13 +663,13 @@ function Header() {
                   }`}
                 >
                   <Clock className="w-4 h-4" />
-                  Dang tien hanh
+                  Đang tiến hành
                 </Link>
               </nav>
 
               {mergedGenres.length > 0 && (
                 <div className="space-y-2">
-                  <h4 className="text-xs uppercase tracking-wide text-muted-foreground">The loai</h4>
+                  <h4 className="text-xs font-semibold tracking-wide text-foreground">Thể loại</h4>
                   <div className="grid grid-cols-2 gap-2">
                     {mergedGenres.map((genre) => (
                       <Link

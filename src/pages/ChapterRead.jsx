@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { supabase } from "../lib/supabase";
-import { AdBanner, AdInline, ShopeeDeals } from '../components/AdSpace';
 
 import {
   Home, BookOpen, Settings, MessageSquare,
@@ -224,10 +223,6 @@ export default function ChapterRead() {
       />
 
       <div className="max-w-4xl mx-auto pb-24">
-        {/* Top Banner Ad */}
-        <AdBanner type="leaderboard" className="hidden md:flex mb-4" />
-        <AdBanner type="mobile" className="md:hidden mb-4" />
-
         {/* Chapter Header */}
         <div className="bg-card border border-border rounded-lg p-3 mb-4">
           <div className="flex items-center justify-between gap-3">
@@ -462,9 +457,6 @@ export default function ChapterRead() {
           </article>
         </div>
 
-        {/* Mid-content Ad */}
-        <AdInline />
-
         {/* Navigation Bottom */}
         <div className="flex items-center justify-between gap-3 mb-4">
           {prevChapter ? (
@@ -500,14 +492,6 @@ export default function ChapterRead() {
           ) : (
             <div className="w-24" />
           )}
-        </div>
-
-        {/* Bottom Banner Ad */}
-        <AdBanner type="large" className="mb-4" />
-
-        {/* AI Recommended Products based on the novel */}
-        <div className="mb-4">
-          <ShopeeDeals novelTitle={novel?.title} />
         </div>
 
         {/* Comments Section */}
