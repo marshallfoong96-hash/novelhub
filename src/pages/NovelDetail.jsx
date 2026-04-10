@@ -477,7 +477,7 @@ function NovelDetail() {
             <section className="bg-card border border-border rounded-lg p-4">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-base font-semibold text-foreground">Cùng thể loại</h3>
-                <Link to="/the-loai" className="text-xs text-accent hover:underline">Xem thể loại</Link>
+                <Link to="/#the-loai-grid" className="text-xs text-accent hover:underline">Xem thể loại</Link>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
                 {relatedNovels.map((item) => (

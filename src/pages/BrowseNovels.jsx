@@ -431,7 +431,7 @@ function BrowseNovels({ mode = "all" }) {
 
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold text-foreground">{titleMap[mode]}</h2>
-        <Link to="/the-loai" className="text-sm text-accent hover:underline">
+        <Link to="/#the-loai-grid" className="text-sm text-accent hover:underline">
           Xem the loai
         </Link>
       </div>

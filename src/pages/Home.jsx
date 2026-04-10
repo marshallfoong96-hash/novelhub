@@ -45,11 +45,11 @@ function HomeHeroBackdrop() {
       aria-hidden
     >
       <div className="absolute inset-0 bg-gradient-to-b from-accent/[0.07] via-background/92 to-background dark:from-accent/[0.11]" />
-      {/* Optional full cast art: place frontend/public/branding-cast.jpg */}
+      {/* Optional full cast art: place frontend/public/branding-cast.png */}
       <div
         className="absolute inset-x-0 top-0 h-full max-h-[680px] opacity-[0.1] dark:opacity-[0.12]"
         style={{
-          backgroundImage: "url(/branding-cast.jpg)",
+          backgroundImage: "url(/branding-cast.png)",
           backgroundRepeat: "no-repeat",
           backgroundPosition: "50% 18%",
           backgroundSize: "min(1100px, 145%)",
@@ -253,6 +253,18 @@ function Home() {
     return () => window.removeEventListener("pageshow", onPageShow);
   }, [location.pathname, fetchData]);
 
+  /** Deep-link from /#/the-loai-grid (e.g. “Xem thể loại” on /the-loai) after content mounts. */
+  useEffect(() => {
+    if (location.pathname !== "/" || location.hash !== "#the-loai-grid") return;
+    if (loading) return;
+    const el = document.getElementById("the-loai-grid");
+    if (!el) return;
+    const t = window.setTimeout(() => {
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 80);
+    return () => clearTimeout(t);
+  }, [location.pathname, location.hash, loading]);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -387,12 +399,12 @@ function Home() {
           </section>
 
           {/* Genre Grid */}
-          <section>
+          <section id="the-loai-grid">
             <SectionHeader 
               icon={<BookOpen className="w-5 h-5 text-accent" />}
               title="Thể Loại"
               subtitle="Khám phá theo sở thích"
-              link="/the-loai"
+              link="/#the-loai-grid"
             />
             <div className="section-shell p-4">
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">

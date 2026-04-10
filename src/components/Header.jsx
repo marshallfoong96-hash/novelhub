@@ -135,6 +135,16 @@ function Header() {
     }
   };
 
+  /** Mark logo = home: go to `/`, or scroll top / clear hash when already on home. */
+  const handleHomeMarkClick = (e) => {
+    if (location.pathname !== '/') return;
+    e.preventDefault();
+    if (location.hash || location.search) {
+      navigate({ pathname: '/', search: '', hash: '' }, { replace: true });
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   useEffect(() => {
     const keyword = searchQuery.trim();
     if (!keyword || !isSupabaseConfigured || !supabase) {
@@ -245,13 +255,19 @@ function Header() {
               >
                 <Menu className="w-5 h-5" />
               </button>
-              <Link to="/" className="flex shrink-0 group" title="Mi Truyen · mitruyen.me">
+              <Link
+                to="/"
+                onClick={handleHomeMarkClick}
+                className="flex shrink-0 cursor-pointer rounded-xl ring-offset-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent group"
+                title="Về trang chủ — Mi Truyen"
+                aria-label="Về trang chủ"
+              >
                 <BrandLogo
                   variant="mark"
                   className="h-9 w-9 rounded-xl ring-1 ring-border shadow-md transition-transform group-hover:scale-105"
                   loading="eager"
                 />
-                <span className="sr-only">Mi Truyen · mitruyen.me</span>
+                <span className="sr-only">Về trang chủ — Mi Truyen</span>
               </Link>
             </div>
 
@@ -569,8 +585,13 @@ function Header() {
           <div className="flex shrink-0 items-center justify-between gap-2 border-b border-border bg-background px-4 py-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
             <Link
               to="/"
-              onClick={() => setIsMenuOpen(false)}
-              className="flex min-w-0 items-center gap-2"
+              onClick={(e) => {
+                handleHomeMarkClick(e);
+                setIsMenuOpen(false);
+              }}
+              className="flex min-w-0 cursor-pointer items-center gap-2 rounded-lg ring-offset-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+              title="Về trang chủ — Mi Truyen"
+              aria-label="Về trang chủ"
             >
               <BrandLogo
                 variant="mark"
@@ -639,10 +660,10 @@ function Header() {
               )}
 
               <Link
-                to="/the-loai"
+                to="/#the-loai-grid"
                 onClick={() => setIsMenuOpen(false)}
                 className={`flex items-center gap-3 border-b border-border px-4 py-3.5 text-sm font-medium transition-colors ${
-                  location.pathname === '/the-loai'
+                  location.pathname === '/' && location.hash === '#the-loai-grid'
                     ? 'bg-accent/10 text-accent'
                     : 'text-foreground hover:bg-secondary/80'
                 }`}

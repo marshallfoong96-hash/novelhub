@@ -106,7 +106,7 @@ function Footer() {
       { label: 'Truyện Hot', to: '/hot' },
       { label: 'Mới cập nhật', to: '/truyen-moi' },
       { label: 'Truyện Full', to: '/truyen-full' },
-      { label: 'Thể loại', to: '/the-loai' },
+      { label: 'Thể loại', to: '/#the-loai-grid' },
     ],
     create: [
       { label: 'Truyện Hot', to: '/hot' },
