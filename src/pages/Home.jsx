@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { supabase, isSupabaseConfigured } from "../lib/supabase";
-import { fetchWithTtl } from "../lib/ttlCache";
+import { fetchWithTtl, clearTtlCache } from "../lib/ttlCache";
+import { HOME_DASHBOARD_CACHE_KEY } from "../lib/cacheKeys";
 import { fetchGenresCached, DEFAULT_DATA_TTL_MS } from "../lib/cachedQueries";
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { 
   Flame, 
   Clock, 
@@ -44,6 +45,17 @@ function HomeHeroBackdrop() {
       aria-hidden
     >
       <div className="absolute inset-0 bg-gradient-to-b from-accent/[0.07] via-background/92 to-background dark:from-accent/[0.11]" />
+      {/* Optional full cast art: place frontend/public/branding-cast.jpg */}
+      <div
+        className="absolute inset-x-0 top-0 h-full max-h-[680px] opacity-[0.1] dark:opacity-[0.12]"
+        style={{
+          backgroundImage: "url(/branding-cast.jpg)",
+          backgroundRepeat: "no-repeat",
+          backgroundPosition: "50% 18%",
+          backgroundSize: "min(1100px, 145%)",
+        }}
+      />
+      <div className="absolute inset-0 bg-gradient-to-b from-background/75 via-background/88 to-background dark:from-background/80 dark:via-background/92" />
       <div
         className="absolute -right-4 top-0 h-[min(65vw,400px)] w-[min(92vw,480px)] opacity-[0.085] dark:opacity-[0.11]"
         style={{
@@ -87,6 +99,7 @@ function getGenreTheme(slug) {
 }
 
 function Home() {
+  const location = useLocation();
   const HOME_TABS = ['hot', 'new', 'full'];
   const [featuredNovels, setFeaturedNovels] = useState([]);
   const [hotNovels, setHotNovels] = useState([]);
@@ -101,10 +114,15 @@ function Home() {
     const saved = localStorage.getItem('mi_home_tab');
     return saved && HOME_TABS.includes(saved) ? saved : 'hot';
   });
+  const [homeRefreshGeneration, setHomeRefreshGeneration] = useState(0);
   const tabSwitchTimerRef = useRef(null);
 
   useEffect(() => {
-    fetchData();
+    const onInvalidate = () => {
+      setHomeRefreshGeneration((n) => n + 1);
+    };
+    window.addEventListener("mitruyen:invalidate-home-cache", onInvalidate);
+    return () => window.removeEventListener("mitruyen:invalidate-home-cache", onInvalidate);
   }, []);
 
   useEffect(() => {
@@ -135,18 +153,19 @@ function Home() {
     }, 130);
   };
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async (options = {}) => {
+    const { silent = false } = options;
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
 
       if (!isSupabaseConfigured || !supabase) {
         console.error('[v0] Supabase not configured');
-        setLoading(false);
+        if (!silent) setLoading(false);
         return;
       }
 
       const bundle = await fetchWithTtl(
-        "mitruyen:home:dashboard:v1",
+        HOME_DASHBOARD_CACHE_KEY,
         DEFAULT_DATA_TTL_MS,
         async () => {
           const genresData = await fetchGenresCached(DEFAULT_DATA_TTL_MS);
@@ -206,9 +225,33 @@ function Home() {
     } catch (error) {
       console.error(error);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    if (location.pathname !== "/") return;
+    clearTtlCache(HOME_DASHBOARD_CACHE_KEY);
+    let silent = false;
+    try {
+      silent = sessionStorage.getItem("mi_home_loaded_once") === "1";
+      sessionStorage.setItem("mi_home_loaded_once", "1");
+    } catch {
+      /* ignore */
+    }
+    fetchData({ silent });
+  }, [location.pathname, location.key, homeRefreshGeneration, fetchData]);
+
+  /** bfcache: coming back from another site tab may restore stale in-memory TTL */
+  useEffect(() => {
+    const onPageShow = (e) => {
+      if (!e.persisted || location.pathname !== "/") return;
+      clearTtlCache(HOME_DASHBOARD_CACHE_KEY);
+      fetchData({ silent: true });
+    };
+    window.addEventListener("pageshow", onPageShow);
+    return () => window.removeEventListener("pageshow", onPageShow);
+  }, [location.pathname, fetchData]);
 
   if (loading) {
     return (
@@ -736,7 +779,7 @@ function OnigiriStickerStrip() {
           variant="sticker"
           stickerIndex={i}
           alt=""
-          className="h-8 w-8 sm:h-9 sm:w-9 rounded-xl ring-1 ring-border/70 bg-card shadow-sm opacity-85 hover:opacity-100 transition-opacity"
+          className="h-[2.6rem] w-[2.6rem] sm:h-[2.925rem] sm:w-[2.925rem] rounded-xl ring-1 ring-border/70 bg-card shadow-sm opacity-85 hover:opacity-100 transition-opacity"
           loading="lazy"
         />
       ))}

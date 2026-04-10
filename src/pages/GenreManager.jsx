@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
-import { FolderTree, Save, Search, CheckSquare, Square, Shuffle } from "lucide-react";
+import { FolderTree, Save, Search, CheckSquare, Square, Shuffle, Database } from "lucide-react";
 import { supabase, isSupabaseConfigured } from "../lib/supabase";
+import { clearTtlCache } from "../lib/ttlCache";
+import { HOME_DASHBOARD_CACHE_KEY, GENRES_CACHE_KEY } from "../lib/cacheKeys";
 
 const coverPool = [
   "https://images.unsplash.com/photo-1509248961158-e54f6934749c?auto=format&fit=crop&w=900&q=80",
@@ -223,6 +225,18 @@ function GenreManager() {
     setTimeout(() => setNotice(""), 1600);
   };
 
+  const handleClearHomeTtlCache = () => {
+    clearTtlCache(HOME_DASHBOARD_CACHE_KEY);
+    clearTtlCache(GENRES_CACHE_KEY);
+    try {
+      window.dispatchEvent(new CustomEvent("mitruyen:invalidate-home-cache"));
+    } catch {
+      /* ignore */
+    }
+    setNotice("Đã xóa cache trang chủ + thể loại. Về trang chủ để thấy view / dữ liệu mới.");
+    setTimeout(() => setNotice(""), 3200);
+  };
+
   const handleRandomizeGenreCover = async (genreId) => {
     const cover = getRandomCover();
     setSavingGenreId(genreId);
@@ -250,6 +264,22 @@ function GenreManager() {
           ? "Chon nhieu the loai cho tung truyen (giu Ctrl/Cmd de chon nhieu). The loai dau tien se dong bo vao genre_id."
           : "Che do hien tai dang la 1 the loai/1 truyen vi chua co bang novel_genres."}
       </p>
+
+      <div className="section-shell p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="flex items-center gap-2 text-sm text-foreground">
+          <Database className="w-4 h-4 text-accent shrink-0" />
+          <span>
+            Cache trang chủ (5 phút): xóa để lấy lượt xem / truyện mới ngay lập tức.
+          </span>
+        </div>
+        <button
+          type="button"
+          onClick={handleClearHomeTtlCache}
+          className="shrink-0 px-3 py-2 text-xs font-semibold rounded-lg bg-secondary border border-border hover:bg-secondary/80 text-foreground"
+        >
+          Xóa cache trang chủ
+        </button>
+      </div>
       {!supportsMultiGenre && (
         <div className="text-xs text-muted-foreground">
           SQL can chay: <code>create table if not exists public.novel_genres (novel_id bigint not null references public.novels(id) on delete cascade, genre_id bigint not null references public.genres(id) on delete cascade, created_at timestamp with time zone default now(), primary key (novel_id, genre_id));</code>

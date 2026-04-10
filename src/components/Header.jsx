@@ -234,8 +234,8 @@ function Header() {
         }`}
       >
         <div className="max-w-[1500px] mx-auto px-4 sm:px-6">
-          <div className="flex items-center justify-between h-14 sm:h-16 gap-2">
-            {/* Hamburger + logo mark (site name lives in the side menu to avoid truncation) */}
+          <div className="flex items-center h-14 sm:h-16 gap-2 min-w-0">
+            {/* Left: hamburger + mark */}
             <div className="flex items-center gap-2 shrink-0 min-w-0">
               <button
                 type="button"
@@ -245,14 +245,27 @@ function Header() {
               >
                 <Menu className="w-5 h-5" />
               </button>
-              <Link to="/" className="flex items-center gap-2 group shrink-0" title="Mi Truyen · mitruyen.me">
+              <Link to="/" className="flex shrink-0 group" title="Mi Truyen · mitruyen.me">
                 <BrandLogo
                   variant="mark"
-                  className="h-9 w-9 shrink-0 rounded-xl ring-1 ring-border shadow-md transition-transform group-hover:scale-105"
+                  className="h-9 w-9 rounded-xl ring-1 ring-border shadow-md transition-transform group-hover:scale-105"
                   loading="eager"
                 />
                 <span className="sr-only">Mi Truyen · mitruyen.me</span>
               </Link>
+            </div>
+
+            {/* Center: site title (fills the gap between logo and search) */}
+            <div className="min-w-0 flex-1 flex flex-col items-center justify-center px-1 sm:px-4 text-center leading-tight">
+              <Link
+                to="/"
+                className="truncate font-bold text-foreground text-sm sm:text-base md:text-lg tracking-tight hover:text-accent transition-colors max-w-[min(100%,14rem)] sm:max-w-md"
+              >
+                Mi Truyen
+              </Link>
+              <span className="hidden sm:block text-[10px] md:text-xs text-muted-foreground truncate max-w-[min(100%,16rem)]">
+                mitruyen.me
+              </span>
             </div>
 
             {/* Right Side Actions */}

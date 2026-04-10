@@ -29,7 +29,6 @@ export default function ChapterRead() {
   const [showTocDrawer, setShowTocDrawer] = useState(false);
   const isAuthenticated = true;
   const READER_PREFS_KEY = "mi_reader_prefs";
-
   const formatDate = (date) => {
     return new Date(date).toLocaleString();
   };
@@ -37,6 +36,76 @@ export default function ChapterRead() {
   useEffect(() => {
     fetchChapter();
   }, [id]);
+
+  /** +1 novel view once per chapter open (DB must allow RPC or UPDATE — see supabase/increment_novel_view_count.sql). */
+  useEffect(() => {
+    if (!novel?.id || !chapter?.id) return;
+
+    const storageKey = `mi_novel_view_${novel.id}_${chapter.id}`;
+    try {
+      const done = sessionStorage.getItem(storageKey);
+      if (done === "1" || done === "pending") return;
+      sessionStorage.setItem(storageKey, "pending");
+    } catch {
+      /* private mode: may double-count in dev Strict Mode */
+    }
+
+    (async () => {
+      const clearPending = () => {
+        try {
+          const v = sessionStorage.getItem(storageKey);
+          if (v === "pending") sessionStorage.removeItem(storageKey);
+        } catch {
+          /* ignore */
+        }
+      };
+
+      const { data: rpcData, error: rpcError } = await supabase.rpc("increment_novel_view_count", {
+        p_novel_id: novel.id
+      });
+
+      if (!rpcError && rpcData != null) {
+        const next = typeof rpcData === "number" ? rpcData : Number(rpcData);
+        if (!Number.isNaN(next)) {
+          setNovel((prev) => (prev ? { ...prev, view_count: next } : prev));
+          try {
+            sessionStorage.setItem(storageKey, "1");
+          } catch {
+            /* ignore */
+          }
+          return;
+        }
+      }
+
+      const { data: fresh } = await supabase
+        .from("novels")
+        .select("view_count")
+        .eq("id", novel.id)
+        .maybeSingle();
+      const base = fresh?.view_count ?? 0;
+      const next = base + 1;
+      const { error: upError } = await supabase
+        .from("novels")
+        .update({ view_count: next })
+        .eq("id", novel.id);
+
+      if (upError) {
+        console.warn(
+          "[MiTruyen] view_count không cập nhật được:",
+          upError.message,
+          "— chạy SQL supabase/increment_novel_view_count.sql trong Supabase (RLS)."
+        );
+        clearPending();
+        return;
+      }
+      setNovel((prev) => (prev ? { ...prev, view_count: next } : prev));
+      try {
+        sessionStorage.setItem(storageKey, "1");
+      } catch {
+        /* ignore */
+      }
+    })();
+  }, [novel?.id, chapter?.id]);
 
   useEffect(() => {
     setShowComments(false);
@@ -149,16 +218,6 @@ export default function ChapterRead() {
 
         if (!novelError) {
           setNovel(novelData);
-
-          if (novelData?.id) {
-            const currentViewCount = novelData.view_count || 0;
-            const nextViewCount = currentViewCount + 1;
-            await supabase
-              .from("novels")
-              .update({ view_count: nextViewCount })
-              .eq("id", novelData.id);
-            setNovel({ ...novelData, view_count: nextViewCount });
-          }
         }
 
         // Fetch all chapters for navigation
