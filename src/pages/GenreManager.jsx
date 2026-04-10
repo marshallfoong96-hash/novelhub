@@ -258,8 +258,8 @@ function GenreManager() {
       </div>
       <p className="text-sm text-muted-foreground">
         {supportsMultiGenre
-          ? "Chon nhieu the loai cho tung truyen (giu Ctrl/Cmd de chon nhieu). The loai dau tien se dong bo vao genre_id."
-          : "Che do hien tai dang la 1 the loai/1 truyen vi chua co bang novel_genres."}
+          ? "Chọn nhiều thể loại cho mỗi truyện — không giới hạn số lượng (giữ Ctrl/Cmd để chọn nhiều dòng). Thể loại đầu tiên đồng bộ vào cột genre_id (hiển thị chính)."
+          : "Chế độ hiện tại chỉ một thể loại / một truyện vì chưa có bảng novel_genres."}
       </p>
 
       <div className="section-shell p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
