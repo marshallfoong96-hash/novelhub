@@ -4,6 +4,7 @@ import { Eye, BookOpen, User, Clock, MessageSquare, ArrowRight, CheckCircle, Sen
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { formatNumber, formatDate } from '../utils/helpers';
+import AdSlot from '../components/AdSlot';
 
 function genreBrowsePath(g) {
   if (g.slug != null && String(g.slug).trim() !== '') {
@@ -141,7 +142,7 @@ function NovelDetail() {
     try {
       if (navigator.share) {
         await navigator.share({
-          title: novel?.title || 'MI Truyen',
+          title: novel?.title || 'Mi Truyen',
           text: `Doc truyện: ${novel?.title || ''}`,
           url: shareUrl
         });
@@ -469,6 +470,8 @@ function NovelDetail() {
               </div>
             </div>
           </div>
+
+          <AdSlot placement="detail" className="py-2" />
 
           {relatedNovels.length > 0 && (
             <section className="bg-card border border-border rounded-lg p-4">

@@ -254,10 +254,10 @@ function Header() {
       {/* Announcement Bar */}
       <div className="site-announcement-bar bg-gradient-to-r from-accent via-[#e11d48] to-[#f43f7d] text-white py-2 text-center overflow-hidden shadow-sm">
         <div className="animate-marquee whitespace-nowrap inline-block font-semibold tracking-wide text-[13px] sm:text-sm">
-          <span className="mx-10">Chào mừng đến MI Truyện — nền tảng đọc truyện trực tuyến</span>
+          <span className="mx-10">Chào mừng đến Mi Truyện (mitruyen.me) — nền tảng đọc truyện trực tuyến</span>
           <span className="mx-10">Cập nhật liên tục nhiều tác phẩm mới mỗi ngày</span>
           <span className="mx-10">Đăng ký để lưu truyện yêu thích và đồng bộ lịch sử đọc</span>
-          <span className="mx-10">Chào mừng đến MI Truyện — nền tảng đọc truyện trực tuyến</span>
+          <span className="mx-10">Chào mừng đến Mi Truyện (mitruyen.me) — nền tảng đọc truyện trực tuyến</span>
         </div>
       </div>
 
@@ -285,7 +285,7 @@ function Header() {
                   <Sparkles className="w-4 h-4 text-accent-foreground" />
                 </div>
                 <span className="text-base sm:text-lg font-bold text-foreground truncate">
-                  MI Truyen
+                  Mi Truyen
                 </span>
               </Link>
             </div>
@@ -727,7 +727,7 @@ function Header() {
               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-accent shadow-md">
                 <Sparkles className="h-4 w-4 text-accent-foreground" />
               </div>
-              <span className="truncate text-base font-bold text-foreground">MI Truyen</span>
+              <span className="truncate text-base font-bold text-foreground">Mi Truyen</span>
             </Link>
             <button
               type="button"

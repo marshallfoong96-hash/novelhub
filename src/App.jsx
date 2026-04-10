@@ -1,5 +1,7 @@
+import { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
+import { loadAdsenseScript } from './lib/adsConfig';
 import Header from './components/Header';
 import Home from './pages/Home';
 import Login from './pages/Login';
@@ -13,6 +15,10 @@ import { AboutPage, PrivacyPage, TermsPage, ContactPage } from './pages/InfoPage
 import { Sparkles, BookOpen, Users, PenTool, Mail, Github, Facebook } from 'lucide-react';
 
 function App() {
+  useEffect(() => {
+    loadAdsenseScript();
+  }, []);
+
   return (
     <AuthProvider>
       <Router>
@@ -103,7 +109,7 @@ function Footer() {
               <div className="w-8 h-8 bg-accent rounded-lg flex items-center justify-center">
                 <Sparkles className="w-4 h-4 text-accent-foreground" />
               </div>
-              <span className="text-lg font-bold text-foreground">MI Truyen</span>
+              <span className="text-lg font-bold text-foreground">Mi Truyen</span>
             </Link>
             <p className="text-muted-foreground text-xs max-w-xs mb-4 leading-relaxed">
               Nền tảng đọc truyện online hàng đầu với hàng nghìn tác phẩm hay. 
@@ -129,7 +135,7 @@ function Footer() {
                 <Github className="w-4 h-4" />
               </a>
               <a 
-                href="mailto:contact@mitruyen.com" 
+                href="mailto:contact@mitruyen.me" 
                 className="w-8 h-8 flex items-center justify-center bg-secondary text-muted-foreground hover:text-foreground hover:bg-accent/10 rounded-lg transition-colors"
                 aria-label="Email"
               >
@@ -202,7 +208,7 @@ function Footer() {
         {/* Bottom Bar */}
         <div className="py-4 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-3">
           <p className="text-[10px] text-muted-foreground">
-            © {currentYear} MI Truyen. All rights reserved.
+            © {currentYear} Mi Truyen · mitruyen.me
           </p>
           <div className="flex items-center gap-4 text-[10px] text-muted-foreground">
             <Link to="/chinh-sach" className="hover:text-foreground transition-colors">

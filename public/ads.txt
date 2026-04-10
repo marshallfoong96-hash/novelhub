@@ -1,0 +1,3 @@
+# mitruyen.me — Thay pub-0000000000000000 bằng mã nhà xuất bản trong AdSense → Tài khoản → Thông tin tài khoản
+# Dòng chữ ký f08c47fec0942fa0 là cố định cho google.com (theo hướng dẫn AdSense)
+google.com, pub-0000000000000000, DIRECT, f08c47fec0942fa0

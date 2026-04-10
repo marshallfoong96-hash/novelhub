@@ -52,7 +52,7 @@ function Login() {
             <div className="w-9 h-9 bg-accent rounded-lg flex items-center justify-center">
               <Sparkles className="w-5 h-5 text-accent-foreground" />
             </div>
-            <span className="text-xl font-bold text-foreground">MI Truyen</span>
+            <span className="text-xl font-bold text-foreground">Mi Truyen</span>
           </Link>
           <h1 className="text-xl font-bold text-foreground">Chào mừng trở lại</h1>
           <p className="text-muted-foreground text-sm mt-1">Đăng nhập để tiếp tục đọc truyện</p>
@@ -151,7 +151,7 @@ function Login() {
         {/* Demo Credentials */}
         <div className="mt-4 p-3 bg-secondary/50 border border-border rounded-lg">
           <p className="text-xs text-muted-foreground text-center">
-            <span className="font-medium">Demo:</span> admin@mitruyen.com / admin123
+            <span className="font-medium">Demo:</span> admin@mitruyen.me / admin123
           </p>
         </div>
       </div>

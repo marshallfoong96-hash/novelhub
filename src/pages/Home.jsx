@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 
 import NovelCard from '../components/NovelCard';
+import AdSlot from '../components/AdSlot';
 import { formatNumber, formatDate } from '../utils/helpers';
 
 function getGenreMeta(genre) {
@@ -275,6 +276,8 @@ function Home() {
             </div>
           </section>
 
+          <AdSlot placement="home" className="py-1" />
+
           {/* Scrolling Feed Section */}
           <section>
             <SectionHeader
@@ -421,7 +424,7 @@ function HeroSection({ featuredNovels }) {
     return (
       <section className="bg-card border border-border rounded-lg p-8 text-center">
         <BookOpen className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-        <h2 className="text-xl font-bold text-foreground mb-2">Chao mung den MI Truyen</h2>
+        <h2 className="text-xl font-bold text-foreground mb-2">Chào mừng đến Mi Truyen · mitruyen.me</h2>
         <p className="text-muted-foreground">Khám phá thế giới tiểu thuyết hấp dẫn</p>
       </section>
     );

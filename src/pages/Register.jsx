@@ -62,7 +62,7 @@ function Register() {
             <div className="w-9 h-9 bg-accent rounded-lg flex items-center justify-center">
               <Sparkles className="w-5 h-5 text-accent-foreground" />
             </div>
-            <span className="text-xl font-bold text-foreground">MI Truyen</span>
+            <span className="text-xl font-bold text-foreground">Mi Truyen</span>
           </Link>
           <h1 className="text-xl font-bold text-foreground">Tạo tài khoản mới</h1>
           <p className="text-muted-foreground text-sm mt-1">Bắt đầu hành trình đọc truyện của bạn</p>

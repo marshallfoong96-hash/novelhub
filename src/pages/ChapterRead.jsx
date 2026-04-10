@@ -7,6 +7,7 @@ import {
   Minus, Plus, ChevronLeft, ChevronRight,
   List, Send, ArrowRight, User, X
 } from "lucide-react";
+import AdSlot from "../components/AdSlot";
 
 export default function ChapterRead() {
   const { id } = useParams();
@@ -461,6 +462,8 @@ export default function ChapterRead() {
           </div>
         </div>
 
+        <AdSlot placement="chapterTop" className="mb-4" minHeightClass="min-h-[90px] sm:min-h-[100px]" />
+
         {/* Chapter Content */}
         <div className={`border rounded-lg p-5 sm:p-6 md:p-8 transition-colors ${themeClasses[readingTheme] || themeClasses.light}`}>
           <article 
@@ -476,6 +479,8 @@ export default function ChapterRead() {
             ))}
           </article>
         </div>
+
+        <AdSlot placement="chapterBottom" className="mb-4" minHeightClass="min-h-[90px] sm:min-h-[100px]" />
 
         {/* Navigation Bottom */}
         <div className="flex items-center justify-between gap-3 mb-4">
