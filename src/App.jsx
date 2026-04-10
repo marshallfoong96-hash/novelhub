@@ -137,18 +137,6 @@ function Footer() {
           {/* Brand */}
           <div className="col-span-2 md:col-span-4 lg:col-span-1 space-y-3">
             <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-              <Link
-                to="/"
-                className="inline-flex shrink-0 items-center self-center"
-              >
-                <BrandLogo
-                  variant="horizontal"
-                  className="h-10 w-auto max-w-[min(100%,240px)] rounded-lg ring-1 ring-border shadow-sm"
-                  loading="lazy"
-                />
-                <span className="sr-only">Mi Truyen · mitruyen.me</span>
-              </Link>
-              {/* 4×2 網格：上下欄位對齊 */}
               <div
                 className="grid grid-cols-4 gap-1.5 content-start"
                 aria-hidden

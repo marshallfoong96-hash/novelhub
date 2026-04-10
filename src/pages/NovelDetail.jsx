@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Eye, BookOpen, User, Clock, MessageSquare, ArrowRight, CheckCircle, Send, ChevronRight, Heart, Share2, Bookmark, Tag } from 'lucide-react';
+import { Eye, BookOpen, User, Clock, MessageSquare, ArrowRight, CheckCircle, Send, ChevronRight, Heart, Bookmark, Tag } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { formatNumber, formatDate } from '../utils/helpers';
@@ -107,53 +107,40 @@ function NovelDetail() {
     window.setTimeout(() => setActionNotice(''), 1500);
   };
 
-  const handleToggleBookmark = () => {
+  /** Một nút: đồng bộ bookmark + favorite; bật khi chưa đủ cả hai, tắt khi đã cả hai. */
+  const handleToggleSave = async () => {
     if (!novel?.id) return;
-    const current = JSON.parse(localStorage.getItem('mi_bookmarks') || '[]');
-    const rows = Array.isArray(current) ? current : [];
-    const next = rows.includes(novel.id) ? rows.filter((id) => id !== novel.id) : [...rows, novel.id];
-    localStorage.setItem('mi_bookmarks', JSON.stringify(next));
-    const nextState = next.includes(novel.id);
-    setIsBookmarked(nextState);
-    showNotice(nextState ? 'Da danh dau truyen.' : 'Da bo danh dau.');
-  };
+    const id = novel.id;
+    const bothOn = isBookmarked && isFavorited;
+    const nextOn = !bothOn;
 
-  const handleToggleFavorite = async () => {
-    if (!novel?.id) return;
-    const current = JSON.parse(localStorage.getItem('mi_favorites') || '[]');
-    const rows = Array.isArray(current) ? current : [];
-    const next = rows.includes(novel.id) ? rows.filter((id) => id !== novel.id) : [...rows, novel.id];
-    localStorage.setItem('mi_favorites', JSON.stringify(next));
-    const nextState = next.includes(novel.id);
-    setIsFavorited(nextState);
-    showNotice(nextState ? 'Da them vao yeu thich.' : 'Da bo yeu thich.');
+    let b = JSON.parse(localStorage.getItem('mi_bookmarks') || '[]');
+    let f = JSON.parse(localStorage.getItem('mi_favorites') || '[]');
+    if (!Array.isArray(b)) b = [];
+    if (!Array.isArray(f)) f = [];
 
-    const currentLikes = Number(novel.likes || 0);
-    const nextLikes = nextState ? currentLikes + 1 : Math.max(currentLikes - 1, 0);
-    setNovel((prev) => (prev ? { ...prev, likes: nextLikes } : prev));
-    await supabase
-      .from('novels')
-      .update({ likes: nextLikes })
-      .eq('id', novel.id);
-  };
-
-  const handleShare = async () => {
-    const shareUrl = window.location.href;
-    try {
-      if (navigator.share) {
-        await navigator.share({
-          title: novel?.title || 'Mi Truyen',
-          text: `Doc truyện: ${novel?.title || ''}`,
-          url: shareUrl
-        });
-        showNotice('Da chia se.');
-        return;
-      }
-      await navigator.clipboard.writeText(shareUrl);
-      showNotice('Da copy link truyen.');
-    } catch {
-      showNotice('Khong the chia se luc nay.');
+    if (nextOn) {
+      if (!b.includes(id)) b = [...b, id];
+      if (!f.includes(id)) f = [...f, id];
+    } else {
+      b = b.filter((x) => x !== id);
+      f = f.filter((x) => x !== id);
     }
+    localStorage.setItem('mi_bookmarks', JSON.stringify(b));
+    localStorage.setItem('mi_favorites', JSON.stringify(f));
+    setIsBookmarked(nextOn);
+    setIsFavorited(nextOn);
+
+    const hadFavorite = isFavorited;
+    const likeDelta = nextOn && !hadFavorite ? 1 : !nextOn && hadFavorite ? -1 : 0;
+    if (likeDelta !== 0) {
+      const currentLikes = Number(novel.likes || 0);
+      const nextLikes = Math.max(0, currentLikes + likeDelta);
+      setNovel((prev) => (prev ? { ...prev, likes: nextLikes } : prev));
+      await supabase.from('novels').update({ likes: nextLikes }).eq('id', id);
+    }
+
+    showNotice(nextOn ? 'Đã lưu truyện (đánh dấu & yêu thích).' : 'Đã bỏ lưu truyện.');
   };
 
   const fetchNovelData = async () => {
@@ -177,16 +164,20 @@ function NovelDetail() {
       setNovel(novelData);
 
       const novelId = parseInt(slug);
-      const genreIdSet = new Set();
-      if (novelData.genre_id != null && novelData.genre_id !== '') {
-        genreIdSet.add(Number(novelData.genre_id));
-      }
       const { data: ngAll, error: ngAllErr } = await supabase
         .from('novel_genres')
         .select('genre_id')
         .eq('novel_id', novelId);
+
+      /** Một cột `novels.genre_id` chỉ lưu được 1 id; nhiều thể loại nằm ở `novel_genres`. Gộp cả hai để hiển thị đủ. */
+      const genreIdSet = new Set();
+      if (novelData.genre_id != null && novelData.genre_id !== '') {
+        genreIdSet.add(Number(novelData.genre_id));
+      }
       if (!ngAllErr && ngAll) {
-        ngAll.forEach((row) => genreIdSet.add(Number(row.genre_id)));
+        ngAll.forEach((row) => {
+          if (row.genre_id != null && row.genre_id !== '') genreIdSet.add(Number(row.genre_id));
+        });
       }
       const mergedGenreIds = [...genreIdSet];
       if (mergedGenreIds.length === 0) {
@@ -200,7 +191,9 @@ function NovelDetail() {
           console.error('[v0] Error fetching genres for novel:', genresLookupErr);
           setNovelGenres([]);
         } else {
-          const sorted = (genreRows || []).slice().sort((a, b) => String(a.name).localeCompare(String(b.name), 'vi'));
+          const sorted = (genreRows || [])
+            .slice()
+            .sort((a, b) => String(a.name).localeCompare(String(b.name), 'vi'));
           setNovelGenres(sorted);
         }
       }
@@ -367,7 +360,13 @@ function NovelDetail() {
                   <div className="flex flex-wrap justify-center md:justify-start gap-2 mb-5">
                     <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-secondary/80 text-xs text-muted-foreground max-w-full">
                       <User className="w-3.5 h-3.5 shrink-0" />
-                      <span className="truncate">{novel.author || 'Đang cập nhật'}</span>
+                      <span className="truncate">
+                        {novel.author?.trim()
+                          ? novel.author
+                          : novel.status === 'completed'
+                            ? 'Chưa rõ'
+                            : 'Đang cập nhật'}
+                      </span>
                     </span>
                     {novel.status && (
                       <span
@@ -435,35 +434,16 @@ function NovelDetail() {
                     )}
                     <button
                       type="button"
-                      onClick={handleToggleBookmark}
+                      onClick={handleToggleSave}
                       className={`inline-flex items-center gap-2 px-4 py-2.5 border rounded-xl text-sm font-medium transition-colors ${
-                        isBookmarked
+                        isBookmarked || isFavorited
                           ? 'border-accent text-accent bg-accent/10 hover:bg-accent/15'
                           : 'border-border text-foreground hover:bg-secondary'
                       }`}
                     >
-                      <Bookmark className="w-4 h-4" />
-                      {isBookmarked ? 'Da danh dau' : 'Đánh dấu'}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleToggleFavorite}
-                      className={`inline-flex items-center gap-2 px-4 py-2.5 border rounded-xl text-sm font-medium transition-colors ${
-                        isFavorited
-                          ? 'border-accent text-accent bg-accent/10 hover:bg-accent/15'
-                          : 'border-border text-foreground hover:bg-secondary'
-                      }`}
-                    >
-                      <Heart className="w-4 h-4" />
-                      {isFavorited ? 'Da yeu thich' : 'Yêu thích'}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleShare}
-                      className="inline-flex items-center gap-2 px-3 py-2.5 border border-border text-muted-foreground rounded-xl text-sm hover:bg-secondary transition-colors"
-                      aria-label="Chia sẻ"
-                    >
-                      <Share2 className="w-4 h-4" />
+                      <Bookmark className="w-4 h-4 shrink-0" aria-hidden />
+                      <Heart className="w-4 h-4 shrink-0" aria-hidden />
+                      {isBookmarked && isFavorited ? 'Đã lưu' : 'Đánh dấu & yêu thích'}
                     </button>
                   </div>
                   {actionNotice && (

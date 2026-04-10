@@ -431,11 +431,21 @@ function Home() {
 
               {!isSwitchingTab && activeHomeTab === 'hot' && (
                 hotNovels.length > 0 ? (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-                    {hotNovels.slice(0, 12).map((novel) => (
-                      <NovelCard key={novel.id} novel={novel} showStatus variant="compact" />
-                    ))}
-                  </div>
+                  <>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                      {hotPagedSlice.map((novel) => (
+                        <NovelCard key={novel.id} novel={novel} showStatus variant="compact" />
+                      ))}
+                    </div>
+                    <Pagination
+                      currentPage={hotPageClamped}
+                      totalPages={hotTotalPages}
+                      onPageChange={(p) =>
+                        setHomeTabPage((prev) => ({ ...prev, hot: p }))
+                      }
+                      className="mt-4"
+                    />
+                  </>
                 ) : (
                   <EmptyTabNotice />
                 )
@@ -443,13 +453,23 @@ function Home() {
 
               {!isSwitchingTab && activeHomeTab === 'new' && (
                 newUpdates.length > 0 ? (
-                  <div className="section-shell overflow-hidden">
-                    <div className="divide-y divide-border">
-                      {newUpdates.slice(0, 20).map((novel) => (
-                        <UpdateRow key={novel.id} novel={novel} />
-                      ))}
+                  <>
+                    <div className="section-shell overflow-hidden">
+                      <div className="divide-y divide-border">
+                        {newPagedSlice.map((novel) => (
+                          <UpdateRow key={novel.id} novel={novel} />
+                        ))}
+                      </div>
                     </div>
-                  </div>
+                    <Pagination
+                      currentPage={newPageClamped}
+                      totalPages={newTotalPages}
+                      onPageChange={(p) =>
+                        setHomeTabPage((prev) => ({ ...prev, new: p }))
+                      }
+                      className="mt-4"
+                    />
+                  </>
                 ) : (
                   <EmptyTabNotice />
                 )
@@ -457,11 +477,21 @@ function Home() {
 
               {!isSwitchingTab && activeHomeTab === 'full' && (
                 completedNovels.length > 0 ? (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-                    {completedNovels.slice(0, 12).map((novel) => (
-                      <NovelCard key={novel.id} novel={novel} showStatus variant="compact" />
-                    ))}
-                  </div>
+                  <>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                      {fullPagedSlice.map((novel) => (
+                        <NovelCard key={novel.id} novel={novel} showStatus variant="compact" />
+                      ))}
+                    </div>
+                    <Pagination
+                      currentPage={fullPageClamped}
+                      totalPages={fullTotalPages}
+                      onPageChange={(p) =>
+                        setHomeTabPage((prev) => ({ ...prev, full: p }))
+                      }
+                      className="mt-4"
+                    />
+                  </>
                 ) : (
                   <EmptyTabNotice text="Chua co truyen full trong he thong." />
                 )

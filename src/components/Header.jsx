@@ -277,24 +277,19 @@ function Header() {
               <Link
                 to="/"
                 onClick={handleHomeMarkClick}
-                className="flex shrink-0 cursor-pointer rounded-xl ring-offset-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent group"
+                className="group inline-flex shrink-0 cursor-pointer items-stretch overflow-hidden rounded-xl ring-1 ring-border shadow-md ring-offset-2 ring-offset-background transition-transform hover:scale-[1.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                 title="Về trang chủ — Mi Truyen"
                 aria-label="Về trang chủ"
               >
                 <BrandLogo
                   variant="mark"
-                  className="h-9 w-9 rounded-xl ring-1 ring-border shadow-md transition-transform group-hover:scale-105"
+                  className="h-9 w-9 shrink-0 rounded-none"
                   loading="eager"
                 />
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center border-l border-border/60 bg-secondary/70 text-accent transition-colors group-hover:bg-accent/12 group-hover:text-accent">
+                  <Home className="h-[1.15rem] w-[1.15rem]" strokeWidth={2.35} aria-hidden />
+                </span>
                 <span className="sr-only">Về trang chủ — Mi Truyen</span>
-              </Link>
-              <Link
-                to="/"
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-border/90 bg-secondary/70 text-accent shadow-sm ring-1 ring-border/40 transition-colors hover:bg-accent/12 hover:border-accent/35 hover:text-accent"
-                aria-label="Trang chủ"
-                title="Trang chủ"
-              >
-                <Home className="h-[1.15rem] w-[1.15rem]" strokeWidth={2.35} />
               </Link>
             </div>
 
@@ -689,11 +684,7 @@ function Header() {
                       <Link to="/#the-loai-grid" onClick={() => setIsMenuOpen(false)} className="text-accent font-medium">
                         mục Thể loại trên trang chủ
                       </Link>{' '}
-                      sau khi đồng bộ dữ liệu, hoặc{' '}
-                      <Link to="/quan-ly-the-loai" onClick={() => setIsMenuOpen(false)} className="text-accent font-medium">
-                        quản lý thể loại
-                      </Link>
-                      .
+                      sau khi đồng bộ dữ liệu.
                     </p>
                   ) : (
                     navGenres.map((genre) => (
@@ -792,19 +783,6 @@ function Header() {
               >
                 <BookOpen className="h-5 w-5 shrink-0 opacity-80" />
                 Chính sách
-              </Link>
-
-              <Link
-                to="/quan-ly-the-loai"
-                onClick={() => setIsMenuOpen(false)}
-                className={`flex items-center gap-3 border-b border-border px-4 py-3.5 text-sm font-medium transition-colors ${
-                  location.pathname === '/quan-ly-the-loai'
-                    ? 'bg-accent/10 text-accent'
-                    : 'text-foreground hover:bg-secondary/80'
-                }`}
-              >
-                <List className="h-5 w-5 shrink-0 opacity-80" />
-                Quản lý thể loại
               </Link>
 
               <div className="flex gap-2 border-b border-border px-4 py-3">
