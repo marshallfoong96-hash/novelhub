@@ -12,7 +12,6 @@ import {
   ChevronRight, 
   BookOpen, 
   Zap,
-  PenTool,
   ArrowRight,
   Crown,
   CheckCircle,
@@ -31,10 +30,6 @@ function getGenreMeta(genre) {
     ...genre,
     image: genre.image || genre.cover_url || genre.banner_url || '/default-cover.jpg'
   };
-}
-
-function normalize(value) {
-  return String(value || '').toLowerCase().trim();
 }
 
 /** Soft onigiri-themed backdrop (readable text stays on content above z-index). */
@@ -79,23 +74,6 @@ function HomeHeroBackdrop() {
       <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-border/50 to-transparent" />
     </div>
   );
-}
-
-function getGenreTheme(slug) {
-  const key = normalize(slug);
-  const themes = {
-    "kinh-di": "from-[#1f2937] via-[#111827] to-[#0b1020]",
-    horror: "from-[#1f2937] via-[#111827] to-[#0b1020]",
-    romance: "from-[#db2777] via-[#be185d] to-[#7e22ce]",
-    "tinh-yeu": "from-[#db2777] via-[#be185d] to-[#7e22ce]",
-    fantasy: "from-[#2563eb] via-[#4f46e5] to-[#7c3aed]",
-    "xuyen-khong": "from-[#0ea5e9] via-[#6366f1] to-[#8b5cf6]",
-    isekai: "from-[#0ea5e9] via-[#6366f1] to-[#8b5cf6]",
-    "do-thi": "from-[#0891b2] via-[#0284c7] to-[#1d4ed8]",
-    "co-dai": "from-[#d97706] via-[#b45309] to-[#7c2d12]",
-    "trinh-tham": "from-[#374151] via-[#111827] to-[#020617]"
-  };
-  return themes[key] || "from-[#334155] via-[#1e293b] to-[#0f172a]";
 }
 
 function Home() {
@@ -439,55 +417,21 @@ function Home() {
               </div>
             </div>
           </section>
-
-          {/* Genre Grid */}
-          <section id="the-loai-grid">
-            <SectionHeader 
-              icon={<BookOpen className="w-5 h-5 text-accent" />}
-              title="Thể Loại"
-              subtitle="Khám phá theo sở thích"
-              link="/#the-loai-grid"
-            />
-            <div className="section-shell p-4">
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                {genres.map((genre) => (
-                  <Link
-                    key={genre.id}
-                    to={`/the-loai/${genre.slug}`}
-                    className="relative h-28 rounded-lg overflow-hidden border border-border group"
-                  >
-                    {genre.image && genre.image !== '/default-cover.jpg' ? (
-                      <img
-                        src={genre.image}
-                        alt={genre.name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                      />
-                    ) : (
-                      <div className={`w-full h-full bg-gradient-to-br ${getGenreTheme(genre.slug)}`} />
-                    )}
-                    <div className="absolute inset-0 bg-black/35 flex items-center justify-center">
-                      <span className="text-sm font-semibold text-white">{genre.name}</span>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            </div>
-          </section>
         </div>
 
-        {/* Sidebar */}
-        <aside className="lg:col-span-1 space-y-6">
+        {/* Sidebar: sticky — cuộn trang thì khối này bám viewport; chỉ khối danh sách bên trong cuộn khi con trỏ ở trong */}
+        <aside className="lg:col-span-1 lg:sticky lg:top-20 lg:z-[2] lg:self-start space-y-6">
           {/* Rankings */}
-          <div className="section-shell overflow-hidden sticky top-20">
-            <div className="p-3 border-b border-border bg-secondary/30">
+          <div className="section-shell flex max-h-[min(560px,calc(100vh-5.5rem))] flex-col overflow-hidden">
+            <div className="shrink-0 border-b border-border bg-secondary/30 p-3">
               <div className="flex items-center gap-2">
                 <Crown className="w-4 h-4 text-[hsl(var(--warning))]" />
-                <h3 className="font-semibold text-foreground text-sm">Bảng Xếp Hạng</h3>
+                <h3 className="text-sm font-semibold text-foreground">Bảng Xếp Hạng</h3>
               </div>
             </div>
-            
+
             {/* Tabs */}
-            <div className="flex border-b border-border">
+            <div className="flex shrink-0 border-b border-border">
               {[
                 { key: 'day', label: 'Ngày' },
                 { key: 'week', label: 'Tuần' },
@@ -495,10 +439,11 @@ function Home() {
               ].map((tab) => (
                 <button
                   key={tab.key}
+                  type="button"
                   onClick={() => setActiveRankTab(tab.key)}
                   className={`flex-1 py-2.5 text-xs font-medium transition-colors ${
                     activeRankTab === tab.key
-                      ? 'text-accent border-b-2 border-accent -mb-px bg-accent/5'
+                      ? 'border-b-2 border-accent bg-accent/5 -mb-px text-accent'
                       : 'text-muted-foreground hover:text-foreground'
                   }`}
                 >
@@ -507,8 +452,8 @@ function Home() {
               ))}
             </div>
 
-            {/* Ranking List */}
-            <div className="divide-y divide-border max-h-[400px] overflow-y-auto">
+            {/* Ranking List — chỉ vùng này nhận cuộn khi chuột ở trong; overscroll không đẩy scroll trang */}
+            <div className="min-h-0 flex-1 divide-y divide-border overflow-y-auto overscroll-contain [scrollbar-gutter:stable]">
               {rankings[activeRankTab]?.slice(0, 10).map((novel, index) => (
                 <Link
                   key={novel.id}
@@ -542,8 +487,48 @@ function Home() {
         </aside>
       </div>
 
-      {/* CTA Section */}
-      <CTASection />
+      {/* Thể loại — full width, thay cho CTA cũ; anchor #the-loai-grid giữ cho deep-link */}
+      <section
+        id="the-loai-grid"
+        className="rounded-xl border border-accent/25 bg-accent/[0.06] p-4 shadow-sm dark:border-accent/30 dark:bg-accent/10 md:p-6"
+      >
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="rounded-md bg-accent px-3 py-1.5 text-xs font-semibold text-accent-foreground shadow-sm">
+              Thể loại
+            </span>
+            <span className="text-xs text-muted-foreground md:text-sm">Khám phá theo sở thích</span>
+          </div>
+          <Link
+            to="/the-loai"
+            className="text-xs font-medium text-accent hover:underline md:text-sm"
+          >
+            Xem tất cả
+            <ChevronRight className="ml-0.5 inline-block h-3.5 w-3.5 align-text-bottom" />
+          </Link>
+        </div>
+        <div className="rounded-lg border border-border/80 bg-card/80 p-3 md:p-5 dark:bg-card/50">
+          {genres.length === 0 ? (
+            <p className="text-center text-sm text-muted-foreground">Đang tải thể loại…</p>
+          ) : (
+            <div className="grid grid-cols-2 gap-x-4 gap-y-2.5 text-sm md:grid-cols-3 lg:grid-cols-4 md:gap-x-8">
+              {genres.map((genre) => (
+                <Link
+                  key={genre.id}
+                  to={`/the-loai/${genre.slug}`}
+                  className="group flex items-start gap-2 text-foreground transition-colors hover:text-accent"
+                >
+                  <span className="mt-0.5 shrink-0 text-accent opacity-80" aria-hidden>
+                    ▸
+                  </span>
+                  <span className="break-words leading-snug group-hover:underline">{genre.name}</span>
+                </Link>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
+
       </div>
     </div>
   );
@@ -838,49 +823,6 @@ function OnigiriStickerStrip() {
         />
       ))}
     </div>
-  );
-}
-
-function CTASection() {
-  return (
-    <section className="relative overflow-hidden rounded-lg border border-border/40 bg-foreground text-background shadow-sm">
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_30%_0%,hsl(var(--accent))/0.35,transparent_55%)] opacity-90" />
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_100%_100%,rgba(124,58,237,0.15),transparent_50%)] opacity-70 dark:opacity-90" />
-      <div className="absolute inset-0 bg-gradient-to-br from-transparent via-transparent to-black/25 dark:to-black/40" />
-
-      <div className="relative px-6 py-12 text-center">
-        <div className="mx-auto mb-4 flex justify-center">
-          <BrandLogo
-            variant="main"
-            className="h-12 w-12 rounded-2xl ring-2 ring-background/25 shadow-lg"
-            loading="lazy"
-          />
-        </div>
-        <h2 className="text-2xl font-bold mb-3 text-balance">
-          Bắt đầu hành trình sáng tác của bạn
-        </h2>
-        <p className="text-background/70 max-w-xl mx-auto mb-6 text-sm">
-          Tham gia cùng hàng nghìn tác giả đang sử dụng công cụ AI để tạo nên những câu chuyện tuyệt vời. 
-          Đăng ký miễn phí ngay hôm nay.
-        </p>
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-          <Link
-            to="/register"
-            className="inline-flex items-center gap-2 px-5 py-2.5 bg-background text-foreground rounded-lg text-sm font-medium hover:bg-background/90 transition-colors"
-          >
-            Đăng ký miễn phí
-            <ArrowRight className="w-4 h-4" />
-          </Link>
-          <Link
-            to="/truyen-sang-tac"
-            className="inline-flex items-center gap-2 px-5 py-2.5 border border-background/30 text-background rounded-lg text-sm font-medium hover:bg-background/10 transition-colors"
-          >
-            <PenTool className="w-4 h-4" />
-            Tìm hiểu thêm
-          </Link>
-        </div>
-      </div>
-    </section>
   );
 }
 

@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { BookOpen, ArrowUp } from "lucide-react";
 import NovelCard from "../components/NovelCard";
+import Pagination from "../components/Pagination";
 import { supabase, isSupabaseConfigured } from "../lib/supabase";
 import { fetchGenresCached } from "../lib/cachedQueries";
 
@@ -55,14 +56,12 @@ function BrowseNovels({ mode = "all" }) {
   const [novels, setNovels] = useState([]);
   const [genres, setGenres] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [hasMore, setHasMore] = useState(true);
   const [page, setPage] = useState(0);
+  const [totalCount, setTotalCount] = useState(0);
   const [error, setError] = useState("");
   const [showBackTop, setShowBackTop] = useState(false);
   const [chapterRangePool, setChapterRangePool] = useState([]);
   const [chapterCounts, setChapterCounts] = useState({});
-  const sentinelRef = useRef(null);
   const PAGE_SIZE = 24;
   /** null = category list not loaded yet; [] = loaded, no novels */
   const [categorySortedIds, setCategorySortedIds] = useState(null);
@@ -118,17 +117,14 @@ function BrowseNovels({ mode = "all" }) {
   const fetchPage = useCallback(async (pageIndex, replace = false) => {
     if (mode === "category" && activeGenre?.id) {
       if (categorySortedIds == null) {
-        setLoadingMore(false);
         return;
       }
       const from = pageIndex * PAGE_SIZE;
       const sliceIds = categorySortedIds.slice(from, from + PAGE_SIZE);
       if (sliceIds.length === 0) {
         setNovels((prev) => (replace ? [] : prev));
-        setHasMore(false);
         setPage(pageIndex);
         setLoading(false);
-        setLoadingMore(false);
         return;
       }
       const { data, error: fetchError } = await supabase
@@ -138,16 +134,13 @@ function BrowseNovels({ mode = "all" }) {
       if (fetchError) {
         setError(fetchError.message || "Failed to load novels.");
         setLoading(false);
-        setLoadingMore(false);
         return;
       }
       const rows = data || [];
       const ordered = sliceIds.map((id) => rows.find((n) => n.id === id)).filter(Boolean);
       setNovels((prev) => (replace ? ordered : [...prev, ...ordered]));
-      setHasMore(from + sliceIds.length < categorySortedIds.length);
       setPage(pageIndex);
       setLoading(false);
-      setLoadingMore(false);
       return;
     }
 
@@ -156,10 +149,8 @@ function BrowseNovels({ mode = "all" }) {
       const to = from + PAGE_SIZE;
       const chunk = chapterRangePool.slice(from, to);
       setNovels((prev) => (replace ? chunk : [...prev, ...chunk]));
-      setHasMore(to < chapterRangePool.length);
       setPage(pageIndex);
       setLoading(false);
-      setLoadingMore(false);
       return;
     }
 
@@ -167,15 +158,12 @@ function BrowseNovels({ mode = "all" }) {
       setError("Supabase is not configured.");
       setNovels([]);
       setLoading(false);
-      setLoadingMore(false);
       return;
     }
 
     if (mode === "category" && slug && !activeGenre) {
       if (genres.length === 0) return;
       setLoading(false);
-      setLoadingMore(false);
-      setHasMore(false);
       setNovels([]);
       return;
     }
@@ -187,16 +175,13 @@ function BrowseNovels({ mode = "all" }) {
     if (fetchError) {
       setError(fetchError.message || "Failed to load novels.");
       setLoading(false);
-      setLoadingMore(false);
       return;
     }
 
     const newRows = data || [];
     setNovels((prev) => (replace ? newRows : [...prev, ...newRows]));
-    setHasMore(newRows.length === PAGE_SIZE);
     setPage(pageIndex);
     setLoading(false);
-    setLoadingMore(false);
   }, [buildQuery, mode, slug, activeGenre, chapterRangePool, categorySortedIds, genres.length]);
 
   useEffect(() => {
@@ -208,7 +193,6 @@ function BrowseNovels({ mode = "all" }) {
     if (!activeGenre?.id || !isSupabaseConfigured || !supabase) {
       setCategorySortedIds([]);
       setNovels([]);
-      setHasMore(false);
       setLoading(false);
       return;
     }
@@ -218,7 +202,6 @@ function BrowseNovels({ mode = "all" }) {
       setLoading(true);
       setError("");
       setNovels([]);
-      setHasMore(true);
       const merged = new Set();
       const { data: junctionRows, error: junctionError } = await supabase
         .from("novel_genres")
@@ -234,7 +217,6 @@ function BrowseNovels({ mode = "all" }) {
         if (!cancelled) {
           setCategorySortedIds([]);
           setNovels([]);
-          setHasMore(false);
           setLoading(false);
         }
         return;
@@ -271,8 +253,7 @@ function BrowseNovels({ mode = "all" }) {
     if (mode === "category") return;
     setError("");
     setLoading(true);
-    setLoadingMore(false);
-    setHasMore(true);
+    setPage(0);
     setNovels([]);
     if (mode !== "chapterRange") {
       fetchPage(0, true);
@@ -283,6 +264,7 @@ function BrowseNovels({ mode = "all" }) {
     if (mode !== "category") return;
     if (!activeGenre?.id) return;
     if (categorySortedIds == null) return;
+    setPage(0);
     fetchPage(0, true);
   }, [mode, activeGenre?.id, categorySortedIds, fetchPage]);
 
@@ -323,30 +305,46 @@ function BrowseNovels({ mode = "all" }) {
       const firstChunk = filtered.slice(0, PAGE_SIZE);
       setNovels(firstChunk);
       setPage(0);
-      setHasMore(filtered.length > PAGE_SIZE);
       setLoading(false);
-      setLoadingMore(false);
     };
 
     fetchChapterRangePool();
   }, [mode, range, matchChapterRange]);
 
   useEffect(() => {
-    if (!sentinelRef.current) return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const entry = entries[0];
-        if (!entry.isIntersecting) return;
-        if (loading || loadingMore || !hasMore) return;
-        setLoadingMore(true);
-        fetchPage(page + 1, false);
-      },
-      { rootMargin: "240px 0px" }
-    );
+    if (mode === "category" || mode === "chapterRange") return;
+    if (!isSupabaseConfigured || !supabase) {
+      setTotalCount(0);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      let q = supabase.from("novels").select("*", { count: "exact", head: true });
+      if (mode === "completed") q = q.eq("status", "completed");
+      if (mode === "ongoing") q = q.eq("status", "ongoing");
+      const { count, error } = await q;
+      if (cancelled) return;
+      if (error) setTotalCount(0);
+      else setTotalCount(count ?? 0);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [mode, slug, range]);
 
-    observer.observe(sentinelRef.current);
-    return () => observer.disconnect();
-  }, [loading, loadingMore, hasMore, page, fetchPage]);
+  useEffect(() => {
+    if (mode !== "category") return;
+    if (categorySortedIds == null) {
+      setTotalCount(0);
+      return;
+    }
+    setTotalCount(categorySortedIds.length);
+  }, [mode, categorySortedIds]);
+
+  useEffect(() => {
+    if (mode !== "chapterRange") return;
+    setTotalCount(chapterRangePool.length);
+  }, [mode, chapterRangePool]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -355,6 +353,20 @@ function BrowseNovels({ mode = "all" }) {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  const totalPages = useMemo(
+    () => Math.max(1, Math.ceil(Math.max(0, totalCount) / PAGE_SIZE)),
+    [totalCount]
+  );
+
+  const handlePageChange = useCallback(
+    (nextPage) => {
+      setLoading(true);
+      fetchPage(nextPage - 1, true);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    },
+    [fetchPage]
+  );
 
   const titleMap = {
     all: "Tat ca truyen",
@@ -468,20 +480,18 @@ function BrowseNovels({ mode = "all" }) {
             ))}
           </div>
 
-          <div ref={sentinelRef} className="h-8" />
-          {loadingMore && (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 pt-2">
-              {Array.from({ length: 6 }).map((_, idx) => (
-                <div key={`more-${idx}`} className="animate-pulse">
-                  <div className="aspect-[2/3] rounded bg-secondary mb-2" />
-                  <div className="h-3 rounded bg-secondary mb-1" />
-                  <div className="h-3 w-2/3 rounded bg-secondary" />
-                </div>
-              ))}
+          {totalPages > 1 && (
+            <div className="flex flex-col items-center gap-2 border-t border-border pt-5">
+              <Pagination
+                currentPage={page + 1}
+                totalPages={totalPages}
+                onPageChange={handlePageChange}
+              />
+              <p className="text-[11px] text-muted-foreground">
+                Trang {page + 1} / {totalPages}
+                {totalCount > 0 ? ` · ${totalCount} truyện` : ""}
+              </p>
             </div>
-          )}
-          {!hasMore && novels.length > 0 && (
-            <div className="text-center text-xs text-muted-foreground">Da hien thi tat ca truyen.</div>
           )}
         </>
       )}
