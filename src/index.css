@@ -227,3 +227,14 @@ html {
 .section-shell {
   @apply bg-card border border-border rounded-xl shadow-sm;
 }
+
+@keyframes reader-toc-up {
+  from {
+    transform: translateY(100%);
+    opacity: 0.98;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Eye, BookOpen, User, Clock, MessageSquare, ArrowRight, CheckCircle, Send, ChevronRight, Heart, Share2, Bookmark } from 'lucide-react';
 import { supabase } from '../lib/supabase';
@@ -18,7 +18,12 @@ function NovelDetail() {
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [isFavorited, setIsFavorited] = useState(false);
   const [actionNotice, setActionNotice] = useState('');
+  const [showDescExpanded, setShowDescExpanded] = useState(false);
+  const [descNeedsToggle, setDescNeedsToggle] = useState(false);
+  const descBlockRef = useRef(null);
   const { isAuthenticated, user } = useAuth();
+
+  const descriptionText = novel?.description != null ? String(novel.description).trim() : '';
 
   useEffect(() => {
     fetchNovelData();
@@ -52,6 +57,41 @@ function NovelDetail() {
       setContinueChapterId(null);
     }
   }, [novel?.id]);
+
+  useEffect(() => {
+    setShowDescExpanded(false);
+  }, [slug]);
+
+  useLayoutEffect(() => {
+    if (!descriptionText || showDescExpanded) {
+      setDescNeedsToggle(false);
+      return;
+    }
+    const measure = () => {
+      const el = descBlockRef.current;
+      if (!el) return;
+      setDescNeedsToggle(el.scrollHeight > el.clientHeight + 2);
+    };
+    const id = window.requestAnimationFrame(() => {
+      measure();
+      window.requestAnimationFrame(measure);
+    });
+    let ro;
+    if (typeof ResizeObserver !== 'undefined') {
+      ro = new ResizeObserver(measure);
+      if (descBlockRef.current) ro.observe(descBlockRef.current);
+    }
+    window.addEventListener('resize', measure);
+    return () => {
+      window.cancelAnimationFrame(id);
+      ro?.disconnect();
+      window.removeEventListener('resize', measure);
+    };
+  }, [descriptionText, showDescExpanded, slug]);
+
+  const showDescToggle =
+    !!descriptionText &&
+    (showDescExpanded || descNeedsToggle || descriptionText.length > 120);
 
   const showNotice = (text) => {
     setActionNotice(text);
@@ -243,20 +283,19 @@ function NovelDetail() {
       </nav>
 
       <div className="max-w-5xl mx-auto space-y-6">
-          {/* Novel Header */}
-          <div className="bg-card border border-border rounded-lg overflow-hidden">
-            <div className="p-4 sm:p-6">
-              <div className="flex flex-col sm:flex-row gap-6">
-                {/* Cover */}
-                <div className="w-40 flex-shrink-0 mx-auto sm:mx-0">
-                  <div className="relative aspect-[2/3] rounded-lg overflow-hidden bg-secondary">
+          {/* Novel intro — clear hierarchy like listing sites */}
+          <div className="rounded-2xl border border-border bg-gradient-to-b from-accent/[0.08] via-card to-card shadow-sm overflow-hidden">
+            <div className="p-5 sm:p-8">
+              <div className="flex flex-col md:flex-row gap-8 md:gap-10">
+                <div className="w-44 sm:w-48 md:w-52 flex-shrink-0 mx-auto md:mx-0">
+                  <div className="relative aspect-[2/3] rounded-xl overflow-hidden bg-secondary shadow-md ring-1 ring-border/60">
                     <img
                       src={novel.cover_url || '/default-cover.jpg'}
                       alt={novel.title}
                       className="w-full h-full object-contain"
                     />
                     {novel.status === 'completed' && (
-                      <span className="absolute top-2 right-2 px-2 py-0.5 bg-[hsl(var(--success))] text-white text-[10px] font-bold rounded flex items-center gap-1">
+                      <span className="absolute top-2 right-2 px-2 py-0.5 bg-[hsl(var(--success))] text-white text-[10px] font-bold rounded flex items-center gap-1 shadow-sm">
                         <CheckCircle className="w-3 h-3" />
                         FULL
                       </span>
@@ -264,50 +303,68 @@ function NovelDetail() {
                   </div>
                 </div>
 
-                {/* Info */}
-                <div className="flex-1 min-w-0 text-center sm:text-left">
-                  <h1 className="text-xl sm:text-2xl font-bold text-foreground mb-2 text-balance">{novel.title}</h1>
-                  <p className="text-sm text-muted-foreground mb-4 line-clamp-3">{novel.description}</p>
+                <div className="flex-1 min-w-0 text-center md:text-left flex flex-col">
+                  <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight text-balance leading-tight mb-2">
+                    {novel.title}
+                  </h1>
 
-                  {/* Quick Stats */}
-                  <div className="flex flex-wrap justify-center sm:justify-start gap-4 mb-4 text-sm">
-                    <div className="flex items-center gap-1.5 text-muted-foreground">
-                      <User className="w-4 h-4" />
-                      <span>{novel.author || 'Đang cập nhật'}</span>
+                  {descriptionText ? (
+                    <div className="mb-4">
+                      <div
+                        ref={descBlockRef}
+                        className={`text-[15px] sm:text-base leading-relaxed text-muted-foreground whitespace-pre-wrap ${
+                          !showDescExpanded ? 'line-clamp-5' : ''
+                        }`}
+                      >
+                        {descriptionText}
+                      </div>
+                      {showDescToggle && (
+                        <button
+                          type="button"
+                          onClick={() => setShowDescExpanded((v) => !v)}
+                          className="mt-2 text-sm font-semibold text-accent hover:underline underline-offset-2"
+                        >
+                          {showDescExpanded ? 'Thu gọn' : 'Xem thêm'}
+                        </button>
+                      )}
                     </div>
-                    <div className="flex items-center gap-1.5 text-muted-foreground">
-                      <BookOpen className="w-4 h-4" />
-                      <span>{chapters.length} chương</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 text-muted-foreground">
-                      <Eye className="w-4 h-4" />
-                      <span>{formatNumber(novel.view_count || 0)}</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 text-muted-foreground">
-                      <Clock className="w-4 h-4" />
-                      <span>{formatDate(novel.created_at)}</span>
-                    </div>
-                  </div>
+                  ) : null}
 
-                  {/* Status Badge */}
-                  {novel.status && (
-                    <div className="flex flex-wrap justify-center sm:justify-start gap-1.5 mb-4">
-                      <span className={`px-2 py-1 text-xs font-medium rounded ${
-                        novel.status === 'completed' 
-                          ? 'bg-[hsl(var(--success))]/10 text-[hsl(var(--success))]' 
-                          : 'bg-accent/10 text-accent'
-                      }`}>
+                  <div className="flex flex-wrap justify-center md:justify-start gap-2 mb-5">
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-secondary/80 text-xs text-muted-foreground max-w-full">
+                      <User className="w-3.5 h-3.5 shrink-0" />
+                      <span className="truncate">{novel.author || 'Đang cập nhật'}</span>
+                    </span>
+                    {novel.status && (
+                      <span
+                        className={`inline-flex items-center px-2.5 py-1 text-xs font-medium rounded-full ${
+                          novel.status === 'completed'
+                            ? 'bg-[hsl(var(--success))]/15 text-[hsl(var(--success))]'
+                            : 'bg-accent/12 text-accent'
+                        }`}
+                      >
                         {novel.status === 'completed' ? 'Hoàn thành' : 'Đang tiến hành'}
                       </span>
-                    </div>
-                  )}
+                    )}
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-secondary/80 text-xs text-muted-foreground">
+                      <BookOpen className="w-3.5 h-3.5" />
+                      {chapters.length} chương
+                    </span>
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-secondary/80 text-xs text-muted-foreground">
+                      <Eye className="w-3.5 h-3.5" />
+                      {formatNumber(novel.view_count || 0)} lượt xem
+                    </span>
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-secondary/80 text-xs text-muted-foreground">
+                      <Clock className="w-3.5 h-3.5" />
+                      {formatDate(novel.created_at)}
+                    </span>
+                  </div>
 
-                  {/* Action Buttons */}
-                  <div className="flex flex-wrap justify-center sm:justify-start gap-2">
+                  <div className="flex flex-wrap justify-center md:justify-start gap-2 mt-auto pt-1">
                     {continueChapterId && (
                       <Link
                         to={`/chapter/${continueChapterId}`}
-                        className="inline-flex items-center gap-2 px-4 py-2 bg-[hsl(var(--success))] text-white rounded-lg text-sm font-medium hover:opacity-90 transition-colors"
+                        className="inline-flex items-center gap-2 px-4 py-2.5 bg-[hsl(var(--success))] text-white rounded-xl text-sm font-semibold hover:opacity-90 transition-colors shadow-sm"
                       >
                         <BookOpen className="w-4 h-4" />
                         Tiếp tục đọc
@@ -316,7 +373,7 @@ function NovelDetail() {
                     {chapters.length > 0 && (
                       <Link
                         to={`/chapter/${chapters[0].id}`}
-                        className="inline-flex items-center gap-2 px-4 py-2 bg-accent text-accent-foreground rounded-lg text-sm font-medium hover:bg-accent/90 transition-colors"
+                        className="inline-flex items-center gap-2 px-4 py-2.5 bg-accent text-accent-foreground rounded-xl text-sm font-semibold hover:bg-accent/90 transition-colors shadow-sm"
                       >
                         <BookOpen className="w-4 h-4" />
                         Đọc từ đầu
@@ -325,7 +382,7 @@ function NovelDetail() {
                     <button
                       type="button"
                       onClick={handleToggleBookmark}
-                      className={`inline-flex items-center gap-2 px-4 py-2 border rounded-lg text-sm font-medium transition-colors ${
+                      className={`inline-flex items-center gap-2 px-4 py-2.5 border rounded-xl text-sm font-medium transition-colors ${
                         isBookmarked
                           ? 'border-accent text-accent bg-accent/10 hover:bg-accent/15'
                           : 'border-border text-foreground hover:bg-secondary'
@@ -337,7 +394,7 @@ function NovelDetail() {
                     <button
                       type="button"
                       onClick={handleToggleFavorite}
-                      className={`inline-flex items-center gap-2 px-4 py-2 border rounded-lg text-sm font-medium transition-colors ${
+                      className={`inline-flex items-center gap-2 px-4 py-2.5 border rounded-xl text-sm font-medium transition-colors ${
                         isFavorited
                           ? 'border-accent text-accent bg-accent/10 hover:bg-accent/15'
                           : 'border-border text-foreground hover:bg-secondary'
@@ -349,13 +406,14 @@ function NovelDetail() {
                     <button
                       type="button"
                       onClick={handleShare}
-                      className="inline-flex items-center gap-2 px-3 py-2 border border-border text-muted-foreground rounded-lg text-sm hover:bg-secondary transition-colors"
+                      className="inline-flex items-center gap-2 px-3 py-2.5 border border-border text-muted-foreground rounded-xl text-sm hover:bg-secondary transition-colors"
+                      aria-label="Chia sẻ"
                     >
                       <Share2 className="w-4 h-4" />
                     </button>
                   </div>
                   {actionNotice && (
-                    <p className="mt-2 text-xs text-accent">{actionNotice}</p>
+                    <p className="mt-3 text-xs text-accent">{actionNotice}</p>
                   )}
                 </div>
               </div>

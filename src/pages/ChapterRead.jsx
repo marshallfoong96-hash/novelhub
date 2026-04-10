@@ -5,7 +5,7 @@ import { supabase } from "../lib/supabase";
 import {
   Home, BookOpen, Settings, MessageSquare,
   Minus, Plus, ChevronLeft, ChevronRight,
-  List, Send, ArrowRight, User
+  List, Send, ArrowRight, User, X
 } from "lucide-react";
 
 export default function ChapterRead() {
@@ -25,6 +25,7 @@ export default function ChapterRead() {
   const [contentWidth, setContentWidth] = useState(760);
   const [readingTheme, setReadingTheme] = useState("light");
   const [readingProgress, setReadingProgress] = useState(0);
+  const [showTocDrawer, setShowTocDrawer] = useState(false);
   const isAuthenticated = true;
   const READER_PREFS_KEY = "mi_reader_prefs";
 
@@ -39,6 +40,23 @@ export default function ChapterRead() {
   useEffect(() => {
     setShowComments(false);
   }, [id]);
+
+  useEffect(() => {
+    if (!showTocDrawer) return;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [showTocDrawer]);
+
+  useEffect(() => {
+    if (!showTocDrawer || !chapter?.id) return;
+    const t = window.setTimeout(() => {
+      const el = document.getElementById(`toc-row-${chapter.id}`);
+      el?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    }, 100);
+    return () => window.clearTimeout(t);
+  }, [showTocDrawer, chapter?.id]);
 
   useEffect(() => {
     if (!chapter || !novel) return;
@@ -365,7 +383,7 @@ export default function ChapterRead() {
           {prevChapter ? (
             <Link
               to={`/chapter/${prevChapter.id}`}
-              className="flex items-center gap-1.5 px-3 py-2 bg-card border border-border rounded-lg text-sm text-muted-foreground hover:text-foreground hover:border-foreground/20 transition-all"
+              className="flex items-center gap-1.5 px-3 py-2 bg-accent text-accent-foreground rounded-lg text-sm font-medium hover:bg-accent/90 transition-colors"
             >
               <ChevronLeft className="w-4 h-4" />
               <span className="hidden sm:inline">Trước</span>
@@ -375,13 +393,14 @@ export default function ChapterRead() {
           )}
 
           {novel && (
-            <Link
-              to={`/truyen/${novel.id}`}
-              className="flex items-center gap-1.5 px-3 py-2 bg-card border border-border rounded-lg text-sm text-muted-foreground hover:text-foreground hover:border-foreground/20 transition-all"
+            <button
+              type="button"
+              onClick={() => setShowTocDrawer(true)}
+              className="flex items-center gap-1.5 px-3 py-2 bg-card border border-border rounded-lg text-sm text-foreground hover:bg-secondary transition-colors"
             >
               <List className="w-4 h-4" />
               <span className="hidden sm:inline">Mục lục</span>
-            </Link>
+            </button>
           )}
 
           {nextChapter ? (
@@ -410,7 +429,7 @@ export default function ChapterRead() {
             {prevChapter ? (
               <Link
                 to={`/chapter/${prevChapter.id}`}
-                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs bg-accent text-accent-foreground font-medium hover:bg-accent/90 transition-colors"
               >
                 <ChevronLeft className="w-3.5 h-3.5" />
                 Trước
@@ -419,13 +438,14 @@ export default function ChapterRead() {
               <span className="px-3 py-2 text-xs text-muted-foreground/50">Trước</span>
             )}
             {novel && (
-              <Link
-                to={`/truyen/${novel.id}`}
-                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+              <button
+                type="button"
+                onClick={() => setShowTocDrawer(true)}
+                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs text-foreground border border-border bg-card hover:bg-secondary transition-colors"
               >
                 <List className="w-3.5 h-3.5" />
                 Mục lục
-              </Link>
+              </button>
             )}
             {nextChapter ? (
               <Link
@@ -462,7 +482,7 @@ export default function ChapterRead() {
           {prevChapter ? (
             <Link
               to={`/chapter/${prevChapter.id}`}
-              className="flex items-center gap-1.5 px-3 py-2 bg-card border border-border rounded-lg text-sm text-muted-foreground hover:text-foreground hover:border-foreground/20 transition-all"
+              className="flex items-center gap-1.5 px-3 py-2 bg-accent text-accent-foreground rounded-lg text-sm font-medium hover:bg-accent/90 transition-colors"
             >
               <ChevronLeft className="w-4 h-4" />
               <span className="hidden sm:inline">Chương trước</span>
@@ -472,13 +492,14 @@ export default function ChapterRead() {
           )}
 
           {novel && (
-            <Link
-              to={`/truyen/${novel.id}`}
-              className="flex items-center gap-1.5 px-3 py-2 bg-card border border-border rounded-lg text-sm text-muted-foreground hover:text-foreground hover:border-foreground/20 transition-all"
+            <button
+              type="button"
+              onClick={() => setShowTocDrawer(true)}
+              className="flex items-center gap-1.5 px-3 py-2 bg-card border border-border rounded-lg text-sm text-foreground hover:bg-secondary transition-colors"
             >
               <List className="w-4 h-4" />
               <span className="hidden sm:inline">Mục lục</span>
-            </Link>
+            </button>
           )}
 
           {nextChapter ? (
@@ -573,6 +594,64 @@ export default function ChapterRead() {
           </div>
         )}
       </div>
+
+      {showTocDrawer && novel && (
+        <div className="fixed inset-0 z-[60] flex flex-col justify-end" role="dialog" aria-modal="true" aria-labelledby="toc-drawer-title">
+          <button
+            type="button"
+            className="absolute inset-0 bg-black/50"
+            onClick={() => setShowTocDrawer(false)}
+            aria-label="Đóng mục lục"
+          />
+          <div className="relative mx-auto w-full max-w-lg rounded-t-2xl border border-border bg-card shadow-2xl flex flex-col max-h-[min(75vh,560px)] motion-safe:animate-[reader-toc-up_0.22s_ease-out]">
+            <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-border shrink-0">
+              <div className="min-w-0">
+                <h2 id="toc-drawer-title" className="text-sm font-semibold text-foreground truncate">
+                  Mục lục
+                </h2>
+                <p className="text-xs text-muted-foreground truncate">{novel.title}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowTocDrawer(false)}
+                className="p-2 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
+                aria-label="Đóng"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="overflow-y-auto overscroll-contain px-2 py-2 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+              {allChapters.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-6">Chưa có danh sách chương.</p>
+              ) : (
+                <ul className="space-y-0.5">
+                  {allChapters.map((ch) => {
+                    const isCurrent = chapter && ch.id === chapter.id;
+                    return (
+                      <li key={ch.id} id={`toc-row-${ch.id}`}>
+                        <Link
+                          to={`/chapter/${ch.id}`}
+                          onClick={() => setShowTocDrawer(false)}
+                          className={`block rounded-lg px-3 py-2.5 text-sm border transition-colors ${
+                            isCurrent
+                              ? "bg-accent/15 text-accent border-accent/40 font-medium"
+                              : "border-transparent text-foreground hover:bg-secondary"
+                          }`}
+                        >
+                          <span className="line-clamp-2">
+                            Chương {ch.chapter_number}
+                            {ch.title ? `: ${ch.title}` : ""}
+                          </span>
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
