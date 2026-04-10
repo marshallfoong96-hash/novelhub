@@ -1,11 +1,10 @@
 /**
- * Google AdSense (display) — set in .env / hosting env:
- * VITE_ADSENSE_CLIENT=ca-pub-xxxxxxxxxxxxxxxx
- * VITE_ADSENSE_SLOT_DEFAULT=1234567890
- * Optional per placement: VITE_ADSENSE_SLOT_HOME, _DETAIL, _CHAPTER_TOP, _CHAPTER_BOTTOM
+ * Google AdSense (display) — script is in index.html; client id here must match.
+ * Override with VITE_ADSENSE_CLIENT / VITE_ADSENSE_SLOT_* in .env if needed.
  */
 
-export const ADSENSE_CLIENT = import.meta.env.VITE_ADSENSE_CLIENT?.trim() || "";
+export const ADSENSE_CLIENT =
+  import.meta.env.VITE_ADSENSE_CLIENT?.trim() || "ca-pub-6602775323692698";
 
 const SLOT_KEYS = {
   home: "VITE_ADSENSE_SLOT_HOME",
@@ -27,10 +26,14 @@ export function isAdsConfigured(placement) {
 
 let scriptRequested = false;
 
-/** Loads adsbygoogle.js once (call from App mount). */
+/** Loads adsbygoogle.js once (call from App mount). Skips if already in index.html. */
 export function loadAdsenseScript() {
-  if (!ADSENSE_CLIENT || scriptRequested) return;
   if (typeof document === "undefined") return;
+  if (document.querySelector('script[src*="pagead2.googlesyndication.com"]')) {
+    scriptRequested = true;
+    return;
+  }
+  if (!ADSENSE_CLIENT || scriptRequested) return;
   if (document.querySelector("script[data-mi-adsense]")) {
     scriptRequested = true;
     return;
