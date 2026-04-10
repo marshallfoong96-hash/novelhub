@@ -21,7 +21,13 @@ export async function fetchAllGenresRows(select = "*") {
       .order("name", { ascending: true })
       .range(from, from + GENRES_PAGE_SIZE - 1);
     if (error) {
-      console.error("[cachedQueries] genres", error);
+      console.error(
+        "[cachedQueries] genres — if Table Editor has rows but the site shows none, run supabase/enable_genres_public_read.sql (GRANT + SELECT policy for anon).",
+        error.message || error,
+        error.code || "",
+        error.details || "",
+        error.hint || ""
+      );
       return [];
     }
     const chunk = data || [];
