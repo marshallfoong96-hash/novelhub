@@ -651,11 +651,13 @@ function Header() {
                     <p className="px-4 py-3 pl-11 text-xs text-muted-foreground">Đang tải thể loại…</p>
                   ) : navGenres.length === 0 ? (
                     <p className="px-4 py-3 pl-11 text-xs leading-relaxed text-muted-foreground">
-                      Chưa có dòng nào trong bảng <span className="font-mono">genres</span> hoặc chưa đọc được (kiểm tra
-                      RLS: cho phép <span className="font-mono">SELECT</span> với vai trò <span className="font-mono">anon</span>
-                      ). Chạy seed SQL hoặc mở{' '}
+                      Chưa có thể loại để hiển thị. Vào{' '}
+                      <Link to="/#the-loai-grid" onClick={() => setIsMenuOpen(false)} className="text-accent font-medium">
+                        mục Thể loại trên trang chủ
+                      </Link>{' '}
+                      sau khi đồng bộ dữ liệu, hoặc{' '}
                       <Link to="/quan-ly-the-loai" onClick={() => setIsMenuOpen(false)} className="text-accent font-medium">
-                        Quản lý thể loại
+                        quản lý thể loại
                       </Link>
                       .
                     </p>
