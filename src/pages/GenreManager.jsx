@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { FolderTree, Save, Search, CheckSquare, Square, Shuffle, Database } from "lucide-react";
 import { supabase, isSupabaseConfigured } from "../lib/supabase";
 import { clearTtlCache } from "../lib/ttlCache";
+import { fetchAllGenresRows } from "../lib/cachedQueries";
 import { HOME_DASHBOARD_CACHE_KEY, GENRES_CACHE_KEY } from "../lib/cacheKeys";
 
 const coverPool = [
@@ -43,9 +44,8 @@ function GenreManager() {
         return;
       }
 
-      const [novelsRes, genresRes, relationsRes] = await Promise.all([
+      const [novelsRes, relationsRes] = await Promise.all([
         supabase.from("novels").select("id,title,author,genre_id,created_at").order("created_at", { ascending: false }),
-        supabase.from("genres").select("id,name,slug,image").order("name", { ascending: true }),
         supabase.from("novel_genres").select("novel_id,genre_id")
       ]);
 
@@ -54,11 +54,8 @@ function GenreManager() {
         setLoading(false);
         return;
       }
-      if (genresRes.error) {
-        setError(genresRes.error.message || "Failed to load genres.");
-        setLoading(false);
-        return;
-      }
+
+      const genresList = await fetchAllGenresRows("id,name,slug,image");
 
       const nextMap = {};
       if (relationsRes.error) {
@@ -72,7 +69,7 @@ function GenreManager() {
       }
 
       setNovels(novelsRes.data || []);
-      setGenres(genresRes.data || []);
+      setGenres(genresList);
       setNovelGenreMap(nextMap);
       setLoading(false);
     };

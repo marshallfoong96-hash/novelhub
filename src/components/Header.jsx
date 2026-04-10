@@ -42,18 +42,6 @@ function Header() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const monkeyDGenres = [
-    'Bách hợp', 'BE', 'Bình luận cốt truyện', 'Chữa lành', 'Cổ đại', 'Cung đấu', 'Cưới trước yêu sau',
-    'Cường thủ hào đoạt', 'Dị năng', 'Dưỡng thê', 'Đam mỹ', 'Điền văn', 'Đô thị', 'Đoản văn', 'Độc tâm',
-    'Gả thay', 'Giả đấu', 'Gia đình', 'Gương vỡ không lành', 'Gương vỡ lại lành', 'Hài hước', 'Hành động',
-    'Hào môn thế gia', 'HE', 'Hệ thống', 'Hiện đại', 'Hoán đổi thân xác', 'Học bá', 'Học đường',
-    'Hư cấu kỳ ảo', 'Huyền huyền', 'Không CP', 'Kinh dị', 'Linh dị', 'Mạt thế', 'Mỹ thực', 'Ngôn tình',
-    'Ngọt', 'Ngược', 'Ngược luyến tận tâm', 'Ngược nam', 'Ngược nữ', 'Nhân thú', 'Niên đại', 'Nữ cường',
-    'OE', 'Phép thuật', 'Phiêu lưu', 'Phương Đông', 'Phương Tây', 'Quy tắc', 'Sảng văn', 'SE', 'Showbiz',
-    'Sủng', 'Thanh xuân vườn trường', 'Thức tỉnh nhân vật', 'Tiên hiệp', 'Tiểu thuyết', 'Tổng tài',
-    'Trả thù', 'Trinh thám', 'Trọng sinh', 'Truy thê', 'Truyền cảm hứng', 'Vả mặt', 'Vô tri', 'Xuyên không', 'Xuyên sách'
-  ];
-
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 10);
@@ -207,21 +195,16 @@ function Header() {
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-+|-+$/g, '');
 
-  const mergedGenres = useMemo(() => {
-    const dbGenres = (genres || []).map((genre) => ({
-      id: genre.id || genre.slug,
-      name: genre.name,
-      slug: genre.slug || toSlug(genre.name)
-    }));
-
-    const map = new Map(dbGenres.map((genre) => [genre.slug, genre]));
-    monkeyDGenres.forEach((name) => {
-      const slug = toSlug(name);
-      if (!map.has(slug)) {
-        map.set(slug, { id: `static-${slug}`, name, slug });
-      }
-    });
-    return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
+  /** Chỉ dùng bảng `genres` trên Supabase — không gộp danh sách tĩnh để tránh lệch với DB. */
+  const navGenres = useMemo(() => {
+    return (genres || [])
+      .map((g) => ({
+        id: g.id,
+        name: g.name,
+        slug: (g.slug || toSlug(g.name) || "").trim(),
+      }))
+      .filter((g) => g.slug)
+      .sort((a, b) => a.name.localeCompare(b.name, "vi"));
   }, [genres]);
 
   return (
@@ -643,19 +626,26 @@ function Header() {
                   }`}
                 />
               </button>
-              {mobileGenresOpen && mergedGenres.length > 0 && (
+              {mobileGenresOpen && (
                 <div className="max-h-[min(45vh,22rem)] overflow-y-auto overscroll-contain border-b border-border bg-secondary/15">
-                  {mergedGenres.map((genre) => (
-                    <Link
-                      key={genre.id}
-                      to={`/the-loai/${genre.slug}`}
-                      onClick={() => setIsMenuOpen(false)}
-                      className="flex items-center gap-2 border-b border-border/60 px-4 py-2.5 pl-11 text-sm text-foreground last:border-b-0 hover:bg-secondary/50"
-                    >
-                      <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                      <span className="min-w-0 leading-snug">{genre.name}</span>
-                    </Link>
-                  ))}
+                  {navGenres.length === 0 ? (
+                    <p className="px-4 py-3 pl-11 text-xs leading-relaxed text-muted-foreground">
+                      Chưa có thể loại trong Supabase (bảng <span className="font-mono">genres</span>). Thêm tại
+                      Quản lý thể loại hoặc SQL.
+                    </p>
+                  ) : (
+                    navGenres.map((genre) => (
+                      <Link
+                        key={genre.id}
+                        to={`/the-loai/${genre.slug}`}
+                        onClick={() => setIsMenuOpen(false)}
+                        className="flex items-center gap-2 border-b border-border/60 px-4 py-2.5 pl-11 text-sm text-foreground last:border-b-0 hover:bg-secondary/50"
+                      >
+                        <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                        <span className="min-w-0 leading-snug">{genre.name}</span>
+                      </Link>
+                    ))
+                  )}
                 </div>
               )}
 

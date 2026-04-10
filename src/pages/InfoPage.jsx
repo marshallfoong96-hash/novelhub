@@ -9,7 +9,7 @@ function InfoPage({ title, description, children }) {
         <div className="space-y-4 text-sm text-muted-foreground leading-7">{children}</div>
         <div className="mt-8">
           <Link to="/" className="text-accent hover:underline text-sm font-medium">
-            Ve trang chu
+            Về trang chủ
           </Link>
         </div>
       </div>
@@ -20,11 +20,15 @@ function InfoPage({ title, description, children }) {
 export function AboutPage() {
   return (
     <InfoPage
-      title="Gioi thieu Mi Truyen"
-      description="mitruyen.me la nen tang doc truyen online mien phi, cap nhat nhanh va toi uu cho di dong."
+      title="Giới thiệu Mi Truyện"
+      description="mitruyen.me là nền tảng đọc truyện online miễn phí, cập nhật nhanh và tối ưu cho di động."
     >
-      <p>Chung toi tap trung vao trai nghiem doc de chiu, toc do nhanh, va de dang tim truyen theo the loai.</p>
-      <p>Neu ban la tac gia hoac don vi quang cao, vui long lien he: contact@mitruyen.me.</p>
+      <p>
+        Chúng tôi tập trung vào trải nghiệm đọc dễ chịu, tốc độ nhanh, và dễ dàng tìm truyện theo thể loại.
+      </p>
+      <p>
+        Nếu bạn là tác giả hoặc đơn vị quảng cáo, vui lòng liên hệ: contact@mitruyen.me.
+      </p>
     </InfoPage>
   );
 }
@@ -32,31 +36,36 @@ export function AboutPage() {
 export function PrivacyPage() {
   return (
     <InfoPage
-      title="Chinh sach bao mat"
-      description="Trang nay duoc su dung cho muc dich minh bach du lieu va yeu cau tich hop quang cao."
+      title="Chính sách bảo mật"
+      description="Trang này được sử dụng cho mục đích minh bạch dữ liệu và yêu cầu tích hợp quảng cáo."
     >
-      <p>Mi Truyen (mitruyen.me) co the su dung cookie de luu dang nhap, cai dat doc, va phan tich luot su dung co ban.</p>
-      <p>Google Ads co the su dung cookie rieng de hien thi quang cao phu hop voi nguoi dung.</p>
-      <p>Ban co the tat cookie trong trinh duyet, tuy nhien mot so tinh nang co the bi anh huong.</p>
+      <p>
+        Mi Truyện (mitruyen.me) có thể sử dụng cookie để lưu đăng nhập, cài đặt đọc và phân tích lượt sử dụng cơ bản.
+      </p>
+      <p>Google Ads có thể sử dụng cookie riêng để hiển thị quảng cáo phù hợp với người dùng.</p>
+      <p>Bạn có thể tắt cookie trong trình duyệt; tuy nhiên một số tính năng có thể bị ảnh hưởng.</p>
     </InfoPage>
   );
 }
 
 export function TermsPage() {
   return (
-    <InfoPage title="Dieu khoan su dung" description="Khi su dung mitruyen.me, ban dong y voi cac dieu khoan duoi day.">
-      <p>Khong sao chep, phat tan noi dung vi pham ban quyen.</p>
-      <p>Khong su dung dich vu vao muc dich gay hai, spam hoac tan cong he thong.</p>
-      <p>Chung toi co quyen dieu chinh noi dung va tinh nang de dam bao chat luong dich vu.</p>
+    <InfoPage
+      title="Điều khoản sử dụng"
+      description="Khi sử dụng mitruyen.me, bạn đồng ý với các điều khoản dưới đây."
+    >
+      <p>Không sao chép, phát tán nội dung vi phạm bản quyền.</p>
+      <p>Không sử dụng dịch vụ vào mục đích gây hại, spam hoặc tấn công hệ thống.</p>
+      <p>Chúng tôi có quyền điều chỉnh nội dung và tính năng để đảm bảo chất lượng dịch vụ.</p>
     </InfoPage>
   );
 }
 
 export function ContactPage() {
   return (
-    <InfoPage title="Lien he" description="Can ho tro tai khoan, noi dung, hoac quang cao?">
+    <InfoPage title="Liên hệ" description="Cần hỗ trợ tài khoản, nội dung hoặc quảng cáo?">
       <p>Email: contact@mitruyen.me</p>
-      <p>Thoi gian phan hoi du kien: 24-72 gio lam viec.</p>
+      <p>Thời gian phản hồi dự kiến: 24–72 giờ làm việc.</p>
     </InfoPage>
   );
 }

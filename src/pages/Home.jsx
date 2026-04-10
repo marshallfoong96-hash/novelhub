@@ -9,7 +9,8 @@ import {
   Clock, 
   TrendingUp, 
   Eye, 
-  ChevronRight, 
+  ChevronRight,
+  ChevronLeft,
   BookOpen, 
   Zap,
   ArrowRight,
@@ -508,8 +509,15 @@ function Home() {
           </Link>
         </div>
         <div className="rounded-lg border border-border/80 bg-card/80 p-3 md:p-5 dark:bg-card/50">
-          {genres.length === 0 ? (
+          {loading && genres.length === 0 ? (
             <p className="text-center text-sm text-muted-foreground">Đang tải thể loại…</p>
+          ) : genres.length === 0 ? (
+            <p className="text-center text-sm text-muted-foreground">
+              Chưa có dữ liệu thể loại từ máy chủ.{" "}
+              <Link to="/the-loai" className="font-medium text-accent hover:underline">
+                Xem tất cả truyện
+              </Link>
+            </p>
           ) : (
             <div className="grid grid-cols-2 gap-x-4 gap-y-2.5 text-sm md:grid-cols-3 lg:grid-cols-4 md:gap-x-8">
               {genres.map((genre) => (
@@ -535,21 +543,56 @@ function Home() {
 }
 
 function HeroSection({ featuredNovels }) {
+  const slides = featuredNovels.slice(0, 5);
+  const slideCount = slides.length;
   const [currentSlide, setCurrentSlide] = useState(0);
   const [showFullDescription, setShowFullDescription] = useState(false);
+  const swipeStartX = useRef(null);
 
   useEffect(() => {
-    if (featuredNovels.length === 0) return;
+    if (slideCount === 0) return;
+    setCurrentSlide((i) => (i >= slideCount ? 0 : i));
+  }, [slideCount]);
+
+  useEffect(() => {
+    if (slideCount === 0) return;
     setShowFullDescription(false);
     const timer = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % Math.min(featuredNovels.length, 5));
+      setCurrentSlide((prev) => (prev + 1) % slideCount);
     }, 5000);
     return () => clearInterval(timer);
-  }, [featuredNovels.length]);
+  }, [slideCount]);
 
   useEffect(() => {
     setShowFullDescription(false);
   }, [currentSlide]);
+
+  const goNext = useCallback(() => {
+    setCurrentSlide((prev) => (prev + 1) % slideCount);
+  }, [slideCount]);
+
+  const goPrev = useCallback(() => {
+    setCurrentSlide((prev) => (prev - 1 + slideCount) % slideCount);
+  }, [slideCount]);
+
+  const onSwipeStart = useCallback((clientX) => {
+    swipeStartX.current = clientX;
+  }, []);
+
+  const onSwipeEnd = useCallback(
+    (clientX) => {
+      if (swipeStartX.current == null || slideCount < 2) {
+        swipeStartX.current = null;
+        return;
+      }
+      const dx = clientX - swipeStartX.current;
+      swipeStartX.current = null;
+      const threshold = 40;
+      if (dx > threshold) goPrev();
+      else if (dx < -threshold) goNext();
+    },
+    [slideCount, goNext, goPrev]
+  );
 
   if (featuredNovels.length === 0) {
     return (
@@ -565,18 +608,60 @@ function HeroSection({ featuredNovels }) {
     );
   }
 
-  const featured = featuredNovels[currentSlide];
+  const featured = slides[currentSlide];
 
   return (
-    <section className="relative section-shell overflow-hidden">
-      <div className="pointer-events-none absolute right-3 top-3 z-10 hidden md:block opacity-75 dark:opacity-90">
+    <section className="section-shell relative overflow-hidden">
+      <div className="pointer-events-none absolute right-3 top-3 z-10 hidden opacity-75 dark:opacity-90 md:block">
         <BrandLogo
           variant="mascot"
-          className="h-11 w-11 rounded-2xl ring-1 ring-border/70 shadow-sm bg-card/85 backdrop-blur-[2px]"
+          className="h-11 w-11 rounded-2xl bg-card/85 shadow-sm ring-1 ring-border/70 backdrop-blur-[2px]"
           loading="lazy"
         />
       </div>
-      <div className="grid md:grid-cols-2 gap-0">
+
+      <div
+        className="relative"
+        style={{ touchAction: "pan-y pinch-zoom" }}
+        onPointerDown={(e) => {
+          if (e.pointerType === "mouse" && e.button !== 0) return;
+          onSwipeStart(e.clientX);
+        }}
+        onPointerUp={(e) => onSwipeEnd(e.clientX)}
+        onPointerCancel={() => {
+          swipeStartX.current = null;
+        }}
+      >
+        {slideCount > 1 && (
+          <>
+            <button
+              type="button"
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={(e) => {
+                e.stopPropagation();
+                goPrev();
+              }}
+              className="absolute left-1 top-1/2 z-20 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-border/80 bg-background/90 text-foreground shadow-md backdrop-blur-sm transition-colors hover:bg-secondary md:left-2"
+              aria-label="Trước"
+            >
+              <ChevronLeft className="h-6 w-6" />
+            </button>
+            <button
+              type="button"
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={(e) => {
+                e.stopPropagation();
+                goNext();
+              }}
+              className="absolute right-1 top-1/2 z-20 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-border/80 bg-background/90 text-foreground shadow-md backdrop-blur-sm transition-colors hover:bg-secondary md:right-2"
+              aria-label="Sau"
+            >
+              <ChevronRight className="h-6 w-6" />
+            </button>
+          </>
+        )}
+
+      <div className="grid gap-0 md:grid-cols-2">
         {/* Featured Novel Image */}
         <div className="relative aspect-[4/3] md:aspect-auto md:h-[320px]">
         <img
@@ -659,22 +744,29 @@ function HeroSection({ featuredNovels }) {
       </div>
 
       {/* Slide Indicators */}
-      {featuredNovels.length > 1 && (
-        <div className="absolute bottom-3 left-3 md:left-auto md:right-3 flex gap-1.5">
-          {featuredNovels.slice(0, 5).map((_, index) => (
+      {slideCount > 1 && (
+        <div className="absolute bottom-3 left-1/2 z-10 flex -translate-x-1/2 gap-1.5 md:left-auto md:right-3 md:translate-x-0">
+          {slides.map((_, index) => (
             <button
               key={index}
-              onClick={() => setCurrentSlide(index)}
-              className={`w-2 h-2 rounded-full transition-all ${
-                index === currentSlide 
-                  ? 'bg-accent w-6' 
-                  : 'bg-muted-foreground/30 hover:bg-muted-foreground/50'
+              type="button"
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={(e) => {
+                e.stopPropagation();
+                setCurrentSlide(index);
+              }}
+              className={`h-2 rounded-full transition-all ${
+                index === currentSlide
+                  ? "w-6 bg-accent"
+                  : "w-2 bg-muted-foreground/30 hover:bg-muted-foreground/50"
               }`}
               aria-label={`Slide ${index + 1}`}
+              aria-current={index === currentSlide ? "true" : undefined}
             />
           ))}
         </div>
       )}
+      </div>
     </section>
   );
 }
