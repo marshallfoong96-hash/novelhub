@@ -13,6 +13,7 @@ const NovelDetail = lazy(() => import('./pages/NovelDetail'));
 const ChapterRead = lazy(() => import('./pages/ChapterRead'));
 const BrowseNovels = lazy(() => import('./pages/BrowseNovels'));
 const ReadingHistory = lazy(() => import('./pages/ReadingHistory'));
+const BookmarkedNovels = lazy(() => import('./pages/BookmarkedNovels'));
 const GenreManager = lazy(() => import('./pages/GenreManager'));
 const AboutPage = lazy(() =>
   import('./pages/InfoPage').then((m) => ({ default: m.AboutPage }))
@@ -59,6 +60,7 @@ function App() {
                 <Route path="/truyen-dang-ra" element={<BrowseNovels mode="ongoing" />} />
                 <Route path="/so-chuong/:range" element={<BrowseNovels mode="chapterRange" />} />
                 <Route path="/lich-su" element={<ReadingHistory />} />
+                <Route path="/danh-dau" element={<BookmarkedNovels />} />
                 <Route path="/quan-ly-the-loai" element={<GenreManager />} />
                 <Route path="/the-loai" element={<BrowseNovels mode="all" />} />
                 <Route path="/the-loai/:slug" element={<BrowseNovels mode="category" />} />
@@ -107,6 +109,8 @@ function Footer() {
       { label: 'Mới cập nhật', to: '/truyen-moi' },
       { label: 'Truyện Full', to: '/truyen-full' },
       { label: 'Thể loại', to: '/#the-loai-grid' },
+      { label: 'Đánh dấu', to: '/danh-dau' },
+      { label: 'Lịch sử đọc', to: '/lich-su' },
     ],
     create: [
       { label: 'Truyện Hot', to: '/hot' },
@@ -132,8 +136,11 @@ function Footer() {
         <div className="py-8 grid grid-cols-2 md:grid-cols-4 gap-8">
           {/* Brand */}
           <div className="col-span-2 md:col-span-4 lg:col-span-1 space-y-3">
-            <div className="flex flex-wrap items-end gap-2">
-              <Link to="/" className="inline-flex shrink-0">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+              <Link
+                to="/"
+                className="inline-flex shrink-0 items-center self-center"
+              >
                 <BrandLogo
                   variant="horizontal"
                   className="h-10 w-auto max-w-[min(100%,240px)] rounded-lg ring-1 ring-border shadow-sm"
@@ -141,10 +148,14 @@ function Footer() {
                 />
                 <span className="sr-only">Mi Truyen · mitruyen.me</span>
               </Link>
-              <div className="flex flex-wrap items-center gap-1.5" aria-hidden>
-                {[0, 1, 2, 3].map((i) => (
+              {/* 4×2 網格：上下欄位對齊 */}
+              <div
+                className="grid grid-cols-4 gap-1.5 content-start"
+                aria-hidden
+              >
+                {Array.from({ length: 8 }, (_, i) => (
                   <BrandLogo
-                    key={`footer-onigiri-top-${i}`}
+                    key={`footer-onigiri-${i}`}
                     variant="sticker"
                     stickerIndex={i}
                     alt=""
@@ -184,18 +195,6 @@ function Footer() {
               >
                 <Mail className="w-4 h-4" />
               </a>
-            </div>
-            <div className="flex flex-wrap items-center gap-1.5 pt-0.5" aria-hidden>
-              {[4, 5, 6, 7].map((i) => (
-                <BrandLogo
-                  key={`footer-onigiri-bottom-${i}`}
-                  variant="sticker"
-                  stickerIndex={i}
-                  alt=""
-                  className={onigiriTileClass}
-                  loading="lazy"
-                />
-              ))}
             </div>
           </div>
 

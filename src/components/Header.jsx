@@ -1,6 +1,23 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Search, User, Menu, X, BookOpen, Moon, Sun, Flame, Clock, CheckCircle, History, ChevronDown, List, ChevronRight } from 'lucide-react';
+import {
+  Search,
+  User,
+  Menu,
+  X,
+  BookOpen,
+  Moon,
+  Sun,
+  Flame,
+  Clock,
+  CheckCircle,
+  History,
+  ChevronDown,
+  List,
+  ChevronRight,
+  Home,
+  Bookmark,
+} from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { fetchAllGenresRows, fetchGenresCached, primeGenresCache } from '../lib/cachedQueries';
@@ -271,6 +288,14 @@ function Header() {
                 />
                 <span className="sr-only">Về trang chủ — Mi Truyen</span>
               </Link>
+              <Link
+                to="/"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-border/90 bg-secondary/70 text-accent shadow-sm ring-1 ring-border/40 transition-colors hover:bg-accent/12 hover:border-accent/35 hover:text-accent"
+                aria-label="Trang chủ"
+                title="Trang chủ"
+              >
+                <Home className="h-[1.15rem] w-[1.15rem]" strokeWidth={2.35} />
+              </Link>
             </div>
 
             {/* Center: site title (fills the gap between logo and search) */}
@@ -383,11 +408,20 @@ function Header() {
                 {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
               </button>
 
-              {/* History Button */}
+              {/* Bookmarks + history */}
+              <Link
+                to="/danh-dau"
+                className="hidden sm:flex p-2 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-lg transition-colors"
+                aria-label="Truyện đánh dấu"
+                title="Truyện đánh dấu"
+              >
+                <Bookmark className="w-5 h-5" />
+              </Link>
               <Link
                 to="/lich-su"
                 className="hidden sm:flex p-2 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-lg transition-colors"
-                aria-label="Reading history"
+                aria-label="Lịch sử đọc"
+                title="Lịch sử đọc"
               >
                 <History className="w-5 h-5" />
               </Link>
@@ -720,6 +754,19 @@ function Header() {
                   ))}
                 </div>
               </div>
+
+              <Link
+                to="/danh-dau"
+                onClick={() => setIsMenuOpen(false)}
+                className={`flex items-center gap-3 border-b border-border px-4 py-3.5 text-sm font-medium transition-colors ${
+                  location.pathname === '/danh-dau'
+                    ? 'bg-accent/10 text-accent'
+                    : 'text-foreground hover:bg-secondary/80'
+                }`}
+              >
+                <Bookmark className="h-5 w-5 shrink-0 opacity-80" />
+                Truyện đánh dấu
+              </Link>
 
               <Link
                 to="/lich-su"

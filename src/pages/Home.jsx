@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { supabase, isSupabaseConfigured } from "../lib/supabase";
 import { fetchWithTtl, clearTtlCache } from "../lib/ttlCache";
 import { HOME_DASHBOARD_CACHE_KEY } from "../lib/cacheKeys";
@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 
 import NovelCard from '../components/NovelCard';
+import Pagination from '../components/Pagination';
 import AdSlot from '../components/AdSlot';
 import BrandLogo from '../components/BrandLogo';
 import { branding } from '../lib/branding';
@@ -77,6 +78,9 @@ function HomeHeroBackdrop() {
   );
 }
 
+/** Items per page for each home tab (grid vs list). */
+const HOME_TAB_PAGE_SIZE = { hot: 12, new: 20, full: 12 };
+
 function Home() {
   const location = useLocation();
   const HOME_TABS = ['hot', 'new', 'full'];
@@ -95,6 +99,8 @@ function Home() {
   });
   const [homeRefreshGeneration, setHomeRefreshGeneration] = useState(0);
   const [loadError, setLoadError] = useState("");
+  /** 1-based page index per tab (Hot / Mới / Full). */
+  const [homeTabPage, setHomeTabPage] = useState({ hot: 1, new: 1, full: 1 });
   const tabSwitchTimerRef = useRef(null);
   /** Ignore stale responses when route remounts or a new fetch supersedes the previous one. */
   const homeFetchIdRef = useRef(0);
@@ -204,11 +210,14 @@ function Home() {
 
       const { novelsWithFirstChapter, genresData } = bundle;
 
-      setHotNovels(novelsWithFirstChapter);
+      const byViews = [...novelsWithFirstChapter].sort(
+        (a, b) => (Number(b.view_count) || 0) - (Number(a.view_count) || 0)
+      );
+      setHotNovels(byViews);
       setNewUpdates(novelsWithFirstChapter);
       setGenres((genresData || []).map(getGenreMeta));
       setCompletedNovels(
-        novelsWithFirstChapter.filter((novel) => String(novel.status || "").toLowerCase() === "completed").slice(0, 6)
+        novelsWithFirstChapter.filter((novel) => String(novel.status || "").toLowerCase() === "completed")
       );
 
       setRankings({
@@ -218,6 +227,7 @@ function Home() {
       });
 
       setFeaturedNovels(novelsWithFirstChapter.slice(0, 5));
+      setHomeTabPage({ hot: 1, new: 1, full: 1 });
     } catch (error) {
       if (myId !== homeFetchIdRef.current) return;
       console.error(error);
@@ -270,6 +280,65 @@ function Home() {
     }, 80);
     return () => clearTimeout(t);
   }, [location.pathname, location.hash, loading]);
+
+  /** Keep page index within range when list length changes. */
+  useEffect(() => {
+    setHomeTabPage((prev) => {
+      const ht = Math.max(1, Math.ceil(hotNovels.length / HOME_TAB_PAGE_SIZE.hot));
+      const nt = Math.max(1, Math.ceil(newUpdates.length / HOME_TAB_PAGE_SIZE.new));
+      const ft = Math.max(1, Math.ceil(completedNovels.length / HOME_TAB_PAGE_SIZE.full));
+      const next = { ...prev };
+      let changed = false;
+      if (prev.hot > ht) {
+        next.hot = ht;
+        changed = true;
+      }
+      if (prev.new > nt) {
+        next.new = nt;
+        changed = true;
+      }
+      if (prev.full > ft) {
+        next.full = ft;
+        changed = true;
+      }
+      return changed ? next : prev;
+    });
+  }, [hotNovels.length, newUpdates.length, completedNovels.length]);
+
+  const hotTotalPages = Math.max(1, Math.ceil(hotNovels.length / HOME_TAB_PAGE_SIZE.hot));
+  const newTotalPages = Math.max(1, Math.ceil(newUpdates.length / HOME_TAB_PAGE_SIZE.new));
+  const fullTotalPages = Math.max(1, Math.ceil(completedNovels.length / HOME_TAB_PAGE_SIZE.full));
+
+  const hotPageClamped = Math.min(Math.max(1, homeTabPage.hot), hotTotalPages);
+  const newPageClamped = Math.min(Math.max(1, homeTabPage.new), newTotalPages);
+  const fullPageClamped = Math.min(Math.max(1, homeTabPage.full), fullTotalPages);
+
+  const hotPagedSlice = useMemo(
+    () =>
+      hotNovels.slice(
+        (hotPageClamped - 1) * HOME_TAB_PAGE_SIZE.hot,
+        hotPageClamped * HOME_TAB_PAGE_SIZE.hot
+      ),
+    [hotNovels, hotPageClamped]
+  );
+
+  const newPagedSlice = useMemo(
+    () =>
+      newUpdates.slice(
+        (newPageClamped - 1) * HOME_TAB_PAGE_SIZE.new,
+        newPageClamped * HOME_TAB_PAGE_SIZE.new
+      ),
+    [newUpdates, newPageClamped]
+  );
+
+  const fullPagedSlice = useMemo(
+    () =>
+      completedNovels.slice(
+        (fullPageClamped - 1) * HOME_TAB_PAGE_SIZE.full,
+        fullPageClamped * HOME_TAB_PAGE_SIZE.full
+      ),
+    [completedNovels, fullPageClamped]
+  );
 
   if (loading) {
     return (
