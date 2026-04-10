@@ -60,7 +60,9 @@ function Header() {
   const { user, isAuthenticated, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
-  const isHotRecommend = location.pathname === '/hot';
+  const isHotRecommend =
+    location.pathname === '/hot' ||
+    (location.pathname === '/' && location.hash === '#kham-pha-truyen-hot');
 
   useEffect(() => {
     const handleScroll = () => {
@@ -280,7 +282,7 @@ function Header() {
                 to="/"
                 onClick={handleHomeMarkClick}
                 className="group inline-flex shrink-0 cursor-pointer items-stretch overflow-hidden rounded-xl ring-1 ring-border shadow-md ring-offset-2 ring-offset-background transition-transform hover:scale-[1.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-                title="Về trang chủ — Mi Truyen"
+                title="Về trang chủ — Mi Truyện"
                 aria-label="Về trang chủ"
               >
                 <BrandLogo
@@ -291,18 +293,18 @@ function Header() {
                 <span className="flex h-9 w-9 shrink-0 items-center justify-center border-l border-border/60 bg-secondary/70 text-accent transition-colors group-hover:bg-accent/12 group-hover:text-accent">
                   <Home className="h-[1.15rem] w-[1.15rem]" strokeWidth={2.35} aria-hidden />
                 </span>
-                <span className="sr-only">Về trang chủ — Mi Truyen</span>
+                <span className="sr-only">Về trang chủ — Mi Truyện</span>
               </Link>
             </div>
 
-            {/* Center: cast art brand strip (public/branding-cast.png) */}
+            {/* Center: cast art + MI TRUYỆN (public/branding-cast.png) — whole strip = home */}
             <div className="flex min-w-0 flex-1 items-center px-1 sm:px-2">
               <Link
                 to="/"
                 onClick={handleHomeMarkClick}
-                className="group relative block h-9 w-full max-w-[min(58vw,300px)] overflow-hidden rounded-xl bg-secondary/40 shadow-sm ring-1 ring-border/65 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent sm:h-10 sm:max-w-[min(42vw,320px)]"
-                title="Mi Truyen — mitruyen.me"
-                aria-label="Mi Truyen — về trang chủ"
+                className="group relative block h-9 w-full max-w-[min(58vw,320px)] overflow-hidden rounded-xl bg-secondary/40 shadow-sm ring-1 ring-border/65 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent sm:h-11 sm:max-w-[min(44vw,340px)]"
+                title="Mi Truyện — mitruyen.me"
+                aria-label="Mi Truyện — về trang chủ"
               >
                 <img
                   src="/branding-cast.png"
@@ -312,9 +314,18 @@ function Header() {
                   decoding="async"
                 />
                 <span
-                  className="pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-background from-35% to-transparent sm:w-14"
+                  className="pointer-events-none absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-black/55 sm:to-black/50"
                   aria-hidden
                 />
+                <span className="pointer-events-none absolute inset-y-0 right-0 flex w-[min(52%,148px)] flex-col items-end justify-center gap-0.5 pr-2 sm:pr-3">
+                  <span className="text-[7px] font-semibold uppercase tracking-[0.28em] text-white/90 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] sm:text-[8px]">
+                    mitruyen.me
+                  </span>
+                  <span className="text-right font-black leading-none tracking-wide text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.85)]">
+                    <span className="block text-[10px] opacity-95 sm:text-[11px]">MI</span>
+                    <span className="block text-[15px] sm:text-[17px]">TRUYỆN</span>
+                  </span>
+                </span>
               </Link>
             </div>
 
@@ -358,7 +369,7 @@ function Header() {
                                   <div className="min-w-0">
                                     <p className="text-sm text-foreground line-clamp-1">{item.title}</p>
                                     <p className="text-xs text-muted-foreground line-clamp-1">
-                                      {normalizeAuthorLabel(item.author) || 'Dang cap nhat'}
+                                      {normalizeAuthorLabel(item.author) || 'Đang cập nhật'}
                                     </p>
                                   </div>
                                 </Link>
@@ -385,7 +396,7 @@ function Header() {
                               <div className="min-w-0">
                                 <p className="text-sm text-foreground line-clamp-1">{item.title}</p>
                                 <p className="text-xs text-muted-foreground line-clamp-1">
-                                  {normalizeAuthorLabel(item.author) || 'Dang cap nhat'}
+                                  {normalizeAuthorLabel(item.author) || 'Đang cập nhật'}
                                 </p>
                               </div>
                             </Link>
@@ -521,7 +532,7 @@ function Header() {
             aria-label="Gợi ý truyện hot"
           >
             <Link
-              to="/hot"
+              to="/#kham-pha-truyen-hot"
               className={`inline-flex items-center gap-2 rounded-lg px-1 py-0.5 text-[13px] font-semibold tracking-wide transition-colors sm:text-sm ${
                 isHotRecommend
                   ? 'text-accent'
@@ -539,7 +550,7 @@ function Header() {
               </span>
               <span>Recommendation</span>
               <span className="hidden text-xs font-normal text-muted-foreground sm:inline">
-                — truyện hot
+                — Truyện hot
               </span>
             </Link>
           </nav>
@@ -587,7 +598,7 @@ function Header() {
                               <div className="min-w-0">
                                 <p className="text-sm text-foreground line-clamp-1">{item.title}</p>
                                 <p className="text-xs text-muted-foreground line-clamp-1">
-                                  {normalizeAuthorLabel(item.author) || 'Dang cap nhat'}
+                                  {normalizeAuthorLabel(item.author) || 'Đang cập nhật'}
                                 </p>
                               </div>
                             </Link>
@@ -617,7 +628,7 @@ function Header() {
                           <div className="min-w-0">
                             <p className="text-sm text-foreground line-clamp-1">{item.title}</p>
                             <p className="text-xs text-muted-foreground line-clamp-1">
-                              {normalizeAuthorLabel(item.author) || 'Dang cap nhat'}
+                              {normalizeAuthorLabel(item.author) || 'Đang cập nhật'}
                             </p>
                           </div>
                         </Link>
@@ -661,7 +672,7 @@ function Header() {
                 setIsMenuOpen(false);
               }}
               className="flex min-w-0 cursor-pointer items-center gap-2 rounded-lg ring-offset-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-              title="Về trang chủ — Mi Truyen"
+              title="Về trang chủ — Mi Truyện"
               aria-label="Về trang chủ"
             >
               <BrandLogo
@@ -669,7 +680,7 @@ function Header() {
                 className="h-9 w-9 shrink-0 rounded-xl shadow-md ring-1 ring-border"
                 loading="lazy"
               />
-              <span className="truncate text-base font-bold text-foreground">Mi Truyen</span>
+              <span className="truncate text-base font-bold text-foreground">Mi Truyện</span>
             </Link>
             <button
               type="button"

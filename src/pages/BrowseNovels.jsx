@@ -369,18 +369,23 @@ function BrowseNovels({ mode = "all" }) {
   );
 
   const titleMap = {
-    all: "Tat ca truyen",
-    hot: "Truyen Hot",
-    recent: "Moi cap nhat",
-    completed: "Truyen Full",
-    ongoing: "Truyen dang tien hanh",
-    chapterRange: `So chuong: ${
-      range === "duoi-100" ? "Duoi 100" :
-      range === "100-500" ? "100 - 500" :
-      range === "500-1000" ? "500 - 1000" :
-      range === "tren-1000" ? "Tren 1000" : "Tat ca"
+    all: "Tất cả truyện",
+    hot: "Truyện Hot",
+    recent: "Mới cập nhật",
+    completed: "Truyện Full",
+    ongoing: "Truyện đang tiến hành",
+    chapterRange: `Số chương: ${
+      range === "duoi-100"
+        ? "Dưới 100"
+        : range === "100-500"
+          ? "100 – 500"
+          : range === "500-1000"
+            ? "500 – 1000"
+            : range === "tren-1000"
+              ? "Trên 1000"
+              : "Tất cả"
     }`,
-    category: `The loai: ${genreHeadingLabel(activeGenre, slug) || slug || ""}`
+    category: `Thể loại: ${genreHeadingLabel(activeGenre, slug) || slug || ""}`
   };
 
   return (
@@ -463,7 +468,7 @@ function BrowseNovels({ mode = "all" }) {
       ) : novels.length === 0 ? (
         <div className="bg-card border border-border rounded-lg p-8 text-center">
           <BookOpen className="w-10 h-10 text-muted-foreground mx-auto mb-2" />
-          <p className="text-muted-foreground">Chua co truyen phu hop.</p>
+          <p className="text-muted-foreground">Chưa có truyện phù hợp.</p>
         </div>
       ) : (
         <>

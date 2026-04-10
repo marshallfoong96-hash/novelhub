@@ -25,7 +25,7 @@ function ReadingHistory() {
       {items.length === 0 ? (
         <div className="bg-card border border-border rounded-lg p-8 text-center">
           <BookOpen className="w-10 h-10 text-muted-foreground mx-auto mb-2" />
-          <p className="text-muted-foreground text-sm">Chua co lich su doc.</p>
+          <p className="text-muted-foreground text-sm">Chưa có lịch sử đọc.</p>
         </div>
       ) : (
         <div className="bg-card border border-border rounded-lg divide-y divide-border">

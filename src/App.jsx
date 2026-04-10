@@ -250,7 +250,7 @@ function Footer() {
         {/* Bottom Bar */}
         <div className="py-4 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-3">
           <p className="text-[10px] text-muted-foreground">
-            © {currentYear} Mi Truyen · mitruyen.me
+            © {currentYear} Mi Truyện · mitruyen.me
           </p>
           <div className="flex items-center gap-4 text-[10px] text-muted-foreground">
             <Link to="/chinh-sach" className="hover:text-foreground transition-colors">

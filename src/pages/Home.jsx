@@ -281,6 +281,19 @@ function Home() {
     return () => clearTimeout(t);
   }, [location.pathname, location.hash, loading]);
 
+  /** Header “Recommendation” → scroll to Truyện hot & bật tab Hot */
+  useEffect(() => {
+    if (location.pathname !== "/" || location.hash !== "#kham-pha-truyen-hot") return;
+    if (loading) return;
+    setActiveHomeTab("hot");
+    const el = document.getElementById("kham-pha-truyen-hot");
+    if (!el) return;
+    const t = window.setTimeout(() => {
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 100);
+    return () => clearTimeout(t);
+  }, [location.pathname, location.hash, loading]);
+
   /** Keep page index within range when list length changes. */
   useEffect(() => {
     setHomeTabPage((prev) => {
@@ -386,13 +399,17 @@ function Home() {
       <div className="grid lg:grid-cols-4 gap-6">
         {/* Main Content */}
         <div className="lg:col-span-3 space-y-8">
-          <section>
+          <section id="kham-pha-truyen-hot" className="scroll-mt-[5.75rem]">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <Zap className="w-5 h-5 text-accent" />
                 <div>
-                  <h2 className="text-base font-bold text-foreground">Khám phá truyện</h2>
-                  <p className="text-xs text-muted-foreground">Chuyển tab để xem nhanh theo nhu cầu</p>
+                  <h2 className="text-lg font-bold tracking-tight text-foreground md:text-xl">
+                    Truyện Hot
+                  </h2>
+                  <p className="text-xs text-muted-foreground">
+                    Khám phá nhanh — Hot, mới cập nhật hoặc truyện full
+                  </p>
                 </div>
               </div>
               <div className="flex items-center gap-1 bg-secondary/60 p-1 rounded-xl border border-border">
@@ -493,7 +510,7 @@ function Home() {
                     />
                   </>
                 ) : (
-                  <EmptyTabNotice text="Chua co truyen full trong he thong." />
+                  <EmptyTabNotice text="Chưa có truyện full trong hệ thống." />
                 )
               )}
             </div>
@@ -505,8 +522,8 @@ function Home() {
           <section>
             <SectionHeader
               icon={<TrendingUp className="w-5 h-5 text-accent" />}
-              title="Dong cap nhat lien tuc"
-              subtitle="Phong cach cuon trang nhu cac web truyen lon"
+              title="Dòng cập nhật liên tục"
+              subtitle="Cuộn danh sách như các trang truyện lớn"
               link="/truyen-moi"
             />
             <div className="section-shell overflow-hidden">
@@ -558,24 +575,33 @@ function Home() {
                 <Link
                   key={novel.id}
                   to={`/truyen/${novel.id}`}
-                  className="flex items-center gap-2 p-3 hover:bg-secondary/50 transition-colors"
+                  className="flex items-center gap-2.5 p-2.5 sm:p-3 hover:bg-secondary/50 transition-colors"
                 >
-                  <span className={`w-6 h-6 flex items-center justify-center rounded text-xs font-bold ${
-                    index < 3 
-                      ? index === 0 
-                        ? 'bg-[hsl(var(--warning))] text-foreground' 
-                        : index === 1 
-                          ? 'bg-muted-foreground/30 text-foreground'
-                          : 'bg-[#CD7F32] text-white'
-                      : 'bg-secondary text-muted-foreground'
-                  }`}>
+                  <span
+                    className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-[11px] font-bold ${
+                      index < 3
+                        ? index === 0
+                          ? 'bg-[hsl(var(--warning))] text-foreground'
+                          : index === 1
+                            ? 'bg-muted-foreground/30 text-foreground'
+                            : 'bg-[#CD7F32] text-white'
+                        : 'bg-secondary text-muted-foreground'
+                    }`}
+                  >
                     {index + 1}
                   </span>
-                  <div className="flex-1 min-w-0">
-                    <h4 className="text-xs font-medium text-foreground line-clamp-1">
+                  <img
+                    src={novel.cover_url || '/default-cover.jpg'}
+                    alt=""
+                    className="h-14 w-10 shrink-0 rounded-md object-cover object-top ring-1 ring-border/60 shadow-sm"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <h4 className="text-xs font-medium text-foreground line-clamp-2">
                       {novel.title}
                     </h4>
-                    <p className="text-[10px] text-muted-foreground">{novel.view_count || 0} lượt xem</p>
+                    <p className="text-[10px] text-muted-foreground">
+                      {novel.view_count || 0} lượt xem
+                    </p>
                   </div>
                 </Link>
               ))}
@@ -701,7 +727,7 @@ function HeroSection({ featuredNovels }) {
           className="h-24 w-24 rounded-3xl ring-1 ring-border bg-background mx-auto mb-4 shadow-sm"
           loading="eager"
         />
-        <h2 className="text-xl font-bold text-foreground mb-2">Chào mừng đến Mi Truyen · mitruyen.me</h2>
+        <h2 className="text-xl font-bold text-foreground mb-2">Chào mừng đến Mi Truyện · mitruyen.me</h2>
         <p className="text-muted-foreground">Khám phá thế giới tiểu thuyết hấp dẫn</p>
       </section>
     );
@@ -893,7 +919,7 @@ function SectionHeader({ icon, title, subtitle, link }) {
   );
 }
 
-function EmptyTabNotice({ text = "Dang cap nhat du lieu cho muc nay." }) {
+function EmptyTabNotice({ text = "Đang cập nhật dữ liệu cho mục này." }) {
   return (
     <div className="section-shell p-8 text-center">
       <BookOpen className="w-10 h-10 mx-auto mb-2 text-muted-foreground" />

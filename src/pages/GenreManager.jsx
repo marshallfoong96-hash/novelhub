@@ -407,7 +407,7 @@ function GenreManager() {
                     <h3 className="text-sm font-semibold text-foreground line-clamp-1">{novel.title}</h3>
                   </button>
                   <p className="text-xs text-muted-foreground">
-                    {normalizeAuthorLabel(novel.author) || "Dang cap nhat"}
+                    {normalizeAuthorLabel(novel.author) || "Đang cập nhật"}
                   </p>
                 </div>
 
