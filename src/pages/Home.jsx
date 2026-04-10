@@ -115,7 +115,10 @@ function Home() {
     return saved && HOME_TABS.includes(saved) ? saved : 'hot';
   });
   const [homeRefreshGeneration, setHomeRefreshGeneration] = useState(0);
+  const [loadError, setLoadError] = useState("");
   const tabSwitchTimerRef = useRef(null);
+  /** Ignore stale responses when route remounts or a new fetch supersedes the previous one. */
+  const homeFetchIdRef = useRef(0);
 
   useEffect(() => {
     const onInvalidate = () => {
@@ -155,56 +158,70 @@ function Home() {
 
   const fetchData = useCallback(async (options = {}) => {
     const { silent = false } = options;
+    const myId = ++homeFetchIdRef.current;
+    const FETCH_HOME_TIMEOUT_MS = 25_000;
+
     try {
+      setLoadError("");
       if (!silent) setLoading(true);
 
       if (!isSupabaseConfigured || !supabase) {
-        console.error('[v0] Supabase not configured');
-        if (!silent) setLoading(false);
+        console.error("[v0] Supabase not configured");
+        if (myId !== homeFetchIdRef.current) return;
+        setLoadError(
+          "Chưa cấu hình Supabase. Thêm VITE_SUPABASE_URL và VITE_SUPABASE_ANON_KEY trên hosting (Vercel → Environment Variables), rồi build lại."
+        );
         return;
       }
 
-      const bundle = await fetchWithTtl(
-        HOME_DASHBOARD_CACHE_KEY,
-        DEFAULT_DATA_TTL_MS,
-        async () => {
-          const genresData = await fetchGenresCached(DEFAULT_DATA_TTL_MS);
-          const { data: novels, error } = await supabase
-            .from("novels")
-            .select("*")
-            .order("created_at", { ascending: false });
+      const bundle = await Promise.race([
+        fetchWithTtl(
+          HOME_DASHBOARD_CACHE_KEY,
+          DEFAULT_DATA_TTL_MS,
+          async () => {
+            const genresData = await fetchGenresCached(DEFAULT_DATA_TTL_MS);
+            const { data: novels, error } = await supabase
+              .from("novels")
+              .select("*")
+              .order("created_at", { ascending: false });
 
-          if (error) {
-            console.error(error);
-            throw error;
-          }
-
-          const novelIds = (novels || []).map((novel) => novel.id);
-          let chapterRows = [];
-          if (novelIds.length > 0) {
-            const chapterResult = await supabase
-              .from("chapters")
-              .select("id,novel_id,chapter_number")
-              .in("novel_id", novelIds)
-              .order("chapter_number", { ascending: true });
-            chapterRows = chapterResult.data || [];
-          }
-
-          const firstChapterMap = {};
-          (chapterRows || []).forEach((chapter) => {
-            if (!firstChapterMap[chapter.novel_id]) {
-              firstChapterMap[chapter.novel_id] = chapter.id;
+            if (error) {
+              console.error(error);
+              throw error;
             }
-          });
 
-          const novelsWithFirstChapter = (novels || []).map((novel) => ({
-            ...novel,
-            first_chapter_id: firstChapterMap[novel.id] || null
-          }));
+            const novelIds = (novels || []).map((novel) => novel.id);
+            let chapterRows = [];
+            if (novelIds.length > 0) {
+              const chapterResult = await supabase
+                .from("chapters")
+                .select("id,novel_id,chapter_number")
+                .in("novel_id", novelIds)
+                .order("chapter_number", { ascending: true });
+              chapterRows = chapterResult.data || [];
+            }
 
-          return { novelsWithFirstChapter, genresData };
-        }
-      );
+            const firstChapterMap = {};
+            (chapterRows || []).forEach((chapter) => {
+              if (!firstChapterMap[chapter.novel_id]) {
+                firstChapterMap[chapter.novel_id] = chapter.id;
+              }
+            });
+
+            const novelsWithFirstChapter = (novels || []).map((novel) => ({
+              ...novel,
+              first_chapter_id: firstChapterMap[novel.id] || null
+            }));
+
+            return { novelsWithFirstChapter, genresData };
+          }
+        ),
+        new Promise((_, reject) => {
+          setTimeout(() => reject(new Error("__FETCH_TIMEOUT__")), FETCH_HOME_TIMEOUT_MS);
+        }),
+      ]);
+
+      if (myId !== homeFetchIdRef.current) return;
 
       const { novelsWithFirstChapter, genresData } = bundle;
 
@@ -223,9 +240,19 @@ function Home() {
 
       setFeaturedNovels(novelsWithFirstChapter.slice(0, 5));
     } catch (error) {
+      if (myId !== homeFetchIdRef.current) return;
       console.error(error);
+      const msg =
+        error?.message === "__FETCH_TIMEOUT__"
+          ? "Kết nối quá lâu (hết thời gian chờ). Kiểm tra mạng, firewall, hoặc Supabase có đang hoạt động không — rồi bấm Thử lại."
+          : error?.message || "Không tải được dữ liệu. Vui lòng thử lại.";
+      setLoadError(msg);
     } finally {
-      if (!silent) setLoading(false);
+      if (myId !== homeFetchIdRef.current) return;
+      /* `silent` only skips setLoading(true) at start (no full-page flash on refetch).
+         Always clear loading when this request finishes — otherwise a remount with
+         silent=true leaves initial loading=true forever. */
+      setLoading(false);
     }
   }, []);
 
@@ -279,6 +306,21 @@ function Home() {
           </div>
           <p className="text-muted-foreground text-sm">Đang tải truyện...</p>
         </div>
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4 px-4 text-center">
+        <p className="max-w-md text-sm text-destructive">{loadError}</p>
+        <button
+          type="button"
+          onClick={() => fetchData({ silent: false })}
+          className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-accent-foreground hover:bg-accent/90"
+        >
+          Thử lại
+        </button>
       </div>
     );
   }
