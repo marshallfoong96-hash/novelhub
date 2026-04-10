@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Search, User, Menu, X, BookOpen, Sparkles, Moon, Sun, Flame, Clock, CheckCircle, History, ChevronDown } from 'lucide-react';
+import { Search, User, Menu, X, BookOpen, Sparkles, Moon, Sun, Flame, Clock, CheckCircle, History, ChevronDown, List, ChevronRight } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
@@ -15,9 +15,29 @@ function Header() {
   const [searchLoading, setSearchLoading] = useState(false);
   const [showSearchDropdown, setShowSearchDropdown] = useState(false);
   const [openMenu, setOpenMenu] = useState('');
+  const [mobileGenresOpen, setMobileGenresOpen] = useState(true);
   const [genres, setGenres] = useState([]);
   const closeTimerRef = useRef(null);
   const searchBoxRef = useRef(null);
+  const drawerSwipeStart = useRef({ x: 0, y: 0 });
+
+  const handleDrawerTouchStart = (e) => {
+    const t = e.touches[0];
+    drawerSwipeStart.current = { x: t.clientX, y: t.clientY };
+  };
+
+  /** Swipe left on drawer or backdrop to close (mobile). */
+  const handleDrawerTouchEnd = (e) => {
+    if (!isMenuOpen) return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - drawerSwipeStart.current.x;
+    const dy = t.clientY - drawerSwipeStart.current.y;
+    const minX = 68;
+    const maxY = 120;
+    if (dx < -minX && Math.abs(dy) < maxY && Math.abs(dx) > Math.abs(dy) + 6) {
+      setIsMenuOpen(false);
+    }
+  };
   const { user, isAuthenticated, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
@@ -49,6 +69,25 @@ function Header() {
       document.documentElement.classList.remove('dark');
     }
   }, [isDark]);
+
+  useEffect(() => {
+    if (isMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isMenuOpen]);
+
+  useEffect(() => {
+    const onEscape = (e) => {
+      if (e.key === 'Escape') setIsMenuOpen(false);
+    };
+    window.addEventListener('keydown', onEscape);
+    return () => window.removeEventListener('keydown', onEscape);
+  }, []);
 
   useEffect(() => {
     setIsMenuOpen(false);
@@ -229,17 +268,27 @@ function Header() {
             : 'bg-background border-b border-border'
         }`}
       >
-        <div className="max-w-[1500px] mx-auto px-6">
-          <div className="flex items-center justify-between h-16">
-            {/* Logo */}
-            <Link to="/" className="flex items-center gap-2 group flex-shrink-0">
-              <div className="w-8 h-8 bg-accent rounded-xl flex items-center justify-center group-hover:scale-105 transition-transform shadow-md">
-                <Sparkles className="w-4 h-4 text-accent-foreground" />
-              </div>
-              <span className="text-lg font-bold text-foreground hidden sm:block">
-                MI Truyen
-              </span>
-            </Link>
+        <div className="max-w-[1500px] mx-auto px-4 sm:px-6">
+          <div className="flex items-center justify-between h-14 sm:h-16 gap-2">
+            {/* Mobile: hamburger + logo */}
+            <div className="flex items-center gap-2 min-w-0 flex-1 lg:flex-initial lg:min-w-0">
+              <button
+                type="button"
+                onClick={() => setIsMenuOpen(true)}
+                className="lg:hidden p-2 -ml-1 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-lg transition-colors shrink-0"
+                aria-label="Mở menu"
+              >
+                <Menu className="w-5 h-5" />
+              </button>
+              <Link to="/" className="flex items-center gap-2 group min-w-0 shrink">
+                <div className="w-8 h-8 bg-accent rounded-xl flex items-center justify-center group-hover:scale-105 transition-transform shadow-md shrink-0">
+                  <Sparkles className="w-4 h-4 text-accent-foreground" />
+                </div>
+                <span className="text-base sm:text-lg font-bold text-foreground truncate">
+                  MI Truyen
+                </span>
+              </Link>
+            </div>
 
             {/* Desktop Navigation */}
             <nav className="hidden lg:flex items-center gap-2">
@@ -372,7 +421,7 @@ function Header() {
             </nav>
 
             {/* Right Side Actions */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 sm:gap-2 shrink-0">
               {/* Search Bar - Desktop */}
               <form onSubmit={handleSearch} className="hidden md:flex">
                 <div className="relative" ref={searchBoxRef}>
@@ -477,6 +526,40 @@ function Header() {
                 <History className="w-5 h-5" />
               </Link>
 
+              {/* Auth — compact on mobile (MonkeyD-style) */}
+              <div className="flex md:hidden items-center gap-1">
+                {isAuthenticated ? (
+                  <Link
+                    to="/profile"
+                    className="p-1.5 rounded-lg hover:bg-secondary transition-colors"
+                    aria-label="Hồ sơ"
+                  >
+                    <div className="w-7 h-7 rounded-full bg-accent/20 flex items-center justify-center overflow-hidden">
+                      {user?.avatar ? (
+                        <img src={user.avatar} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        <User className="w-4 h-4 text-accent" />
+                      )}
+                    </div>
+                  </Link>
+                ) : (
+                  <>
+                    <Link
+                      to="/login"
+                      className="px-2 py-1 text-[11px] sm:text-xs font-semibold text-foreground border border-border rounded-lg hover:bg-secondary transition-colors whitespace-nowrap"
+                    >
+                      Đăng nhập
+                    </Link>
+                    <Link
+                      to="/register"
+                      className="px-2 py-1 text-[11px] sm:text-xs font-semibold bg-accent text-accent-foreground rounded-lg hover:bg-accent/90 transition-colors whitespace-nowrap shadow-sm"
+                    >
+                      Đăng ký
+                    </Link>
+                  </>
+                )}
+              </div>
+
               {/* Auth Buttons - Desktop */}
               <div className="hidden md:flex items-center gap-2">
                 {isAuthenticated ? (
@@ -523,14 +606,6 @@ function Header() {
                 )}
               </div>
 
-              {/* Mobile Menu Button */}
-              <button
-                onClick={() => setIsMenuOpen(!isMenuOpen)}
-                className="lg:hidden p-2 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-lg transition-colors"
-                aria-label="Toggle menu"
-              >
-                {isMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-              </button>
             </div>
           </div>
         </div>
@@ -620,126 +695,231 @@ function Header() {
           </div>
         )}
 
-        {/* Mobile Menu */}
-        {isMenuOpen && (
-          <div className="lg:hidden bg-background border-t border-border animate-fade-in">
-            <div className="max-w-7xl mx-auto px-4 py-4 space-y-4">
-              {/* Mobile Navigation */}
-              <nav className="grid grid-cols-2 gap-2">
-                {navLinks.map((link) => (
-                  <Link
-                    key={link.to}
-                    to={link.to}
-                    onClick={() => setIsMenuOpen(false)}
-                    className={`flex items-center gap-2 px-4 py-3 text-sm font-medium rounded-lg transition-colors ${
-                      location.pathname === link.to
-                        ? 'text-accent bg-accent/10'
-                        : 'text-muted-foreground hover:text-foreground hover:bg-secondary'
-                    }`}
-                  >
-                    {link.icon && <link.icon className="w-4 h-4" />}
-                    {link.label}
-                  </Link>
-                ))}
-                <Link
-                  to="/the-loai"
-                  onClick={() => setIsMenuOpen(false)}
-                  className={`flex items-center gap-2 px-4 py-3 text-sm font-medium rounded-lg transition-colors ${
-                    location.pathname.startsWith('/the-loai')
-                      ? 'text-accent bg-accent/10'
-                      : 'text-muted-foreground hover:text-foreground hover:bg-secondary'
-                  }`}
-                >
-                  <BookOpen className="w-4 h-4" />
-                  Thể loại
-                </Link>
-                <Link
-                  to="/truyen-dang-ra"
-                  onClick={() => setIsMenuOpen(false)}
-                  className={`flex items-center gap-2 px-4 py-3 text-sm font-medium rounded-lg transition-colors ${
-                    location.pathname === '/truyen-dang-ra'
-                      ? 'text-accent bg-accent/10'
-                      : 'text-muted-foreground hover:text-foreground hover:bg-secondary'
-                  }`}
-                >
-                  <Clock className="w-4 h-4" />
-                  Đang tiến hành
-                </Link>
-              </nav>
+      </header>
 
-              {mergedGenres.length > 0 && (
-                <div className="space-y-2">
-                  <h4 className="text-xs font-semibold tracking-wide text-foreground">Thể loại</h4>
-                  <div className="grid grid-cols-2 gap-2">
-                    {mergedGenres.map((genre) => (
-                      <Link
-                        key={genre.id}
-                        to={`/the-loai/${genre.slug}`}
-                        onClick={() => setIsMenuOpen(false)}
-                        className="px-3 py-2 text-sm rounded-lg bg-secondary/50 text-foreground hover:bg-secondary transition-colors"
-                      >
-                        {genre.name}
-                      </Link>
-                    ))}
-                  </div>
+      {/* Mobile: side drawer (slides from left) */}
+      <div className="lg:hidden">
+        <div
+          className={`fixed inset-0 z-[60] bg-black/45 backdrop-blur-[1px] transition-opacity duration-300 ease-out ${
+            isMenuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+          }`}
+          onClick={() => setIsMenuOpen(false)}
+          onTouchStart={handleDrawerTouchStart}
+          onTouchEnd={handleDrawerTouchEnd}
+          aria-hidden
+        />
+        <aside
+          role="dialog"
+          aria-modal="true"
+          aria-label="Menu điều hướng"
+          className={`fixed top-0 left-0 z-[70] flex h-[100dvh] w-[min(88vw,20rem)] max-w-full flex-col bg-background shadow-2xl transition-transform duration-300 ease-out motion-reduce:transition-none border-r border-border ${
+            isMenuOpen ? 'translate-x-0' : '-translate-x-full pointer-events-none'
+          }`}
+          onTouchStart={handleDrawerTouchStart}
+          onTouchEnd={handleDrawerTouchEnd}
+        >
+          <div className="flex shrink-0 items-center justify-between gap-2 border-b border-border bg-background px-4 py-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
+            <Link
+              to="/"
+              onClick={() => setIsMenuOpen(false)}
+              className="flex min-w-0 items-center gap-2"
+            >
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-accent shadow-md">
+                <Sparkles className="h-4 w-4 text-accent-foreground" />
+              </div>
+              <span className="truncate text-base font-bold text-foreground">MI Truyen</span>
+            </Link>
+            <button
+              type="button"
+              onClick={() => setIsMenuOpen(false)}
+              className="rounded-lg p-2 text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
+              aria-label="Đóng menu"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+
+          <div className="min-h-0 flex-1 touch-pan-y overflow-y-auto overscroll-contain [-webkit-overflow-scrolling:touch]">
+            <nav className="flex flex-col">
+              {navLinks.map((link) => (
+                <Link
+                  key={link.to}
+                  to={link.to}
+                  onClick={() => setIsMenuOpen(false)}
+                  className={`flex items-center gap-3 border-b border-border px-4 py-3.5 text-sm font-medium transition-colors ${
+                    location.pathname === link.to
+                      ? 'bg-accent/10 text-accent'
+                      : 'text-foreground hover:bg-secondary/80'
+                  }`}
+                >
+                  {link.icon && <link.icon className="h-5 w-5 shrink-0 opacity-80" />}
+                  {link.label}
+                </Link>
+              ))}
+
+              <button
+                type="button"
+                onClick={() => setMobileGenresOpen((v) => !v)}
+                className="flex w-full items-center justify-between gap-2 border-b border-border bg-secondary/35 px-4 py-3.5 text-left text-sm font-medium text-foreground transition-colors hover:bg-secondary/60"
+              >
+                <span className="flex items-center gap-3">
+                  <List className="h-5 w-5 shrink-0 text-muted-foreground" />
+                  Thể loại
+                </span>
+                <ChevronDown
+                  className={`h-5 w-5 shrink-0 text-muted-foreground transition-transform duration-200 ${
+                    mobileGenresOpen ? 'rotate-180' : ''
+                  }`}
+                />
+              </button>
+              {mobileGenresOpen && mergedGenres.length > 0 && (
+                <div className="max-h-[min(45vh,22rem)] overflow-y-auto overscroll-contain border-b border-border bg-secondary/15">
+                  {mergedGenres.map((genre) => (
+                    <Link
+                      key={genre.id}
+                      to={`/the-loai/${genre.slug}`}
+                      onClick={() => setIsMenuOpen(false)}
+                      className="flex items-center gap-2 border-b border-border/60 px-4 py-2.5 pl-11 text-sm text-foreground last:border-b-0 hover:bg-secondary/50"
+                    >
+                      <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                      <span className="min-w-0 leading-snug">{genre.name}</span>
+                    </Link>
+                  ))}
                 </div>
               )}
 
-              {/* Mobile Auth */}
-              <div className="pt-4 border-t border-border">
-                {isAuthenticated ? (
-                  <div className="space-y-2">
-                    <Link 
-                      to="/profile"
+              <Link
+                to="/the-loai"
+                onClick={() => setIsMenuOpen(false)}
+                className={`flex items-center gap-3 border-b border-border px-4 py-3.5 text-sm font-medium transition-colors ${
+                  location.pathname === '/the-loai'
+                    ? 'bg-accent/10 text-accent'
+                    : 'text-foreground hover:bg-secondary/80'
+                }`}
+              >
+                <BookOpen className="h-5 w-5 shrink-0 opacity-80" />
+                Tất cả thể loại
+              </Link>
+
+              <Link
+                to="/truyen-dang-ra"
+                onClick={() => setIsMenuOpen(false)}
+                className={`flex items-center gap-3 border-b border-border px-4 py-3.5 text-sm font-medium transition-colors ${
+                  location.pathname === '/truyen-dang-ra'
+                    ? 'bg-accent/10 text-accent'
+                    : 'text-foreground hover:bg-secondary/80'
+                }`}
+              >
+                <Clock className="h-5 w-5 shrink-0 opacity-80" />
+                Đang tiến hành
+              </Link>
+
+              <div className="border-b border-border px-4 py-2">
+                <p className="py-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  Theo số chương
+                </p>
+                <div className="flex flex-col pb-1">
+                  {chapterRangeLinks.map((item) => (
+                    <Link
+                      key={item.to}
+                      to={item.to}
                       onClick={() => setIsMenuOpen(false)}
-                      className="flex items-center gap-3 px-4 py-3 bg-secondary rounded-lg"
+                      className="rounded-lg px-2 py-2 text-sm text-foreground hover:bg-secondary/70"
                     >
-                      <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center overflow-hidden">
-                        {user?.avatar ? (
-                          <img 
-                            src={user.avatar} 
-                            alt={user?.username}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <User className="w-5 h-5 text-accent" />
-                        )}
-                      </div>
-                      <div>
-                        <span className="font-medium text-foreground block">{user?.username}</span>
-                        <span className="text-xs text-muted-foreground">Xem hồ sơ</span>
-                      </div>
+                      {item.label}
                     </Link>
-                    <button
-                      onClick={() => { logout(); setIsMenuOpen(false); }}
-                      className="w-full py-2.5 text-center text-sm text-destructive border border-destructive/30 rounded-lg font-medium hover:bg-destructive/10 transition-colors"
-                    >
-                      Đăng xuất
-                    </button>
-                  </div>
-                ) : (
-                  <div className="flex gap-3">
-                    <Link 
-                      to="/login" 
-                      onClick={() => setIsMenuOpen(false)}
-                      className="flex-1 py-2.5 text-center text-muted-foreground border border-border rounded-lg text-sm font-medium hover:bg-secondary transition-colors"
-                    >
-                      Đăng nhập
-                    </Link>
-                    <Link 
-                      to="/register" 
-                      onClick={() => setIsMenuOpen(false)}
-                      className="flex-1 py-2.5 text-center bg-accent text-accent-foreground rounded-lg text-sm font-medium hover:bg-accent/90 transition-colors"
-                    >
-                      Đăng ký
-                    </Link>
-                  </div>
-                )}
+                  ))}
+                </div>
               </div>
+
+              <Link
+                to="/lich-su"
+                onClick={() => setIsMenuOpen(false)}
+                className={`flex items-center gap-3 border-b border-border px-4 py-3.5 text-sm font-medium transition-colors ${
+                  location.pathname === '/lich-su'
+                    ? 'bg-accent/10 text-accent'
+                    : 'text-foreground hover:bg-secondary/80'
+                }`}
+              >
+                <History className="h-5 w-5 shrink-0 opacity-80" />
+                Lịch sử đọc
+              </Link>
+
+              <div className="flex gap-2 border-b border-border px-4 py-3">
+                <button
+                  type="button"
+                  onClick={() => setIsDark(false)}
+                  className={`flex-1 rounded-lg border px-2 py-2 text-xs font-medium transition-colors ${
+                    !isDark ? 'border-accent bg-accent/10 text-accent' : 'border-border text-muted-foreground hover:bg-secondary'
+                  }`}
+                >
+                  Sáng
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsDark(true)}
+                  className={`flex-1 rounded-lg border px-2 py-2 text-xs font-medium transition-colors ${
+                    isDark ? 'border-accent bg-accent/10 text-accent' : 'border-border text-muted-foreground hover:bg-secondary'
+                  }`}
+                >
+                  Tối
+                </button>
+              </div>
+            </nav>
+
+            <div className="border-t border-border p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+              {isAuthenticated ? (
+                <div className="space-y-2">
+                  <Link
+                    to="/profile"
+                    onClick={() => setIsMenuOpen(false)}
+                    className="flex items-center gap-3 rounded-xl bg-secondary px-3 py-3"
+                  >
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-accent/20">
+                      {user?.avatar ? (
+                        <img src={user.avatar} alt="" className="h-full w-full object-cover" />
+                      ) : (
+                        <User className="h-5 w-5 text-accent" />
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <span className="block truncate font-medium text-foreground">{user?.username}</span>
+                      <span className="text-xs text-muted-foreground">Xem hồ sơ</span>
+                    </div>
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      logout();
+                      setIsMenuOpen(false);
+                    }}
+                    className="w-full rounded-lg border border-destructive/30 py-2.5 text-center text-sm font-medium text-destructive hover:bg-destructive/10 transition-colors"
+                  >
+                    Đăng xuất
+                  </button>
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  <Link
+                    to="/login"
+                    onClick={() => setIsMenuOpen(false)}
+                    className="flex-1 rounded-xl border border-border py-2.5 text-center text-sm font-semibold text-foreground hover:bg-secondary transition-colors"
+                  >
+                    Đăng nhập
+                  </Link>
+                  <Link
+                    to="/register"
+                    onClick={() => setIsMenuOpen(false)}
+                    className="flex-1 rounded-xl bg-accent py-2.5 text-center text-sm font-semibold text-accent-foreground hover:bg-accent/90 transition-colors shadow-sm"
+                  >
+                    Đăng ký
+                  </Link>
+                </div>
+              )}
             </div>
           </div>
-        )}
-      </header>
+        </aside>
+      </div>
     </>
   );
 }

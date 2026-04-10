@@ -5,6 +5,13 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { formatNumber, formatDate } from '../utils/helpers';
 
+function genreBrowsePath(g) {
+  if (g.slug != null && String(g.slug).trim() !== '') {
+    return `/the-loai/${encodeURIComponent(String(g.slug).trim())}`;
+  }
+  return `/the-loai/${g.id}`;
+}
+
 function NovelDetail() {
   const { slug } = useParams(); // This is now the novel ID
   const [novel, setNovel] = useState(null);
@@ -18,6 +25,7 @@ function NovelDetail() {
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [isFavorited, setIsFavorited] = useState(false);
   const [actionNotice, setActionNotice] = useState('');
+  const [novelGenres, setNovelGenres] = useState([]);
   const [showDescExpanded, setShowDescExpanded] = useState(false);
   const [descNeedsToggle, setDescNeedsToggle] = useState(false);
   const descBlockRef = useRef(null);
@@ -161,20 +169,44 @@ function NovelDetail() {
       if (novelError) {
         console.error('[v0] Error fetching novel:', novelError);
         setNovel(null);
+        setNovelGenres([]);
         return;
       }
 
       setNovel(novelData);
 
       const novelId = parseInt(slug);
-      let primaryGenreId = novelData?.genre_id || null;
-      const { data: ngForNovel, error: ngForNovelErr } = await supabase
+      const genreIdSet = new Set();
+      if (novelData.genre_id != null && novelData.genre_id !== '') {
+        genreIdSet.add(Number(novelData.genre_id));
+      }
+      const { data: ngAll, error: ngAllErr } = await supabase
         .from('novel_genres')
         .select('genre_id')
-        .eq('novel_id', novelId)
-        .limit(1);
-      if (!primaryGenreId && !ngForNovelErr && ngForNovel?.[0]?.genre_id) {
-        primaryGenreId = ngForNovel[0].genre_id;
+        .eq('novel_id', novelId);
+      if (!ngAllErr && ngAll) {
+        ngAll.forEach((row) => genreIdSet.add(Number(row.genre_id)));
+      }
+      const mergedGenreIds = [...genreIdSet];
+      if (mergedGenreIds.length === 0) {
+        setNovelGenres([]);
+      } else {
+        const { data: genreRows, error: genresLookupErr } = await supabase
+          .from('genres')
+          .select('id,name,slug')
+          .in('id', mergedGenreIds);
+        if (genresLookupErr) {
+          console.error('[v0] Error fetching genres for novel:', genresLookupErr);
+          setNovelGenres([]);
+        } else {
+          const sorted = (genreRows || []).slice().sort((a, b) => String(a.name).localeCompare(String(b.name), 'vi'));
+          setNovelGenres(sorted);
+        }
+      }
+
+      let primaryGenreId = novelData?.genre_id || null;
+      if (!primaryGenreId && !ngAllErr && ngAll?.[0]?.genre_id) {
+        primaryGenreId = ngAll[0].genre_id;
       }
 
       if (primaryGenreId) {
@@ -224,6 +256,7 @@ function NovelDetail() {
 
     } catch (error) {
       console.error('[v0] Error fetching novel data:', error);
+      setNovelGenres([]);
     } finally {
       setLoading(false);
     }
@@ -329,6 +362,23 @@ function NovelDetail() {
                       )}
                     </div>
                   ) : null}
+
+                  {novelGenres.length > 0 && (
+                    <div className="mb-4 text-center md:text-left">
+                      <p className="text-sm font-semibold text-foreground mb-2">Thể loại:</p>
+                      <div className="flex flex-wrap justify-center md:justify-start gap-2">
+                        {novelGenres.map((g) => (
+                          <Link
+                            key={g.id}
+                            to={genreBrowsePath(g)}
+                            className="inline-flex items-center rounded-md bg-[#2d7d5d] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-white shadow-sm ring-1 ring-black/10 transition hover:brightness-110 hover:shadow active:brightness-95"
+                          >
+                            {g.name}
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   <div className="flex flex-wrap justify-center md:justify-start gap-2 mb-5">
                     <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-secondary/80 text-xs text-muted-foreground max-w-full">

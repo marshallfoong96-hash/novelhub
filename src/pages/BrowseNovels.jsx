@@ -8,6 +8,16 @@ function normalize(value) {
   return String(value || "").toLowerCase().trim();
 }
 
+/** Prefer DB `name`; otherwise turn slug `ga-thay` → `Ga thay` (no hyphens, first letter capital). */
+function genreHeadingLabel(activeGenre, slug) {
+  const name = activeGenre?.name?.trim();
+  if (name) return name;
+  if (!slug) return "";
+  const spaced = String(slug).replace(/[-_]+/g, " ").replace(/\s+/g, " ").trim();
+  if (!spaced) return "";
+  return spaced.charAt(0).toUpperCase() + spaced.slice(1);
+}
+
 function getGenreMeta(genre) {
   return {
     ...genre,
@@ -33,9 +43,10 @@ function getGenreTheme(slug) {
     isekai: "from-[#0ea5e9] via-[#6366f1] to-[#8b5cf6]",
     "do-thi": "from-[#0891b2] via-[#0284c7] to-[#1d4ed8]",
     "co-dai": "from-[#d97706] via-[#b45309] to-[#7c2d12]",
-    "trinh-tham": "from-[#374151] via-[#111827] to-[#020617]"
+    "trinh-tham": "from-[#374151] via-[#111827] to-[#020617]",
+    "ga-thay": "from-[#be185d] via-[#6b21a8] to-[#0f172a]"
   };
-  return themes[key] || "from-[#334155] via-[#1e293b] to-[#0f172a]";
+  return themes[key] || "from-[#4f46e5] via-[#312e81] to-[#0f172a]";
 }
 
 function BrowseNovels({ mode = "all" }) {
@@ -359,32 +370,62 @@ function BrowseNovels({ mode = "all" }) {
       range === "500-1000" ? "500 - 1000" :
       range === "tren-1000" ? "Tren 1000" : "Tat ca"
     }`,
-    category: `The loai: ${activeGenre?.name || slug || ""}`
+    category: `The loai: ${genreHeadingLabel(activeGenre, slug) || slug || ""}`
   };
 
   return (
     <div className="space-y-6">
       {mode === "category" && slug && (
-        <div className="relative overflow-hidden rounded-xl border border-border shadow-sm">
-          {activeGenre?.image && activeGenre.image !== "/default-cover.jpg" ? (
-            <img
-              src={activeGenre.image}
-              alt={activeGenre?.name || slug}
-              className="w-full h-44 object-cover"
+        <div className="relative overflow-hidden rounded-2xl border border-border/70 shadow-xl min-h-[12rem] md:min-h-[14rem]">
+          <div className="absolute inset-0 bg-gradient-to-br from-[#121826] via-[#0f141d] to-[#0a0c12]" />
+          <div
+            className="absolute inset-0"
+            style={{
+              background:
+                "radial-gradient(ellipse 100% 80% at 12% 18%, hsl(var(--accent) / 0.38), transparent 52%), radial-gradient(ellipse 90% 60% at 88% 78%, hsl(268 62% 48% / 0.32), transparent 55%), radial-gradient(ellipse 70% 50% at 50% 110%, hsl(var(--accent) / 0.15), transparent 50%)"
+            }}
+          />
+          {!(activeGenre?.image && activeGenre.image !== "/default-cover.jpg") && (
+            <div
+              className={`absolute inset-0 bg-gradient-to-br opacity-[0.42] mix-blend-soft-light ${getGenreTheme(activeGenre?.slug || slug)}`}
+              aria-hidden
             />
-          ) : (
-            <div className={`h-44 bg-gradient-to-br ${getGenreTheme(activeGenre?.slug || slug)}`} />
           )}
+          {activeGenre?.image && activeGenre.image !== "/default-cover.jpg" ? (
+            <>
+              <img
+                src={activeGenre.image}
+                alt=""
+                className="absolute inset-0 h-full w-full object-cover opacity-[0.22] mix-blend-luminosity"
+              />
+              <div className="absolute inset-0 bg-gradient-to-r from-[#070a10]/95 via-[#070a10]/78 to-[#070a10]/45" />
+            </>
+          ) : null}
+          <div
+            className="absolute inset-0 opacity-[0.11]"
+            style={{
+              backgroundImage: "radial-gradient(circle, rgba(255,255,255,0.9) 1px, transparent 1px)",
+              backgroundSize: "20px 20px"
+            }}
+            aria-hidden
+          />
+          <div className="pointer-events-none absolute -left-20 top-1/2 h-[24rem] w-[24rem] -translate-y-1/2 rounded-full border border-white/[0.06]" aria-hidden />
+          <div
+            className="pointer-events-none absolute -bottom-28 right-[-12%] h-[20rem] w-[20rem] rounded-full bg-accent/20 blur-3xl"
+            aria-hidden
+          />
+          <BookOpen
+            className="pointer-events-none absolute right-4 top-1/2 h-28 w-28 -translate-y-1/2 text-white/[0.05] md:right-10 md:h-40 md:w-40"
+            strokeWidth={1}
+            aria-hidden
+          />
 
-          <div className="absolute inset-0 bg-gradient-to-r from-black/45 via-black/35 to-black/20" />
-
-          <div className="absolute -top-12 -right-12 w-48 h-48 rounded-full bg-white/10 blur-2xl" />
-          <div className="absolute -bottom-16 left-10 w-56 h-56 rounded-full bg-accent/25 blur-3xl" />
-
-          <div className="absolute inset-0 flex flex-col items-center justify-center px-4 text-center">
-            <p className="text-[11px] uppercase tracking-[0.35em] text-white/85 mb-2 font-semibold">Thể loại</p>
-            <h1 className="text-2xl md:text-4xl font-bold text-white drop-shadow-md tracking-tight">
-              {activeGenre?.name || slug}
+          <div className="relative z-10 flex min-h-[12rem] flex-col items-center justify-center px-5 py-8 text-center md:min-h-[14rem] md:px-10">
+            <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.42em] text-white/80 sm:text-[11px]">
+              Thể loại
+            </p>
+            <h1 className="max-w-3xl text-balance text-2xl font-bold tracking-tight text-white drop-shadow-[0_2px_28px_rgba(0,0,0,0.5)] md:text-4xl md:leading-tight">
+              {genreHeadingLabel(activeGenre, slug)}
             </h1>
           </div>
         </div>
