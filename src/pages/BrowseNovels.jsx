@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import { BookOpen, ArrowUp } from "lucide-react";
 import NovelCard from "../components/NovelCard";
 import { supabase, isSupabaseConfigured } from "../lib/supabase";
+import { fetchGenresCached } from "../lib/cachedQueries";
 
 function normalize(value) {
   return String(value || "").toLowerCase().trim();
@@ -69,15 +70,12 @@ function BrowseNovels({ mode = "all" }) {
   useEffect(() => {
     const fetchGenres = async () => {
       if (!isSupabaseConfigured || !supabase) return;
-      const { data, error: genresError } = await supabase
-        .from("genres")
-        .select("*")
-        .order("name", { ascending: true });
-      if (genresError) {
-        setError(genresError.message || "Failed to load genres.");
-        setGenres([]);
-      } else {
+      try {
+        const data = await fetchGenresCached();
         setGenres((data || []).map(getGenreMeta));
+      } catch (e) {
+        setError(e?.message || "Failed to load genres.");
+        setGenres([]);
       }
     };
     fetchGenres();

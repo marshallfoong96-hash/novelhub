@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Search, User, Menu, X, BookOpen, Sparkles, Moon, Sun, Flame, Clock, CheckCircle, History, ChevronDown, List, ChevronRight } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { fetchGenresCached } from '../lib/cachedQueries';
 
 function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -114,10 +115,7 @@ function Header() {
   useEffect(() => {
     const fetchGenres = async () => {
       if (!isSupabaseConfigured || !supabase) return;
-      const { data } = await supabase
-        .from('genres')
-        .select('*')
-        .order('name', { ascending: true });
+      const data = await fetchGenresCached();
       setGenres(data || []);
     };
     fetchGenres();

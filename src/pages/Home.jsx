@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { supabase, isSupabaseConfigured } from "../lib/supabase";
+import { fetchWithTtl } from "../lib/ttlCache";
+import { fetchGenresCached, DEFAULT_DATA_TTL_MS } from "../lib/cachedQueries";
 import { Link } from 'react-router-dom';
 import { 
   Sparkles, 
@@ -109,47 +111,49 @@ function Home() {
         return;
       }
 
-      const { data: novels, error } = await supabase
-        .from("novels")
-        .select("*")
-        .order("created_at", { ascending: false });
-      const { data: genresData, error: genresError } = await supabase
-        .from("genres")
-        .select("*")
-        .order("name", { ascending: true });
+      const bundle = await fetchWithTtl(
+        "mitruyen:home:dashboard:v1",
+        DEFAULT_DATA_TTL_MS,
+        async () => {
+          const genresData = await fetchGenresCached(DEFAULT_DATA_TTL_MS);
+          const { data: novels, error } = await supabase
+            .from("novels")
+            .select("*")
+            .order("created_at", { ascending: false });
 
-      if (genresError) {
-        console.error(genresError);
-      }
+          if (error) {
+            console.error(error);
+            throw error;
+          }
 
+          const novelIds = (novels || []).map((novel) => novel.id);
+          let chapterRows = [];
+          if (novelIds.length > 0) {
+            const chapterResult = await supabase
+              .from("chapters")
+              .select("id,novel_id,chapter_number")
+              .in("novel_id", novelIds)
+              .order("chapter_number", { ascending: true });
+            chapterRows = chapterResult.data || [];
+          }
 
-      if (error) {
-        console.error(error);
-        return;
-      }
+          const firstChapterMap = {};
+          (chapterRows || []).forEach((chapter) => {
+            if (!firstChapterMap[chapter.novel_id]) {
+              firstChapterMap[chapter.novel_id] = chapter.id;
+            }
+          });
 
-      const novelIds = (novels || []).map((novel) => novel.id);
-      let chapterRows = [];
-      if (novelIds.length > 0) {
-        const chapterResult = await supabase
-          .from("chapters")
-          .select("id,novel_id,chapter_number")
-          .in("novel_id", novelIds)
-          .order("chapter_number", { ascending: true });
-        chapterRows = chapterResult.data || [];
-      }
+          const novelsWithFirstChapter = (novels || []).map((novel) => ({
+            ...novel,
+            first_chapter_id: firstChapterMap[novel.id] || null
+          }));
 
-      const firstChapterMap = {};
-      (chapterRows || []).forEach((chapter) => {
-        if (!firstChapterMap[chapter.novel_id]) {
-          firstChapterMap[chapter.novel_id] = chapter.id;
+          return { novelsWithFirstChapter, genresData };
         }
-      });
+      );
 
-      const novelsWithFirstChapter = (novels || []).map((novel) => ({
-        ...novel,
-        first_chapter_id: firstChapterMap[novel.id] || null
-      }));
+      const { novelsWithFirstChapter, genresData } = bundle;
 
       setHotNovels(novelsWithFirstChapter);
       setNewUpdates(novelsWithFirstChapter);
@@ -165,7 +169,6 @@ function Home() {
       });
 
       setFeaturedNovels(novelsWithFirstChapter.slice(0, 5));
-
     } catch (error) {
       console.error(error);
     } finally {
