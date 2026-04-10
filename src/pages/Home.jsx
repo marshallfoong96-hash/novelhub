@@ -512,19 +512,29 @@ function Home() {
           {loading && genres.length === 0 ? (
             <p className="text-center text-sm text-muted-foreground">Đang tải thể loại…</p>
           ) : genres.length === 0 ? (
-            <p className="text-center text-sm text-muted-foreground">
-              Chưa có dữ liệu thể loại từ máy chủ.{" "}
-              <Link to="/the-loai" className="font-medium text-accent hover:underline">
-                Xem tất cả truyện
-              </Link>
-            </p>
+            <div className="space-y-2 text-center text-sm text-muted-foreground">
+              <p>
+                Chưa tải được danh sách thể loại. Kiểm tra bảng <span className="font-mono text-foreground/90">genres</span> trên
+                Supabase, policy <span className="font-mono">SELECT</span> cho <span className="font-mono">anon</span>, rồi chạy
+                seed SQL nếu cần.
+              </p>
+              <p>
+                <Link to="/quan-ly-the-loai" className="font-medium text-accent hover:underline">
+                  Quản lý thể loại
+                </Link>
+                <span className="mx-2 opacity-50">·</span>
+                <Link to="/the-loai" className="font-medium text-accent hover:underline">
+                  Xem tất cả truyện
+                </Link>
+              </p>
+            </div>
           ) : (
-            <div className="grid grid-cols-2 gap-x-4 gap-y-2.5 text-sm md:grid-cols-3 lg:grid-cols-4 md:gap-x-8">
+            <div className="grid grid-cols-2 gap-x-3 gap-y-2 text-sm sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 md:gap-x-4">
               {genres.map((genre) => (
                 <Link
                   key={genre.id}
                   to={`/the-loai/${genre.slug}`}
-                  className="group flex items-start gap-2 text-foreground transition-colors hover:text-accent"
+                  className="group flex items-start gap-2 rounded-lg border border-transparent px-1.5 py-1 text-foreground transition-colors hover:border-accent/30 hover:bg-accent/[0.07] hover:text-accent"
                 >
                   <span className="mt-0.5 shrink-0 text-accent opacity-80" aria-hidden>
                     ▸

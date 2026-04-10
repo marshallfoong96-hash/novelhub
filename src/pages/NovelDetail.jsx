@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Eye, BookOpen, User, Clock, MessageSquare, ArrowRight, CheckCircle, Send, ChevronRight, Heart, Share2, Bookmark } from 'lucide-react';
+import { Eye, BookOpen, User, Clock, MessageSquare, ArrowRight, CheckCircle, Send, ChevronRight, Heart, Share2, Bookmark, Tag } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { formatNumber, formatDate } from '../utils/helpers';
@@ -364,23 +364,6 @@ function NovelDetail() {
                     </div>
                   ) : null}
 
-                  {novelGenres.length > 0 && (
-                    <div className="mb-4 text-center md:text-left">
-                      <p className="text-sm font-semibold text-foreground mb-2">Thể loại:</p>
-                      <div className="flex flex-wrap justify-center md:justify-start gap-2">
-                        {novelGenres.map((g) => (
-                          <Link
-                            key={g.id}
-                            to={genreBrowsePath(g)}
-                            className="inline-flex items-center rounded-md bg-[#2d7d5d] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-white shadow-sm ring-1 ring-black/10 transition hover:brightness-110 hover:shadow active:brightness-95"
-                          >
-                            {g.name}
-                          </Link>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
                   <div className="flex flex-wrap justify-center md:justify-start gap-2 mb-5">
                     <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-secondary/80 text-xs text-muted-foreground max-w-full">
                       <User className="w-3.5 h-3.5 shrink-0" />
@@ -410,6 +393,26 @@ function NovelDetail() {
                       {formatDate(novel.created_at)}
                     </span>
                   </div>
+
+                  {novelGenres.length > 0 && (
+                    <div className="mb-4 text-center md:text-left">
+                      <div className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
+                        <Tag className="w-3.5 h-3.5 text-accent shrink-0" aria-hidden />
+                        Thể loại
+                      </div>
+                      <div className="flex flex-wrap justify-center md:justify-start gap-2">
+                        {novelGenres.map((g) => (
+                          <Link
+                            key={g.id}
+                            to={genreBrowsePath(g)}
+                            className="inline-flex items-center rounded-full border border-accent/35 bg-accent/[0.08] px-3 py-1.5 text-xs font-medium text-accent transition hover:bg-accent/15 hover:border-accent/55"
+                          >
+                            {g.name}
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   <div className="flex flex-wrap justify-center md:justify-start gap-2 mt-auto pt-1">
                     {continueChapterId && (

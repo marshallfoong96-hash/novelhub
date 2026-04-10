@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Search, User, Menu, X, BookOpen, Moon, Sun, Flame, Clock, CheckCircle, History, ChevronDown, List, ChevronRight } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
-import { fetchGenresCached } from '../lib/cachedQueries';
+import { fetchAllGenresRows, fetchGenresCached, primeGenresCache } from '../lib/cachedQueries';
 import BrandLogo from './BrandLogo';
 
 function Header() {
@@ -18,6 +18,7 @@ function Header() {
   const [showSearchDropdown, setShowSearchDropdown] = useState(false);
   const [mobileGenresOpen, setMobileGenresOpen] = useState(true);
   const [genres, setGenres] = useState([]);
+  const [genresRefreshing, setGenresRefreshing] = useState(false);
   const searchBoxRef = useRef(null);
   const drawerSwipeStart = useRef({ x: 0, y: 0 });
 
@@ -102,6 +103,24 @@ function Header() {
     };
     fetchGenres();
   }, []);
+
+  /** Refresh list when opening the drawer so new rows in `genres` appear without waiting on TTL. */
+  useEffect(() => {
+    if (!isMenuOpen || !isSupabaseConfigured || !supabase) return;
+    let cancelled = false;
+    setGenresRefreshing(true);
+    (async () => {
+      const data = await fetchAllGenresRows('*');
+      if (cancelled) return;
+      setGenres(data || []);
+      primeGenresCache(data || []);
+    })().finally(() => {
+      setGenresRefreshing(false);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [isMenuOpen]);
 
   const handleSearch = async (e) => {
     e.preventDefault();
@@ -627,11 +646,18 @@ function Header() {
                 />
               </button>
               {mobileGenresOpen && (
-                <div className="max-h-[min(45vh,22rem)] overflow-y-auto overscroll-contain border-b border-border bg-secondary/15">
-                  {navGenres.length === 0 ? (
+                <div className="max-h-[min(55vh,28rem)] overflow-y-auto overscroll-contain border-b border-border bg-secondary/15">
+                  {genresRefreshing && navGenres.length === 0 ? (
+                    <p className="px-4 py-3 pl-11 text-xs text-muted-foreground">Đang tải thể loại…</p>
+                  ) : navGenres.length === 0 ? (
                     <p className="px-4 py-3 pl-11 text-xs leading-relaxed text-muted-foreground">
-                      Chưa có thể loại trong Supabase (bảng <span className="font-mono">genres</span>). Thêm tại
-                      Quản lý thể loại hoặc SQL.
+                      Chưa có dòng nào trong bảng <span className="font-mono">genres</span> hoặc chưa đọc được (kiểm tra
+                      RLS: cho phép <span className="font-mono">SELECT</span> với vai trò <span className="font-mono">anon</span>
+                      ). Chạy seed SQL hoặc mở{' '}
+                      <Link to="/quan-ly-the-loai" onClick={() => setIsMenuOpen(false)} className="text-accent font-medium">
+                        Quản lý thể loại
+                      </Link>
+                      .
                     </p>
                   ) : (
                     navGenres.map((genre) => (

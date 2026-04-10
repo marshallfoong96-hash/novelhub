@@ -1,5 +1,5 @@
 import { supabase, isSupabaseConfigured } from "./supabase";
-import { fetchWithTtl } from "./ttlCache";
+import { fetchWithTtl, setTtlCache } from "./ttlCache";
 import { GENRES_CACHE_KEY } from "./cacheKeys";
 
 /** Match common ISR example: 5 minutes */
@@ -33,8 +33,18 @@ export async function fetchAllGenresRows(select = "*") {
 
 /**
  * Shared genres list — Header, Browse, Home can reuse the same cached result.
+ * Does not cache empty arrays (so new rows in `genres` show up on the next fetch).
  */
 export async function fetchGenresCached(ttlMs = DEFAULT_DATA_TTL_MS) {
   if (!isSupabaseConfigured || !supabase) return [];
-  return fetchWithTtl(GENRES_CACHE_KEY, ttlMs, async () => fetchAllGenresRows("*"));
+  return fetchWithTtl(GENRES_CACHE_KEY, ttlMs, async () => fetchAllGenresRows("*"), {
+    shouldCache: (data) => Array.isArray(data) && data.length > 0,
+  });
+}
+
+/** After loading genres elsewhere (e.g. drawer), sync TTL so Home/Browse reuse the same list. */
+export function primeGenresCache(rows) {
+  if (Array.isArray(rows) && rows.length > 0) {
+    setTtlCache(GENRES_CACHE_KEY, rows);
+  }
 }

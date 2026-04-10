@@ -10,16 +10,21 @@ const store = new Map();
  * @param {string} key Stable cache key
  * @param {number} ttlMs Time-to-live in ms (e.g. 300_000 = 5 minutes)
  * @param {() => Promise<T>} factory
+ * @param {{ shouldCache?: (data: T) => boolean }} [options] If `shouldCache` returns false, result is not stored (e.g. avoid caching empty lists).
  * @returns {Promise<T>}
  */
-export async function fetchWithTtl(key, ttlMs, factory) {
+export async function fetchWithTtl(key, ttlMs, factory, options = {}) {
+  const shouldCache =
+    typeof options.shouldCache === "function" ? options.shouldCache : () => true;
   const now = Date.now();
   const hit = store.get(key);
   if (hit && now - hit.at < ttlMs) {
     return hit.data;
   }
   const data = await factory();
-  store.set(key, { at: now, data });
+  if (shouldCache(data)) {
+    store.set(key, { at: now, data });
+  }
   return data;
 }
 
@@ -27,4 +32,9 @@ export async function fetchWithTtl(key, ttlMs, factory) {
 export function clearTtlCache(key) {
   if (key) store.delete(key);
   else store.clear();
+}
+
+/** Force-set cached value (e.g. after a fresh `fetchAllGenresRows` in the menu). */
+export function setTtlCache(key, data) {
+  store.set(key, { at: Date.now(), data });
 }
