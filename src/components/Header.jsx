@@ -16,10 +16,8 @@ function Header() {
   const [hotSuggestions, setHotSuggestions] = useState([]);
   const [searchLoading, setSearchLoading] = useState(false);
   const [showSearchDropdown, setShowSearchDropdown] = useState(false);
-  const [openMenu, setOpenMenu] = useState('');
   const [mobileGenresOpen, setMobileGenresOpen] = useState(true);
   const [genres, setGenres] = useState([]);
-  const closeTimerRef = useRef(null);
   const searchBoxRef = useRef(null);
   const drawerSwipeStart = useRef({ x: 0, y: 0 });
 
@@ -94,12 +92,7 @@ function Header() {
   useEffect(() => {
     setIsMenuOpen(false);
     setShowSearch(false);
-    setOpenMenu('');
     setShowSearchDropdown(false);
-    if (closeTimerRef.current) {
-      clearTimeout(closeTimerRef.current);
-      closeTimerRef.current = null;
-    }
   }, [location.pathname]);
 
   useEffect(() => {
@@ -190,12 +183,6 @@ function Header() {
     { to: '/truyen-full', label: 'Truyện Full', icon: CheckCircle },
   ];
 
-  const quickCategoryLinks = [
-    { to: '/hot', label: 'Truyện hot' },
-    { to: '/truyen-moi', label: 'Mới cập nhật' },
-    { to: '/truyen-full', label: 'Truyện full' },
-    { to: '/truyen-dang-ra', label: 'Đang tiến hành' }
-  ];
   const chapterRangeLinks = [
     { to: '/so-chuong/duoi-100', label: 'Dưới 100 chương' },
     { to: '/so-chuong/100-500', label: 'Từ 100 đến 500 chương' },
@@ -227,27 +214,6 @@ function Header() {
     return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
   }, [genres]);
 
-  const genreColumns = [[], [], [], [], []];
-  mergedGenres.forEach((genre, index) => {
-    genreColumns[index % 5].push(genre);
-  });
-
-  const openDropdown = (menuKey) => {
-    if (closeTimerRef.current) {
-      clearTimeout(closeTimerRef.current);
-      closeTimerRef.current = null;
-    }
-    setOpenMenu(menuKey);
-  };
-
-  const scheduleClose = () => {
-    if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
-    closeTimerRef.current = setTimeout(() => {
-      setOpenMenu('');
-      closeTimerRef.current = null;
-    }, 220);
-  };
-
   return (
     <>
       {/* Announcement Bar */}
@@ -269,157 +235,25 @@ function Header() {
       >
         <div className="max-w-[1500px] mx-auto px-4 sm:px-6">
           <div className="flex items-center justify-between h-14 sm:h-16 gap-2">
-            {/* Mobile: hamburger + logo */}
-            <div className="flex items-center gap-2 min-w-0 flex-1 lg:flex-initial lg:min-w-0">
+            {/* Hamburger + logo mark (site name lives in the side menu to avoid truncation) */}
+            <div className="flex items-center gap-2 shrink-0 min-w-0">
               <button
                 type="button"
                 onClick={() => setIsMenuOpen(true)}
-                className="lg:hidden p-2 -ml-1 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-lg transition-colors shrink-0"
+                className="p-2 -ml-1 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-lg transition-colors shrink-0"
                 aria-label="Mở menu"
               >
                 <Menu className="w-5 h-5" />
               </button>
-              <Link to="/" className="flex items-center gap-2 group min-w-0 shrink">
+              <Link to="/" className="flex items-center gap-2 group shrink-0" title="Mi Truyen · mitruyen.me">
                 <BrandLogo
                   variant="mark"
-                  className="h-8 w-8 shrink-0 rounded-xl ring-1 ring-border shadow-md transition-transform group-hover:scale-105"
+                  className="h-9 w-9 shrink-0 rounded-xl ring-1 ring-border shadow-md transition-transform group-hover:scale-105"
                   loading="eager"
                 />
-                <span className="text-base sm:text-lg font-bold text-foreground truncate">
-                  Mi Truyen
-                </span>
+                <span className="sr-only">Mi Truyen · mitruyen.me</span>
               </Link>
             </div>
-
-            {/* Desktop Navigation */}
-            <nav className="hidden lg:flex items-center gap-2">
-              {navLinks.map((link) => (
-                <Link
-                  key={link.to}
-                  to={link.to}
-                  className={`top-nav-pill ${
-                    location.pathname === link.to
-                      ? 'top-nav-pill-active'
-                      : 'top-nav-pill-idle'
-                  }`}
-                >
-                  {link.icon && <link.icon className="w-3.5 h-3.5" />}
-                  {link.label}
-                </Link>
-              ))}
-              <div className="relative" onMouseEnter={() => openDropdown('danh-sach')} onMouseLeave={scheduleClose}>
-                <button
-                  type="button"
-                  className={`top-nav-pill ${
-                    location.pathname.startsWith('/the-loai') || location.pathname.startsWith('/hot') || location.pathname.startsWith('/truyen-')
-                      ? 'top-nav-pill-active'
-                      : 'top-nav-pill-idle'
-                  }`}
-                >
-                  <BookOpen className="w-3.5 h-3.5" />
-                  Danh sách
-                  <ChevronDown className={`w-3.5 h-3.5 transition-transform ${openMenu === 'danh-sach' ? 'rotate-180' : ''}`} />
-                </button>
-
-                {openMenu === 'danh-sach' && (
-                  <div className="absolute top-full left-0 mt-1 w-[980px] dropdown-surface p-4 z-50" onMouseEnter={() => openDropdown('danh-sach')} onMouseLeave={scheduleClose}>
-                    <div className="grid grid-cols-4 gap-3 mb-3">
-                      {quickCategoryLinks.map((item) => (
-                        <Link
-                          key={item.to}
-                          to={item.to}
-                          className="text-sm font-semibold text-foreground hover:text-accent transition-colors"
-                        >
-                          {item.label}
-                        </Link>
-                      ))}
-                    </div>
-                    <div className="grid grid-cols-5 gap-3 border-t border-border pt-3 max-h-[420px] overflow-y-auto">
-                      {genreColumns.map((column, colIndex) => (
-                        <div key={colIndex} className="space-y-2">
-                          {column.map((genre) => (
-                            <Link
-                              key={genre.id}
-                              to={`/the-loai/${genre.slug}`}
-                              className="block text-sm text-muted-foreground hover:text-foreground transition-colors"
-                            >
-                              {genre.name}
-                            </Link>
-                          ))}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <div className="relative" onMouseEnter={() => openDropdown('chapter-range')} onMouseLeave={scheduleClose}>
-                <button
-                  type="button"
-                  className={`top-nav-pill ${
-                    location.pathname.startsWith('/so-chuong')
-                      ? 'top-nav-pill-active'
-                      : 'top-nav-pill-idle'
-                  }`}
-                >
-                  <BookOpen className="w-3.5 h-3.5" />
-                  Phân loại theo chương
-                  <ChevronDown className={`w-3.5 h-3.5 transition-transform ${openMenu === 'chapter-range' ? 'rotate-180' : ''}`} />
-                </button>
-                {openMenu === 'chapter-range' && (
-                  <div className="absolute top-full left-0 mt-1 w-64 dropdown-surface p-3 z-50" onMouseEnter={() => openDropdown('chapter-range')} onMouseLeave={scheduleClose}>
-                    <div className="space-y-2">
-                      {chapterRangeLinks.map((item) => (
-                        <Link
-                          key={item.to}
-                          to={item.to}
-                          className="block text-sm font-medium text-foreground hover:text-accent transition-colors"
-                        >
-                          {item.label}
-                        </Link>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <div className="relative" onMouseEnter={() => openDropdown('customize')} onMouseLeave={scheduleClose}>
-                <button
-                  type="button"
-                  className={`top-nav-pill ${openMenu === 'customize' ? 'top-nav-pill-active' : 'top-nav-pill-idle'}`}
-                >
-                  <Moon className="w-3.5 h-3.5" />
-                  Tùy chỉnh
-                  <ChevronDown className={`w-3.5 h-3.5 transition-transform ${openMenu === 'customize' ? 'rotate-180' : ''}`} />
-                </button>
-                {openMenu === 'customize' && (
-                  <div className="absolute top-full left-0 mt-1 w-56 dropdown-surface p-3 z-50" onMouseEnter={() => openDropdown('customize')} onMouseLeave={scheduleClose}>
-                    <div className="space-y-2">
-                      <button
-                        type="button"
-                        onClick={() => setIsDark(false)}
-                        className="block w-full text-left text-sm font-medium text-foreground hover:text-accent transition-colors"
-                      >
-                        Màu nền sáng
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setIsDark(true)}
-                        className="block w-full text-left text-sm font-medium text-foreground hover:text-accent transition-colors"
-                      >
-                        Màu nền tối
-                      </button>
-                      <Link to="/chinh-sach" className="block text-sm font-medium text-foreground hover:text-accent transition-colors">
-                        Chính sách
-                      </Link>
-                      <Link to="/quan-ly-the-loai" className="block text-sm font-medium text-foreground hover:text-accent transition-colors">
-                        Quản lý thể loại
-                      </Link>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </nav>
 
             {/* Right Side Actions */}
             <div className="flex items-center gap-1 sm:gap-2 shrink-0">
@@ -698,8 +532,8 @@ function Header() {
 
       </header>
 
-      {/* Mobile: side drawer (slides from left) */}
-      <div className="lg:hidden">
+      {/* Side drawer (slides from left) — desktop & mobile */}
+      <>
         <div
           className={`fixed inset-0 z-[60] bg-black/45 backdrop-blur-[1px] transition-opacity duration-300 ease-out ${
             isMenuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
@@ -713,7 +547,7 @@ function Header() {
           role="dialog"
           aria-modal="true"
           aria-label="Menu điều hướng"
-          className={`fixed top-0 left-0 z-[70] flex h-[100dvh] w-[min(88vw,20rem)] max-w-full flex-col bg-background shadow-2xl transition-transform duration-300 ease-out motion-reduce:transition-none border-r border-border ${
+          className={`fixed top-0 left-0 z-[70] flex h-[100dvh] w-[min(92vw,24rem)] max-w-full flex-col bg-background shadow-2xl transition-transform duration-300 ease-out motion-reduce:transition-none border-r border-border ${
             isMenuOpen ? 'translate-x-0' : '-translate-x-full pointer-events-none'
           }`}
           onTouchStart={handleDrawerTouchStart}
@@ -848,6 +682,32 @@ function Header() {
                 Lịch sử đọc
               </Link>
 
+              <Link
+                to="/chinh-sach"
+                onClick={() => setIsMenuOpen(false)}
+                className={`flex items-center gap-3 border-b border-border px-4 py-3.5 text-sm font-medium transition-colors ${
+                  location.pathname === '/chinh-sach'
+                    ? 'bg-accent/10 text-accent'
+                    : 'text-foreground hover:bg-secondary/80'
+                }`}
+              >
+                <BookOpen className="h-5 w-5 shrink-0 opacity-80" />
+                Chính sách
+              </Link>
+
+              <Link
+                to="/quan-ly-the-loai"
+                onClick={() => setIsMenuOpen(false)}
+                className={`flex items-center gap-3 border-b border-border px-4 py-3.5 text-sm font-medium transition-colors ${
+                  location.pathname === '/quan-ly-the-loai'
+                    ? 'bg-accent/10 text-accent'
+                    : 'text-foreground hover:bg-secondary/80'
+                }`}
+              >
+                <List className="h-5 w-5 shrink-0 opacity-80" />
+                Quản lý thể loại
+              </Link>
+
               <div className="flex gap-2 border-b border-border px-4 py-3">
                 <button
                   type="button"
@@ -922,7 +782,7 @@ function Header() {
             </div>
           </div>
         </aside>
-      </div>
+      </>
     </>
   );
 }

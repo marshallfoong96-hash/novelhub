@@ -36,6 +36,39 @@ function normalize(value) {
   return String(value || '').toLowerCase().trim();
 }
 
+/** Soft onigiri-themed backdrop (readable text stays on content above z-index). */
+function HomeHeroBackdrop() {
+  return (
+    <div
+      className="pointer-events-none absolute left-0 right-0 top-0 z-0 h-[min(92vh,720px)] overflow-hidden"
+      aria-hidden
+    >
+      <div className="absolute inset-0 bg-gradient-to-b from-accent/[0.07] via-background/92 to-background dark:from-accent/[0.11]" />
+      <div
+        className="absolute -right-4 top-0 h-[min(65vw,400px)] w-[min(92vw,480px)] opacity-[0.085] dark:opacity-[0.11]"
+        style={{
+          backgroundImage: `url(${branding.mascot})`,
+          backgroundRepeat: "no-repeat",
+          backgroundPosition: "right top",
+          backgroundSize: "contain",
+        }}
+      />
+      <div
+        className="absolute -left-8 top-28 h-72 w-72 opacity-[0.055] dark:opacity-[0.08] blur-[1px]"
+        style={{
+          backgroundImage: `url(${branding.main})`,
+          backgroundRepeat: "no-repeat",
+          backgroundPosition: "left center",
+          backgroundSize: "contain",
+        }}
+      />
+      <div className="absolute left-[12%] top-40 h-44 w-44 rounded-full bg-violet-500/10 blur-3xl dark:bg-violet-400/12" />
+      <div className="absolute right-[22%] top-[38%] h-52 w-52 rounded-full bg-accent/10 blur-3xl" />
+      <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-border/50 to-transparent" />
+    </div>
+  );
+}
+
 function getGenreTheme(slug) {
   const key = normalize(slug);
   const themes = {
@@ -196,7 +229,9 @@ function Home() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="relative">
+      <HomeHeroBackdrop />
+      <div className="relative z-[1] space-y-8">
       {/* Hero Section with Featured Novels */}
       <HeroSection featuredNovels={featuredNovels} />
 
@@ -412,6 +447,7 @@ function Home() {
 
       {/* CTA Section */}
       <CTASection />
+      </div>
     </div>
   );
 }
@@ -451,10 +487,10 @@ function HeroSection({ featuredNovels }) {
 
   return (
     <section className="relative section-shell overflow-hidden">
-      <div className="pointer-events-none absolute right-3 top-3 z-10 hidden sm:block opacity-90 dark:opacity-100">
+      <div className="pointer-events-none absolute right-3 top-3 z-10 hidden md:block opacity-75 dark:opacity-90">
         <BrandLogo
           variant="mascot"
-          className="h-14 w-14 rounded-2xl ring-1 ring-border/80 shadow-md bg-card/90 backdrop-blur-[2px]"
+          className="h-11 w-11 rounded-2xl ring-1 ring-border/70 shadow-sm bg-card/85 backdrop-blur-[2px]"
           loading="lazy"
         />
       </div>
@@ -710,11 +746,10 @@ function OnigiriStickerStrip() {
 
 function CTASection() {
   return (
-    <section className="relative overflow-hidden rounded-lg bg-foreground text-background">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,hsl(var(--accent)),transparent_50%)] opacity-20" />
-      <div className="pointer-events-none absolute -right-6 -bottom-10 h-40 w-40 opacity-[0.12] dark:opacity-[0.18] rotate-12">
-        <BrandLogo variant="main" className="h-full w-full rounded-3xl ring-0" loading="lazy" />
-      </div>
+    <section className="relative overflow-hidden rounded-lg border border-border/40 bg-foreground text-background shadow-sm">
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_30%_0%,hsl(var(--accent))/0.35,transparent_55%)] opacity-90" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_100%_100%,rgba(124,58,237,0.15),transparent_50%)] opacity-70 dark:opacity-90" />
+      <div className="absolute inset-0 bg-gradient-to-br from-transparent via-transparent to-black/25 dark:to-black/40" />
 
       <div className="relative px-6 py-12 text-center">
         <div className="mx-auto mb-4 flex justify-center">
