@@ -1,3 +1,1 @@
-# mitruyen.me — AdSense publisher (khớp với ca-pub trong index.html)
-# Dòng chữ ký f08c47fec0942fa0 là cố định cho google.com
 google.com, pub-6602775323692698, DIRECT, f08c47fec0942fa0
