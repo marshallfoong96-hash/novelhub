@@ -1,3 +1,39 @@
+/** Lowercase tokens treated as “no author” (bad imports, Table Editor placeholders, etc.). */
+const AUTHOR_PLACEHOLDER_LOWER = new Set([
+  'null',
+  'undefined',
+  'empty',
+  'none',
+  'n/a',
+  '-',
+  '--',
+  '—',
+  '(null)',
+  '(none)',
+  'unknown',
+  'anonymous',
+  'chưa rõ',
+  'chua ro',
+  'tbd',
+  'todo',
+]);
+
+/**
+ * Returns a trimmed author name, or '' if missing or a known placeholder (e.g. NULL, EMPTY from DB).
+ * @param {unknown} author
+ * @returns {string}
+ */
+export function normalizeAuthorLabel(author) {
+  if (author == null) return '';
+  const s = String(author).trim();
+  if (s === '') return '';
+  const lower = s.toLowerCase();
+  if (AUTHOR_PLACEHOLDER_LOWER.has(lower)) return '';
+  const upper = s.toUpperCase();
+  if (upper === 'NULL' || upper === 'EMPTY' || upper === 'N/A') return '';
+  return s;
+}
+
 // Format Number (e.g., 125000 -> 125K)
 export const formatNumber = (num) => {
   if (!num) return '0';

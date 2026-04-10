@@ -4,6 +4,7 @@ import { supabase, isSupabaseConfigured } from "../lib/supabase";
 import { clearTtlCache } from "../lib/ttlCache";
 import { fetchAllGenresRows } from "../lib/cachedQueries";
 import { HOME_DASHBOARD_CACHE_KEY, GENRES_CACHE_KEY } from "../lib/cacheKeys";
+import { normalizeAuthorLabel } from "../utils/helpers";
 
 const coverPool = [
   "https://images.unsplash.com/photo-1509248961158-e54f6934749c?auto=format&fit=crop&w=900&q=80",
@@ -405,7 +406,9 @@ function GenreManager() {
                     )}
                     <h3 className="text-sm font-semibold text-foreground line-clamp-1">{novel.title}</h3>
                   </button>
-                  <p className="text-xs text-muted-foreground">{novel.author || "Dang cap nhat"}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {normalizeAuthorLabel(novel.author) || "Dang cap nhat"}
+                  </p>
                 </div>
 
                 <div className="w-full md:w-[380px] flex items-center gap-2">

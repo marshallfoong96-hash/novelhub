@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Eye, BookOpen, CheckCircle, Flame } from 'lucide-react';
-import { formatNumber } from '../utils/helpers';
+import { formatNumber, normalizeAuthorLabel } from '../utils/helpers';
 
 function NovelCard({ novel, showStatus = false, variant = 'default' }) {
   // Featured variant - larger card with more info
@@ -84,7 +84,7 @@ function NovelCard({ novel, showStatus = false, variant = 'default' }) {
             {novel.title}
           </h3>
           <p className="text-[10px] text-muted-foreground mt-0.5 line-clamp-1">
-            {novel.author || 'Đang cập nhật'}
+            {normalizeAuthorLabel(novel.author) || 'Đang cập nhật'}
           </p>
         </div>
       </Link>
@@ -131,7 +131,7 @@ function NovelCard({ novel, showStatus = false, variant = 'default' }) {
         {novel.title}
       </h3>
       <p className="text-xs text-muted-foreground mt-1">
-        {novel.author || 'Đang cập nhật'}
+        {normalizeAuthorLabel(novel.author) || 'Đang cập nhật'}
       </p>
     </Link>
   );

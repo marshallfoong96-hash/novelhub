@@ -25,7 +25,7 @@ import Pagination from '../components/Pagination';
 import AdSlot from '../components/AdSlot';
 import BrandLogo from '../components/BrandLogo';
 import { branding } from '../lib/branding';
-import { formatNumber, formatDate } from '../utils/helpers';
+import { formatNumber, formatDate, normalizeAuthorLabel } from '../utils/helpers';
 
 function getGenreMeta(genre) {
   return {
@@ -924,7 +924,9 @@ function UpdateRow({ novel }) {
               FULL
             </span>
           )}
-          <span className="text-xs text-muted-foreground">{novel.author}</span>
+          <span className="text-xs text-muted-foreground">
+            {normalizeAuthorLabel(novel.author) || 'Đang cập nhật'}
+          </span>
         </div>
       </div>
       <div className="flex-shrink-0 text-right">

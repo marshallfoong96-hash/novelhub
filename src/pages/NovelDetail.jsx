@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { Eye, BookOpen, User, Clock, MessageSquare, ArrowRight, CheckCircle, Send, ChevronRight, Heart, Bookmark, Tag } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
-import { formatNumber, formatDate } from '../utils/helpers';
+import { formatNumber, formatDate, normalizeAuthorLabel } from '../utils/helpers';
 import AdSlot from '../components/AdSlot';
 
 function genreBrowsePath(g) {
@@ -33,6 +33,7 @@ function NovelDetail() {
   const { isAuthenticated, user } = useAuth();
 
   const descriptionText = novel?.description != null ? String(novel.description).trim() : '';
+  const authorLabel = normalizeAuthorLabel(novel?.author);
 
   useEffect(() => {
     fetchNovelData();
@@ -335,6 +336,26 @@ function NovelDetail() {
                     {novel.title}
                   </h1>
 
+                  {novelGenres.length > 0 && (
+                    <div className={`text-center md:text-left ${descriptionText ? 'mb-3' : 'mb-4'}`}>
+                      <div className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
+                        <Tag className="w-3.5 h-3.5 text-accent shrink-0" aria-hidden />
+                        Thể loại
+                      </div>
+                      <div className="flex flex-wrap justify-center md:justify-start gap-2">
+                        {novelGenres.map((g) => (
+                          <Link
+                            key={g.id}
+                            to={genreBrowsePath(g)}
+                            className="inline-flex items-center rounded-full border border-accent/35 bg-accent/[0.08] px-3 py-1.5 text-xs font-medium text-accent transition hover:bg-accent/15 hover:border-accent/55"
+                          >
+                            {g.name}
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   {descriptionText ? (
                     <div className="mb-4">
                       <div
@@ -358,16 +379,12 @@ function NovelDetail() {
                   ) : null}
 
                   <div className="flex flex-wrap justify-center md:justify-start gap-2 mb-5">
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-secondary/80 text-xs text-muted-foreground max-w-full">
-                      <User className="w-3.5 h-3.5 shrink-0" />
-                      <span className="truncate">
-                        {novel.author?.trim()
-                          ? novel.author
-                          : novel.status === 'completed'
-                            ? 'Chưa rõ'
-                            : 'Đang cập nhật'}
+                    {authorLabel ? (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-secondary/80 text-xs text-muted-foreground max-w-full">
+                        <User className="w-3.5 h-3.5 shrink-0" />
+                        <span className="truncate">{authorLabel}</span>
                       </span>
-                    </span>
+                    ) : null}
                     {novel.status && (
                       <span
                         className={`inline-flex items-center px-2.5 py-1 text-xs font-medium rounded-full ${
@@ -392,26 +409,6 @@ function NovelDetail() {
                       {formatDate(novel.created_at)}
                     </span>
                   </div>
-
-                  {novelGenres.length > 0 && (
-                    <div className="mb-4 text-center md:text-left">
-                      <div className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
-                        <Tag className="w-3.5 h-3.5 text-accent shrink-0" aria-hidden />
-                        Thể loại
-                      </div>
-                      <div className="flex flex-wrap justify-center md:justify-start gap-2">
-                        {novelGenres.map((g) => (
-                          <Link
-                            key={g.id}
-                            to={genreBrowsePath(g)}
-                            className="inline-flex items-center rounded-full border border-accent/35 bg-accent/[0.08] px-3 py-1.5 text-xs font-medium text-accent transition hover:bg-accent/15 hover:border-accent/55"
-                          >
-                            {g.name}
-                          </Link>
-                        ))}
-                      </div>
-                    </div>
-                  )}
 
                   <div className="flex flex-wrap justify-center md:justify-start gap-2 mt-auto pt-1">
                     {continueChapterId && (

@@ -22,6 +22,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { fetchAllGenresRows, fetchGenresCached, primeGenresCache } from '../lib/cachedQueries';
 import BrandLogo from './BrandLogo';
+import { normalizeAuthorLabel } from '../utils/helpers';
 
 function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -59,6 +60,7 @@ function Header() {
   const { user, isAuthenticated, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+  const isHotRecommend = location.pathname === '/hot';
 
   useEffect(() => {
     const handleScroll = () => {
@@ -293,17 +295,27 @@ function Header() {
               </Link>
             </div>
 
-            {/* Center: site title (fills the gap between logo and search) */}
-            <div className="min-w-0 flex-1 flex flex-col items-center justify-center px-1 sm:px-4 text-center leading-tight">
+            {/* Center: cast art brand strip (public/branding-cast.png) */}
+            <div className="flex min-w-0 flex-1 items-center px-1 sm:px-2">
               <Link
                 to="/"
-                className="truncate font-bold text-foreground text-sm sm:text-base md:text-lg tracking-tight hover:text-accent transition-colors max-w-[min(100%,14rem)] sm:max-w-md"
+                onClick={handleHomeMarkClick}
+                className="group relative block h-9 w-full max-w-[min(58vw,300px)] overflow-hidden rounded-xl bg-secondary/40 shadow-sm ring-1 ring-border/65 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent sm:h-10 sm:max-w-[min(42vw,320px)]"
+                title="Mi Truyen — mitruyen.me"
+                aria-label="Mi Truyen — về trang chủ"
               >
-                Mi Truyen
+                <img
+                  src="/branding-cast.png"
+                  alt=""
+                  className="h-full w-full object-cover object-[center_20%] transition duration-500 group-hover:scale-[1.03] sm:object-[center_22%]"
+                  loading="eager"
+                  decoding="async"
+                />
+                <span
+                  className="pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-background from-35% to-transparent sm:w-14"
+                  aria-hidden
+                />
               </Link>
-              <span className="hidden sm:block text-[10px] md:text-xs text-muted-foreground truncate max-w-[min(100%,16rem)]">
-                mitruyen.me
-              </span>
             </div>
 
             {/* Right Side Actions */}
@@ -346,7 +358,7 @@ function Header() {
                                   <div className="min-w-0">
                                     <p className="text-sm text-foreground line-clamp-1">{item.title}</p>
                                     <p className="text-xs text-muted-foreground line-clamp-1">
-                                      {item.author || 'Dang cap nhat'}
+                                      {normalizeAuthorLabel(item.author) || 'Dang cap nhat'}
                                     </p>
                                   </div>
                                 </Link>
@@ -373,7 +385,7 @@ function Header() {
                               <div className="min-w-0">
                                 <p className="text-sm text-foreground line-clamp-1">{item.title}</p>
                                 <p className="text-xs text-muted-foreground line-clamp-1">
-                                  {item.author || 'Dang cap nhat'}
+                                  {normalizeAuthorLabel(item.author) || 'Dang cap nhat'}
                                 </p>
                               </div>
                             </Link>
@@ -503,6 +515,34 @@ function Header() {
 
             </div>
           </div>
+
+          <nav
+            className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-border/70 bg-gradient-to-r from-accent/[0.07] via-secondary/35 to-accent/[0.06] py-1.5 sm:py-2"
+            aria-label="Gợi ý truyện hot"
+          >
+            <Link
+              to="/hot"
+              className={`inline-flex items-center gap-2 rounded-lg px-1 py-0.5 text-[13px] font-semibold tracking-wide transition-colors sm:text-sm ${
+                isHotRecommend
+                  ? 'text-accent'
+                  : 'text-foreground/90 hover:text-accent'
+              }`}
+            >
+              <span
+                className={`inline-flex h-7 w-7 items-center justify-center rounded-lg sm:h-8 sm:w-8 ${
+                  isHotRecommend
+                    ? 'bg-accent text-accent-foreground shadow-sm'
+                    : 'bg-accent/15 text-accent ring-1 ring-accent/25'
+                }`}
+              >
+                <Flame className="h-3.5 w-3.5 sm:h-4 sm:w-4" aria-hidden />
+              </span>
+              <span>Recommendation</span>
+              <span className="hidden text-xs font-normal text-muted-foreground sm:inline">
+                — truyện hot
+              </span>
+            </Link>
+          </nav>
         </div>
 
         {/* Mobile Search Bar */}
@@ -547,7 +587,7 @@ function Header() {
                               <div className="min-w-0">
                                 <p className="text-sm text-foreground line-clamp-1">{item.title}</p>
                                 <p className="text-xs text-muted-foreground line-clamp-1">
-                                  {item.author || 'Dang cap nhat'}
+                                  {normalizeAuthorLabel(item.author) || 'Dang cap nhat'}
                                 </p>
                               </div>
                             </Link>
@@ -577,7 +617,7 @@ function Header() {
                           <div className="min-w-0">
                             <p className="text-sm text-foreground line-clamp-1">{item.title}</p>
                             <p className="text-xs text-muted-foreground line-clamp-1">
-                              {item.author || 'Dang cap nhat'}
+                              {normalizeAuthorLabel(item.author) || 'Dang cap nhat'}
                             </p>
                           </div>
                         </Link>
