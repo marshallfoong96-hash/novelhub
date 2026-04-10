@@ -1,6 +1,22 @@
 import { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Eye, BookOpen, User, Clock, MessageSquare, ArrowRight, CheckCircle, Send, ChevronRight, Heart, Bookmark, Tag } from 'lucide-react';
+import {
+  Eye,
+  BookOpen,
+  User,
+  Clock,
+  MessageSquare,
+  ArrowRight,
+  CheckCircle,
+  Send,
+  ChevronRight,
+  Heart,
+  Bookmark,
+  Tag,
+  DollarSign,
+  Sparkles,
+  AlertCircle,
+} from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { formatNumber, formatDate, normalizeAuthorLabel } from '../utils/helpers';
@@ -108,40 +124,47 @@ function NovelDetail() {
     window.setTimeout(() => setActionNotice(''), 1500);
   };
 
-  /** Một nút: đồng bộ bookmark + favorite; bật khi chưa đủ cả hai, tắt khi đã cả hai. */
-  const handleToggleSave = async () => {
+  const handleToggleBookmark = () => {
     if (!novel?.id) return;
     const id = novel.id;
-    const bothOn = isBookmarked && isFavorited;
-    const nextOn = !bothOn;
-
     let b = JSON.parse(localStorage.getItem('mi_bookmarks') || '[]');
-    let f = JSON.parse(localStorage.getItem('mi_favorites') || '[]');
     if (!Array.isArray(b)) b = [];
+    const next = b.includes(id) ? b.filter((x) => x !== id) : [...b, id];
+    localStorage.setItem('mi_bookmarks', JSON.stringify(next));
+    setIsBookmarked(next.includes(id));
+    showNotice(next.includes(id) ? 'Đã đánh dấu truyện.' : 'Đã bỏ đánh dấu.');
+  };
+
+  const handleToggleFavorite = async () => {
+    if (!novel?.id) return;
+    const id = novel.id;
+    let f = JSON.parse(localStorage.getItem('mi_favorites') || '[]');
     if (!Array.isArray(f)) f = [];
+    const willFavorite = !f.includes(id);
+    const next = willFavorite ? [...f, id] : f.filter((x) => x !== id);
+    localStorage.setItem('mi_favorites', JSON.stringify(next));
+    setIsFavorited(willFavorite);
 
-    if (nextOn) {
-      if (!b.includes(id)) b = [...b, id];
-      if (!f.includes(id)) f = [...f, id];
-    } else {
-      b = b.filter((x) => x !== id);
-      f = f.filter((x) => x !== id);
-    }
-    localStorage.setItem('mi_bookmarks', JSON.stringify(b));
-    localStorage.setItem('mi_favorites', JSON.stringify(f));
-    setIsBookmarked(nextOn);
-    setIsFavorited(nextOn);
+    const currentLikes = Number(novel.likes || 0);
+    const nextLikes = willFavorite ? currentLikes + 1 : Math.max(0, currentLikes - 1);
+    setNovel((prev) => (prev ? { ...prev, likes: nextLikes } : prev));
+    await supabase.from('novels').update({ likes: nextLikes }).eq('id', id);
 
-    const hadFavorite = isFavorited;
-    const likeDelta = nextOn && !hadFavorite ? 1 : !nextOn && hadFavorite ? -1 : 0;
-    if (likeDelta !== 0) {
-      const currentLikes = Number(novel.likes || 0);
-      const nextLikes = Math.max(0, currentLikes + likeDelta);
-      setNovel((prev) => (prev ? { ...prev, likes: nextLikes } : prev));
-      await supabase.from('novels').update({ likes: nextLikes }).eq('id', id);
-    }
+    showNotice(willFavorite ? 'Đã thêm vào yêu thích.' : 'Đã bỏ yêu thích.');
+  };
 
-    showNotice(nextOn ? 'Đã lưu truyện (đánh dấu & yêu thích).' : 'Đã bỏ lưu truyện.');
+  const handleDonate = () => {
+    if (!novel?.title) return;
+    const subject = encodeURIComponent(`Ủng hộ — ${novel.title}`);
+    window.location.href = `mailto:contact@mitruyen.me?subject=${subject}`;
+    showNotice('Đang mở email ủng hộ…');
+  };
+
+  const handleReportError = () => {
+    if (!novel?.id) return;
+    const subject = encodeURIComponent(`Báo lỗi — truyện #${novel.id}: ${novel.title}`);
+    window.location.href = `mailto:contact@mitruyen.me?subject=${subject}`;
+    showNotice('Đang mở email báo lỗi…');
   };
 
   const fetchNovelData = async () => {
@@ -410,38 +433,78 @@ function NovelDetail() {
                     </span>
                   </div>
 
-                  <div className="flex flex-wrap justify-center md:justify-start gap-2 mt-auto pt-1">
-                    {continueChapterId && (
-                      <Link
-                        to={`/chapter/${continueChapterId}`}
-                        className="inline-flex items-center gap-2 px-4 py-2.5 bg-[hsl(var(--success))] text-white rounded-xl text-sm font-semibold hover:opacity-90 transition-colors shadow-sm"
+                  <div className="mt-auto flex w-full flex-col gap-2 pt-2">
+                    <div className="flex flex-wrap justify-center gap-2 md:justify-start">
+                      {continueChapterId && (
+                        <Link
+                          to={`/chapter/${continueChapterId}`}
+                          className="inline-flex items-center gap-2 rounded-xl bg-[hsl(var(--success))] px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:opacity-90"
+                        >
+                          <BookOpen className="h-4 w-4 shrink-0" aria-hidden />
+                          Tiếp tục đọc
+                        </Link>
+                      )}
+                      {chapters.length > 0 && (
+                        <Link
+                          to={`/chapter/${chapters[0].id}`}
+                          className="inline-flex items-center gap-2 rounded-xl bg-amber-400 px-3.5 py-2.5 text-sm font-semibold text-amber-950 shadow-sm transition hover:bg-amber-500"
+                        >
+                          <BookOpen className="h-4 w-4 shrink-0" aria-hidden />
+                          Đọc từ đầu
+                        </Link>
+                      )}
+                      <button
+                        type="button"
+                        onClick={handleToggleBookmark}
+                        className={`inline-flex items-center gap-2 rounded-xl px-3.5 py-2.5 text-sm font-semibold transition ${
+                          isBookmarked
+                            ? 'bg-blue-600 text-white shadow-sm hover:bg-blue-700'
+                            : 'border-2 border-blue-600 bg-background text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-950/40'
+                        }`}
                       >
-                        <BookOpen className="w-4 h-4" />
-                        Tiếp tục đọc
-                      </Link>
-                    )}
-                    {chapters.length > 0 && (
-                      <Link
-                        to={`/chapter/${chapters[0].id}`}
-                        className="inline-flex items-center gap-2 px-4 py-2.5 bg-accent text-accent-foreground rounded-xl text-sm font-semibold hover:bg-accent/90 transition-colors shadow-sm"
+                        <Bookmark className="h-4 w-4 shrink-0" aria-hidden />
+                        {isBookmarked ? 'Đã đánh dấu' : 'Đánh dấu'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleToggleFavorite}
+                        className={`inline-flex items-center gap-2 rounded-xl px-3.5 py-2.5 text-sm font-semibold transition ${
+                          isFavorited
+                            ? 'border-2 border-red-500 bg-red-500 text-white shadow-sm hover:bg-red-600'
+                            : 'border-2 border-red-500 bg-background text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30'
+                        }`}
                       >
-                        <BookOpen className="w-4 h-4" />
-                        Đọc từ đầu
-                      </Link>
-                    )}
-                    <button
-                      type="button"
-                      onClick={handleToggleSave}
-                      className={`inline-flex items-center gap-2 px-4 py-2.5 border rounded-xl text-sm font-medium transition-colors ${
-                        isBookmarked || isFavorited
-                          ? 'border-accent text-accent bg-accent/10 hover:bg-accent/15'
-                          : 'border-border text-foreground hover:bg-secondary'
-                      }`}
-                    >
-                      <Bookmark className="w-4 h-4 shrink-0" aria-hidden />
-                      <Heart className="w-4 h-4 shrink-0" aria-hidden />
-                      {isBookmarked && isFavorited ? 'Đã lưu' : 'Đánh dấu & yêu thích'}
-                    </button>
+                        <Heart className="h-4 w-4 shrink-0" aria-hidden />
+                        {isFavorited ? 'Đã yêu thích' : 'Yêu thích'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleDonate}
+                        className="inline-flex items-center gap-2 rounded-xl bg-red-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-red-700"
+                      >
+                        <DollarSign className="h-4 w-4 shrink-0" aria-hidden />
+                        Ủng hộ
+                      </button>
+                      {chapters.length > 0 && (
+                        <Link
+                          to={`/chapter/${chapters[chapters.length - 1].id}`}
+                          className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700"
+                        >
+                          <Sparkles className="h-4 w-4 shrink-0" aria-hidden />
+                          Đọc chương mới nhất
+                        </Link>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap justify-center md:justify-start">
+                      <button
+                        type="button"
+                        onClick={handleReportError}
+                        className="inline-flex items-center gap-2 rounded-xl bg-neutral-900 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-neutral-800 dark:bg-neutral-800 dark:hover:bg-neutral-700"
+                      >
+                        <AlertCircle className="h-4 w-4 shrink-0" aria-hidden />
+                        Báo lỗi
+                      </button>
+                    </div>
                   </div>
                   {actionNotice && (
                     <p className="mt-3 text-xs text-accent">{actionNotice}</p>
