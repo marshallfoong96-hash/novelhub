@@ -1,9 +1,10 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Search, User, Menu, X, BookOpen, Sparkles, Moon, Sun, Flame, Clock, CheckCircle, History, ChevronDown, List, ChevronRight } from 'lucide-react';
+import { Search, User, Menu, X, BookOpen, Moon, Sun, Flame, Clock, CheckCircle, History, ChevronDown, List, ChevronRight } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { fetchGenresCached } from '../lib/cachedQueries';
+import BrandLogo from './BrandLogo';
 
 function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -279,9 +280,11 @@ function Header() {
                 <Menu className="w-5 h-5" />
               </button>
               <Link to="/" className="flex items-center gap-2 group min-w-0 shrink">
-                <div className="w-8 h-8 bg-accent rounded-xl flex items-center justify-center group-hover:scale-105 transition-transform shadow-md shrink-0">
-                  <Sparkles className="w-4 h-4 text-accent-foreground" />
-                </div>
+                <BrandLogo
+                  variant="mark"
+                  className="h-8 w-8 shrink-0 rounded-xl ring-1 ring-border shadow-md transition-transform group-hover:scale-105"
+                  loading="eager"
+                />
                 <span className="text-base sm:text-lg font-bold text-foreground truncate">
                   Mi Truyen
                 </span>
@@ -722,9 +725,11 @@ function Header() {
               onClick={() => setIsMenuOpen(false)}
               className="flex min-w-0 items-center gap-2"
             >
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-accent shadow-md">
-                <Sparkles className="h-4 w-4 text-accent-foreground" />
-              </div>
+              <BrandLogo
+                variant="mark"
+                className="h-9 w-9 shrink-0 rounded-xl shadow-md ring-1 ring-border"
+                loading="lazy"
+              />
               <span className="truncate text-base font-bold text-foreground">Mi Truyen</span>
             </Link>
             <button

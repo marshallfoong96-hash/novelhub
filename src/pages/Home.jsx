@@ -4,7 +4,6 @@ import { fetchWithTtl } from "../lib/ttlCache";
 import { fetchGenresCached, DEFAULT_DATA_TTL_MS } from "../lib/cachedQueries";
 import { Link } from 'react-router-dom';
 import { 
-  Sparkles, 
   Flame, 
   Clock, 
   TrendingUp, 
@@ -22,6 +21,8 @@ import {
 
 import NovelCard from '../components/NovelCard';
 import AdSlot from '../components/AdSlot';
+import BrandLogo from '../components/BrandLogo';
+import { branding } from '../lib/branding';
 import { formatNumber, formatDate } from '../utils/helpers';
 
 function getGenreMeta(genre) {
@@ -180,7 +181,14 @@ function Home() {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="flex flex-col items-center gap-4">
-          <div className="w-10 h-10 border-2 border-accent border-t-transparent rounded-full animate-spin" />
+          <div className="relative">
+            <BrandLogo
+              variant="main"
+              className="h-16 w-16 rounded-2xl ring-1 ring-border shadow-md animate-pulse"
+              loading="eager"
+            />
+            <div className="pointer-events-none absolute -inset-1 rounded-2xl border border-accent/30 animate-ping" />
+          </div>
           <p className="text-muted-foreground text-sm">Đang tải truyện...</p>
         </div>
       </div>
@@ -191,6 +199,8 @@ function Home() {
     <div className="space-y-8">
       {/* Hero Section with Featured Novels */}
       <HeroSection featuredNovels={featuredNovels} />
+
+      <OnigiriStickerStrip />
 
       {/* Main Content with Sidebar */}
       <div className="grid lg:grid-cols-4 gap-6">
@@ -426,7 +436,11 @@ function HeroSection({ featuredNovels }) {
   if (featuredNovels.length === 0) {
     return (
       <section className="bg-card border border-border rounded-lg p-8 text-center">
-        <BookOpen className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+        <BrandLogo
+          variant="mascot"
+          className="h-24 w-24 rounded-3xl ring-1 ring-border bg-background mx-auto mb-4 shadow-sm"
+          loading="eager"
+        />
         <h2 className="text-xl font-bold text-foreground mb-2">Chào mừng đến Mi Truyen · mitruyen.me</h2>
         <p className="text-muted-foreground">Khám phá thế giới tiểu thuyết hấp dẫn</p>
       </section>
@@ -437,6 +451,13 @@ function HeroSection({ featuredNovels }) {
 
   return (
     <section className="relative section-shell overflow-hidden">
+      <div className="pointer-events-none absolute right-3 top-3 z-10 hidden sm:block opacity-90 dark:opacity-100">
+        <BrandLogo
+          variant="mascot"
+          className="h-14 w-14 rounded-2xl ring-1 ring-border/80 shadow-md bg-card/90 backdrop-blur-[2px]"
+          loading="lazy"
+        />
+      </div>
       <div className="grid md:grid-cols-2 gap-0">
         {/* Featured Novel Image */}
         <div className="relative aspect-[4/3] md:aspect-auto md:h-[320px]">
@@ -667,12 +688,42 @@ function TopViewsSection({ novels }) {
   );
 }
 
+function OnigiriStickerStrip() {
+  return (
+    <div
+      className="flex flex-wrap justify-center gap-2 sm:gap-2.5 px-2 py-2 -mt-2 mb-2"
+      aria-hidden
+    >
+      {branding.stickers.map((_, i) => (
+        <BrandLogo
+          key={`onigiri-sticker-${i}`}
+          variant="sticker"
+          stickerIndex={i}
+          alt=""
+          className="h-8 w-8 sm:h-9 sm:w-9 rounded-xl ring-1 ring-border/70 bg-card shadow-sm opacity-85 hover:opacity-100 transition-opacity"
+          loading="lazy"
+        />
+      ))}
+    </div>
+  );
+}
+
 function CTASection() {
   return (
     <section className="relative overflow-hidden rounded-lg bg-foreground text-background">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,hsl(var(--accent)),transparent_50%)] opacity-20" />
-      
+      <div className="pointer-events-none absolute -right-6 -bottom-10 h-40 w-40 opacity-[0.12] dark:opacity-[0.18] rotate-12">
+        <BrandLogo variant="main" className="h-full w-full rounded-3xl ring-0" loading="lazy" />
+      </div>
+
       <div className="relative px-6 py-12 text-center">
+        <div className="mx-auto mb-4 flex justify-center">
+          <BrandLogo
+            variant="main"
+            className="h-12 w-12 rounded-2xl ring-2 ring-background/25 shadow-lg"
+            loading="lazy"
+          />
+        </div>
         <h2 className="text-2xl font-bold mb-3 text-balance">
           Bắt đầu hành trình sáng tác của bạn
         </h2>

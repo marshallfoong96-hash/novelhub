@@ -12,7 +12,8 @@ import BrowseNovels from './pages/BrowseNovels';
 import ReadingHistory from './pages/ReadingHistory';
 import GenreManager from './pages/GenreManager';
 import { AboutPage, PrivacyPage, TermsPage, ContactPage } from './pages/InfoPage';
-import { Sparkles, BookOpen, Users, PenTool, Mail, Github, Facebook } from 'lucide-react';
+import { BookOpen, Users, PenTool, Mail, Github, Facebook } from 'lucide-react';
+import BrandLogo from './components/BrandLogo';
 
 function App() {
   useEffect(() => {
@@ -105,11 +106,13 @@ function Footer() {
         <div className="py-8 grid grid-cols-2 md:grid-cols-4 gap-8">
           {/* Brand */}
           <div className="col-span-2 md:col-span-4 lg:col-span-1">
-            <Link to="/" className="flex items-center gap-2 mb-3">
-              <div className="w-8 h-8 bg-accent rounded-lg flex items-center justify-center">
-                <Sparkles className="w-4 h-4 text-accent-foreground" />
-              </div>
-              <span className="text-lg font-bold text-foreground">Mi Truyen</span>
+            <Link to="/" className="inline-flex mb-3">
+              <BrandLogo
+                variant="horizontal"
+                className="h-10 w-auto max-w-[min(100%,240px)] rounded-lg ring-1 ring-border shadow-sm"
+                loading="lazy"
+              />
+              <span className="sr-only">Mi Truyen · mitruyen.me</span>
             </Link>
             <p className="text-muted-foreground text-xs max-w-xs mb-4 leading-relaxed">
               Nền tảng đọc truyện online hàng đầu với hàng nghìn tác phẩm hay. 
