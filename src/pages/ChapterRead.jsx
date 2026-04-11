@@ -11,6 +11,8 @@ import {
   List, Send, ArrowRight, User, X
 } from "lucide-react";
 import AdSlot from "../components/AdSlot";
+import ShopeeChapterGateModal from "../components/ShopeeChapterGateModal";
+import { lastChapterStorageKey } from "../lib/shopeeGate";
 
 export default function ChapterRead() {
   const { id } = useParams();
@@ -30,10 +32,13 @@ export default function ChapterRead() {
   const [readingTheme, setReadingTheme] = useState("light");
   const [readingProgress, setReadingProgress] = useState(0);
   const [showTocDrawer, setShowTocDrawer] = useState(false);
+  const [showShopeeGate, setShowShopeeGate] = useState(false);
   const isAuthenticated = true;
   const READER_PREFS_KEY = "mi_reader_prefs";
   /** Tránh gọi RPC 2 lần trong React Strict Mode (cùng chapter). */
   const viewBumpDedupRef = useRef({ key: '', at: 0 });
+  /** Tránh mở Shopee gate 2 lần (Strict Mode) cho cùng một chapter.id */
+  const shopeeGateOpenedForChapterRef = useRef(null);
   const formatDate = (date) => {
     return new Date(date).toLocaleString();
   };
@@ -135,6 +140,50 @@ export default function ChapterRead() {
   useEffect(() => {
     setShowComments(false);
   }, [id]);
+
+  /**
+   * Shopee gate: sang chương **số lớn hơn** chương vừa đọc trong tab (cùng truyện) — gồm liền kề (10→11) và nhảy cóc (10→15).
+   * Không hiện khi lần đầu vào một chương (chưa có prev), khi refresh cùng chương, hoặc khi lùi chương.
+   */
+  useEffect(() => {
+    if (loading || !chapter) return;
+    if (Number(chapter.id) !== Number(id)) return;
+    if (chapter.novel_id == null) return;
+
+    const novelId = Number(chapter.novel_id);
+    if (Number.isNaN(novelId)) return;
+
+    const n = Number(chapter.chapter_number);
+    if (Number.isNaN(n)) return;
+
+    const key = lastChapterStorageKey(novelId);
+    let prev = null;
+    try {
+      const raw = sessionStorage.getItem(key);
+      if (raw != null && raw !== '') prev = Number(raw);
+    } catch {
+      /* ignore */
+    }
+
+    const isForwardInNovel =
+      prev != null && !Number.isNaN(prev) && n > prev;
+
+    if (!isForwardInNovel) {
+      setShowShopeeGate(false);
+      shopeeGateOpenedForChapterRef.current = null;
+    } else if (shopeeGateOpenedForChapterRef.current !== chapter.id) {
+      shopeeGateOpenedForChapterRef.current = chapter.id;
+      setShowShopeeGate(true);
+    }
+
+    queueMicrotask(() => {
+      try {
+        sessionStorage.setItem(key, String(n));
+      } catch {
+        /* ignore */
+      }
+    });
+  }, [loading, id, chapter?.id, chapter?.novel_id, chapter?.chapter_number]);
 
   useEffect(() => {
     if (!showTocDrawer) return;
@@ -690,6 +739,8 @@ export default function ChapterRead() {
           </div>
         )}
       </div>
+
+      <ShopeeChapterGateModal open={showShopeeGate} onClose={() => setShowShopeeGate(false)} />
 
       {showTocDrawer && novel && (
         <div className="fixed inset-0 z-[60] flex flex-col justify-end" role="dialog" aria-modal="true" aria-labelledby="toc-drawer-title">
