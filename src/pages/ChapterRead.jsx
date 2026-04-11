@@ -1,6 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { supabase } from "../lib/supabase";
+import { supabase, isSupabaseConfigured } from "../lib/supabase";
+import { clearTtlCache } from "../lib/ttlCache";
+import { HOME_DASHBOARD_CACHE_KEY } from "../lib/cacheKeys";
 
 import {
   Home, BookOpen, Settings, MessageSquare,
@@ -29,6 +31,8 @@ export default function ChapterRead() {
   const [showTocDrawer, setShowTocDrawer] = useState(false);
   const isAuthenticated = true;
   const READER_PREFS_KEY = "mi_reader_prefs";
+  /** Tránh gọi RPC 2 lần trong React Strict Mode (cùng chapter). */
+  const viewBumpDedupRef = useRef({ key: '', at: 0 });
   const formatDate = (date) => {
     return new Date(date).toLocaleString();
   };
@@ -37,39 +41,35 @@ export default function ChapterRead() {
     fetchChapter();
   }, [id]);
 
-  /** +1 novel view once per chapter open (DB must allow RPC or UPDATE — see supabase/increment_novel_view_count.sql). */
+  /**
+   * Mỗi lần mở trang chương: +1 `novels.view_count` (member / guest đều được).
+   * Dùng RPC `increment_novel_view_count` (security definer) vì RLS thường chặn anon UPDATE.
+   */
   useEffect(() => {
-    if (!novel?.id || !chapter?.id) return;
+    if (!isSupabaseConfigured || !supabase || !novel?.id || !chapter?.id) return;
 
-    const storageKey = `mi_novel_view_${novel.id}_${chapter.id}`;
-    try {
-      const done = sessionStorage.getItem(storageKey);
-      if (done === "1" || done === "pending") return;
-      sessionStorage.setItem(storageKey, "pending");
-    } catch {
-      /* private mode: may double-count in dev Strict Mode */
+    const dedupKey = `${novel.id}:${chapter.id}`;
+    const now = Date.now();
+    if (
+      viewBumpDedupRef.current.key === dedupKey &&
+      now - viewBumpDedupRef.current.at < 1600
+    ) {
+      return;
     }
+    viewBumpDedupRef.current = { key: dedupKey, at: now };
 
     (async () => {
-      const clearPending = () => {
-        try {
-          const v = sessionStorage.getItem(storageKey);
-          if (v === "pending") sessionStorage.removeItem(storageKey);
-        } catch {
-          /* ignore */
-        }
-      };
-
-      const { data: rpcData, error: rpcError } = await supabase.rpc("increment_novel_view_count", {
+      const { data: rpcData, error: rpcError } = await supabase.rpc('increment_novel_view_count', {
         p_novel_id: novel.id
       });
 
       if (!rpcError && rpcData != null) {
-        const next = typeof rpcData === "number" ? rpcData : Number(rpcData);
+        const next = typeof rpcData === 'number' ? rpcData : Number(rpcData);
         if (!Number.isNaN(next)) {
           setNovel((prev) => (prev ? { ...prev, view_count: next } : prev));
+          clearTtlCache(HOME_DASHBOARD_CACHE_KEY);
           try {
-            sessionStorage.setItem(storageKey, "1");
+            window.dispatchEvent(new CustomEvent('mitruyen:invalidate-home-cache'));
           } catch {
             /* ignore */
           }
@@ -77,30 +77,34 @@ export default function ChapterRead() {
         }
       }
 
+      if (rpcError) {
+        console.warn('[MiTruyen] increment_novel_view_count:', rpcError.message);
+      }
+
       const { data: fresh } = await supabase
-        .from("novels")
-        .select("view_count")
-        .eq("id", novel.id)
+        .from('novels')
+        .select('view_count')
+        .eq('id', novel.id)
         .maybeSingle();
       const base = fresh?.view_count ?? 0;
       const next = base + 1;
       const { error: upError } = await supabase
-        .from("novels")
+        .from('novels')
         .update({ view_count: next })
-        .eq("id", novel.id);
+        .eq('id', novel.id);
 
       if (upError) {
         console.warn(
-          "[MiTruyen] view_count không cập nhật được:",
+          '[MiTruyen] view_count không cập nhật được:',
           upError.message,
-          "— chạy SQL supabase/increment_novel_view_count.sql trong Supabase (RLS)."
+          '— chạy SQL `supabase/increment_novel_view_count.sql` trong Supabase (Dashboard → SQL).'
         );
-        clearPending();
         return;
       }
       setNovel((prev) => (prev ? { ...prev, view_count: next } : prev));
+      clearTtlCache(HOME_DASHBOARD_CACHE_KEY);
       try {
-        sessionStorage.setItem(storageKey, "1");
+        window.dispatchEvent(new CustomEvent('mitruyen:invalidate-home-cache'));
       } catch {
         /* ignore */
       }
