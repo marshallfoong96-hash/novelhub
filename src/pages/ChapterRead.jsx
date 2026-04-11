@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { supabase, isSupabaseConfigured } from "../lib/supabase";
 import { clearTtlCache } from "../lib/ttlCache";
@@ -42,14 +42,34 @@ export default function ChapterRead() {
     fetchChapter();
   }, [id]);
 
+  /** Đổi chương hoặc mới vào từ trang truyện → về đầu trang ngay (trước khi vẽ). */
+  useLayoutEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+  }, [id]);
+
+  /** Sau khi nội dung chương load xong — tránh layout ảnh kéo scroll lệch. */
+  useEffect(() => {
+    if (loading || !chapter) return;
+    const t = requestAnimationFrame(() => {
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    });
+    return () => cancelAnimationFrame(t);
+  }, [id, loading, chapter?.id]);
+
   /**
-   * Mỗi lần mở trang chương: +1 `novels.view_count` (member / guest đều được).
-   * Dùng RPC `increment_novel_view_count` (security definer) vì RLS thường chặn anon UPDATE.
+   * +1 `novels.view_count` mỗi lần mở đúng chương (anon / member).
+   * Dùng `chapter.novel_id` — không chờ `novel` load (tránh effect không chạy nếu select novel lỗi / chậm).
+   * Chỉ chạy khi đã fetch xong và `chapter.id` khớp URL (tránh state chương cũ).
    */
   useEffect(() => {
-    if (!isSupabaseConfigured || !supabase || !novel?.id || !chapter?.id) return;
+    if (!isSupabaseConfigured || !supabase || loading) return;
+    if (!chapter?.id || chapter.novel_id == null) return;
+    if (Number(chapter.id) !== Number(id)) return;
 
-    const dedupKey = `${novel.id}:${chapter.id}`;
+    const novelId = Number(chapter.novel_id);
+    if (Number.isNaN(novelId)) return;
+
+    const dedupKey = `${novelId}:${chapter.id}`;
     const now = Date.now();
     if (
       viewBumpDedupRef.current.key === dedupKey &&
@@ -61,7 +81,7 @@ export default function ChapterRead() {
 
     (async () => {
       const { data: rpcData, error: rpcError } = await supabase.rpc('increment_novel_view_count', {
-        p_novel_id: novel.id
+        p_novel_id: novelId
       });
 
       if (!rpcError && rpcData != null) {
@@ -79,20 +99,20 @@ export default function ChapterRead() {
       }
 
       if (rpcError) {
-        console.warn('[MiTruyen] increment_novel_view_count:', rpcError.message);
+        console.warn('[MiTruyen] increment_novel_view_count:', rpcError.message, rpcError);
       }
 
       const { data: fresh } = await supabase
         .from('novels')
         .select('view_count')
-        .eq('id', novel.id)
+        .eq('id', novelId)
         .maybeSingle();
       const base = fresh?.view_count ?? 0;
       const next = base + 1;
       const { error: upError } = await supabase
         .from('novels')
         .update({ view_count: next })
-        .eq('id', novel.id);
+        .eq('id', novelId);
 
       if (upError) {
         console.warn(
@@ -110,7 +130,7 @@ export default function ChapterRead() {
         /* ignore */
       }
     })();
-  }, [novel?.id, chapter?.id]);
+  }, [loading, id, chapter?.id, chapter?.novel_id]);
 
   useEffect(() => {
     setShowComments(false);
@@ -196,8 +216,14 @@ export default function ChapterRead() {
   }, []);
 
   const fetchChapter = async () => {
+    if (!isSupabaseConfigured || !supabase) {
+      setLoading(false);
+      return;
+    }
     try {
       setLoading(true);
+      setChapter(null);
+      setNovel(null);
 
       // Fetch the chapter
       const { data: chapterData, error: chapterError } = await supabase

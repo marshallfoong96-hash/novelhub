@@ -60,6 +60,11 @@ function NovelDetail() {
     fetchNovelData();
   }, [slug]);
 
+  /** Vào trang giới thiệu truyện (từ danh sách / link) → luôn từ đầu trang. */
+  useLayoutEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+  }, [slug]);
+
   useEffect(() => {
     if (!novel?.id) return;
     try {
