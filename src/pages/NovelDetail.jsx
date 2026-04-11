@@ -21,6 +21,7 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { formatNumber, formatDate, normalizeAuthorLabel } from '../utils/helpers';
 import AdSlot from '../components/AdSlot';
+import NovelCard from '../components/NovelCard';
 
 function genreBrowsePath(g) {
   if (g.slug != null && String(g.slug).trim() !== '') {
@@ -609,20 +610,9 @@ function NovelDetail() {
                 <h3 className="text-base font-semibold text-foreground">Cùng thể loại</h3>
                 <Link to="/#the-loai-grid" className="text-xs text-accent hover:underline">Xem thể loại</Link>
               </div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+              <div className="novel-feed-grid">
                 {relatedNovels.map((item) => (
-                  <Link key={item.id} to={`/truyen/${item.id}`} className="group">
-                    <div className="aspect-[2/3] rounded overflow-hidden bg-secondary mb-1.5">
-                      <img
-                        src={item.cover_url || '/default-cover.jpg'}
-                        alt={item.title}
-                        className="w-full h-full object-contain group-hover:scale-105 transition-transform"
-                      />
-                    </div>
-                    <p className="text-xs text-foreground line-clamp-2 group-hover:text-accent transition-colors">
-                      {item.title}
-                    </p>
-                  </Link>
+                  <NovelCard key={item.id} novel={item} showStatus variant="webtoon" />
                 ))}
               </div>
             </section>

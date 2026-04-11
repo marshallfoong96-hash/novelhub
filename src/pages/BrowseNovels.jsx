@@ -454,12 +454,12 @@ function BrowseNovels({ mode = "all" }) {
       </div>
 
       {loading ? (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+        <div className="novel-feed-grid">
           {Array.from({ length: 12 }).map((_, idx) => (
-            <div key={idx} className="animate-pulse">
-              <div className="aspect-[2/3] rounded bg-secondary mb-2" />
-              <div className="h-3 rounded bg-secondary mb-1" />
-              <div className="h-3 w-2/3 rounded bg-secondary" />
+            <div key={idx} className="min-w-0 animate-pulse">
+              <div className="aspect-[3/4] rounded-md bg-secondary ring-1 ring-border/30" />
+              <div className="mt-1 h-2.5 rounded bg-secondary" />
+              <div className="mt-0.5 h-2 w-[80%] rounded bg-secondary" />
             </div>
           ))}
         </div>
@@ -472,13 +472,13 @@ function BrowseNovels({ mode = "all" }) {
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+          <div className="novel-feed-grid">
             {novels.map((novel) => (
-              <div key={novel.id} className="relative">
-                <NovelCard novel={novel} showStatus variant="compact" />
+              <div key={novel.id} className="relative min-w-0">
+                <NovelCard novel={novel} showStatus variant="webtoon" />
                 {mode === "chapterRange" && (
-                  <span className="absolute left-1.5 bottom-12 text-[10px] px-1.5 py-0.5 rounded bg-foreground/80 text-background">
-                    {chapterCounts[novel.id] || 0} chuong
+                  <span className="absolute right-1 top-7 z-[1] rounded bg-foreground/85 px-1 py-0.5 text-[8px] font-medium text-background">
+                    {chapterCounts[novel.id] || 0} chương
                   </span>
                 )}
               </div>

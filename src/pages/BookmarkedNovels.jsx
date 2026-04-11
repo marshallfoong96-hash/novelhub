@@ -88,9 +88,9 @@ function BookmarkedNovels() {
           </Link>
         </div>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+        <div className="novel-feed-grid">
           {novels.map((novel) => (
-            <NovelCard key={novel.id} novel={novel} showStatus variant="compact" />
+            <NovelCard key={novel.id} novel={novel} showStatus variant="webtoon" />
           ))}
         </div>
       )}

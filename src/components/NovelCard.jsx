@@ -3,6 +3,44 @@ import { Eye, BookOpen, CheckCircle, Flame } from 'lucide-react';
 import { formatNumber, normalizeAuthorLabel } from '../utils/helpers';
 
 function NovelCard({ novel, showStatus = false, variant = 'default' }) {
+  /** Lưới 3 cột mobile — bìa đầy ô, chữ nhỏ (tham chiếu LINE Webtoon). */
+  if (variant === 'webtoon') {
+    return (
+      <Link to={`/truyen/${novel.id}`} className="group block min-w-0">
+        <div className="relative aspect-[3/4] overflow-hidden rounded-md bg-secondary ring-1 ring-border/40">
+          <img
+            src={novel.cover_url || '/default-cover.jpg'}
+            alt={novel.title}
+            className="h-full w-full object-cover object-top transition-transform duration-300 group-hover:scale-[1.03]"
+          />
+          {showStatus && (
+            <div className="absolute left-1 top-1 flex flex-col gap-0.5">
+              {novel.status === 'completed' && (
+                <span className="rounded px-1 py-0.5 bg-[hsl(var(--success))] text-[8px] font-bold leading-none text-white">
+                  FULL
+                </span>
+              )}
+            </div>
+          )}
+          <div className="absolute bottom-1 right-1">
+            <span className="flex items-center gap-0.5 rounded bg-foreground/75 px-1 py-0.5 text-[8px] font-medium text-background">
+              <Eye className="h-2 w-2 shrink-0" />
+              {formatNumber(novel.view_count || 0)}
+            </span>
+          </div>
+        </div>
+        <div className="mt-1">
+          <h3 className="line-clamp-2 text-[11px] font-semibold leading-snug text-foreground group-hover:text-accent sm:text-xs">
+            {novel.title}
+          </h3>
+          <p className="mt-0.5 line-clamp-1 text-[9px] text-muted-foreground sm:text-[10px]">
+            {normalizeAuthorLabel(novel.author) || 'Đang cập nhật'}
+          </p>
+        </div>
+      </Link>
+    );
+  }
+
   // Featured variant - larger card with more info
   if (variant === 'featured') {
     return (

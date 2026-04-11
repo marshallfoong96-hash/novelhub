@@ -53,6 +53,13 @@
   }
 }
 
+@layer components {
+  /** Điện thoại: lưới 3 cột kiểu Webtoon; tablet/desktop giữ mật độ cao hơn. */
+  .novel-feed-grid {
+    @apply grid grid-cols-3 gap-x-1.5 gap-y-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 sm:gap-x-2 sm:gap-y-2.5 md:gap-3;
+  }
+}
+
 @layer base {
   * {
     @apply border-border;

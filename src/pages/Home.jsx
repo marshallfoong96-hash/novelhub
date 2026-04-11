@@ -435,12 +435,12 @@ function Home() {
 
             <div className="min-h-[360px]">
               {isSwitchingTab && (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 animate-pulse">
+                <div className="novel-feed-grid animate-pulse">
                   {Array.from({ length: 12 }).map((_, idx) => (
-                    <div key={`tab-skeleton-${idx}`}>
-                      <div className="aspect-[2/3] rounded bg-secondary mb-2" />
-                      <div className="h-3 rounded bg-secondary mb-1" />
-                      <div className="h-3 w-2/3 rounded bg-secondary" />
+                    <div key={`tab-skeleton-${idx}`} className="min-w-0">
+                      <div className="aspect-[3/4] rounded-md bg-secondary ring-1 ring-border/30" />
+                      <div className="mt-1 h-2.5 rounded bg-secondary" />
+                      <div className="mt-0.5 h-2 w-[80%] rounded bg-secondary" />
                     </div>
                   ))}
                 </div>
@@ -449,9 +449,9 @@ function Home() {
               {!isSwitchingTab && activeHomeTab === 'hot' && (
                 hotNovels.length > 0 ? (
                   <>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                    <div className="novel-feed-grid">
                       {hotPagedSlice.map((novel) => (
-                        <NovelCard key={novel.id} novel={novel} showStatus variant="compact" />
+                        <NovelCard key={novel.id} novel={novel} showStatus variant="webtoon" />
                       ))}
                     </div>
                     <Pagination
@@ -495,9 +495,9 @@ function Home() {
               {!isSwitchingTab && activeHomeTab === 'full' && (
                 completedNovels.length > 0 ? (
                   <>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                    <div className="novel-feed-grid">
                       {fullPagedSlice.map((novel) => (
-                        <NovelCard key={novel.id} novel={novel} showStatus variant="compact" />
+                        <NovelCard key={novel.id} novel={novel} showStatus variant="webtoon" />
                       ))}
                     </div>
                     <Pagination
