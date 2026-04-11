@@ -23,6 +23,7 @@ import { formatNumber, formatDate, normalizeAuthorLabel } from '../utils/helpers
 import AdSlot from '../components/AdSlot';
 import NovelCard from '../components/NovelCard';
 import DonateModal from '../components/DonateModal';
+import { fetchAllChaptersForNovel } from '../lib/fetchAllChapters';
 
 function genreBrowsePath(g) {
   if (g.slug != null && String(g.slug).trim() !== '') {
@@ -309,17 +310,13 @@ function NovelDetail() {
         setRelatedNovels([]);
       }
 
-      // Fetch chapters for this novel
-      const { data: chaptersData, error: chaptersError } = await supabase
-        .from('chapters')
-        .select('*')
-        .eq('novel_id', parseInt(slug))
-        .order('chapter_number', { ascending: true });
-
-      if (chaptersError) {
-        console.error('[v0] Error fetching chapters:', chaptersError);
-      } else {
+      // Fetch chapters (nhiều hơn 1000 chương vẫn lấy đủ — xem fetchAllChaptersForNovel)
+      try {
+        const chaptersData = await fetchAllChaptersForNovel(supabase, parseInt(slug, 10), '*');
         setChapters(chaptersData || []);
+      } catch (chaptersError) {
+        console.error('[v0] Error fetching chapters:', chaptersError);
+        setChapters([]);
       }
 
     } catch (error) {

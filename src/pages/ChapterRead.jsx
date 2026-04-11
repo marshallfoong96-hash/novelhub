@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { supabase, isSupabaseConfigured } from "../lib/supabase";
 import { clearTtlCache } from "../lib/ttlCache";
 import { HOME_DASHBOARD_CACHE_KEY } from "../lib/cacheKeys";
+import { fetchAllChaptersForNovel } from "../lib/fetchAllChapters";
 
 import {
   Home, BookOpen, Settings, MessageSquare,
@@ -224,15 +225,16 @@ export default function ChapterRead() {
           setNovel(novelData);
         }
 
-        // Fetch all chapters for navigation
-        const { data: chaptersData, error: chaptersError } = await supabase
-          .from("chapters")
-          .select("id, chapter_number, title")
-          .eq("novel_id", chapterData.novel_id)
-          .order("chapter_number", { ascending: true });
-
-        if (!chaptersError) {
+        try {
+          const chaptersData = await fetchAllChaptersForNovel(
+            supabase,
+            chapterData.novel_id,
+            "id, chapter_number, title"
+          );
           setAllChapters(chaptersData || []);
+        } catch (chaptersError) {
+          console.error("[v0] chapters list:", chaptersError);
+          setAllChapters([]);
         }
       }
     } catch (error) {
