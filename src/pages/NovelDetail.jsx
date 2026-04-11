@@ -22,6 +22,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { formatNumber, formatDate, normalizeAuthorLabel } from '../utils/helpers';
 import AdSlot from '../components/AdSlot';
 import NovelCard from '../components/NovelCard';
+import DonateModal from '../components/DonateModal';
 
 function genreBrowsePath(g) {
   if (g.slug != null && String(g.slug).trim() !== '') {
@@ -47,6 +48,7 @@ function NovelDetail() {
   const [novelGenres, setNovelGenres] = useState([]);
   const [showDescExpanded, setShowDescExpanded] = useState(false);
   const [descNeedsToggle, setDescNeedsToggle] = useState(false);
+  const [showDonateModal, setShowDonateModal] = useState(false);
   const descBlockRef = useRef(null);
   const { isAuthenticated, user } = useAuth();
 
@@ -159,10 +161,7 @@ function NovelDetail() {
   };
 
   const handleDonate = () => {
-    if (!novel?.title) return;
-    const subject = encodeURIComponent(`Ủng hộ — ${novel.title}`);
-    window.location.href = `mailto:contact@mitruyen.me?subject=${subject}`;
-    showNotice('Đang mở email ủng hộ…');
+    setShowDonateModal(true);
   };
 
   const handleReportError = () => {
@@ -376,6 +375,7 @@ function NovelDetail() {
   }
 
   return (
+    <>
     <div className="space-y-6">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -755,6 +755,8 @@ function NovelDetail() {
           </div>
       </div>
     </div>
+    <DonateModal open={showDonateModal} onClose={() => setShowDonateModal(false)} />
+    </>
   );
 }
 
