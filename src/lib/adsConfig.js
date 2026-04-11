@@ -6,6 +6,9 @@
 export const ADSENSE_CLIENT =
   import.meta.env.VITE_ADSENSE_CLIENT?.trim() || "ca-pub-6602775323692698";
 
+/** mitruyen trial 1 — dùng khi không set VITE_ADSENSE_SLOT_* / DEFAULT */
+export const DEFAULT_AD_SLOT = "8426876857";
+
 const SLOT_KEYS = {
   home: "VITE_ADSENSE_SLOT_HOME",
   detail: "VITE_ADSENSE_SLOT_DETAIL",
@@ -17,7 +20,7 @@ export function resolveAdSlot(placement) {
   const envName = SLOT_KEYS[placement];
   const specific = envName ? import.meta.env[envName]?.trim() : "";
   const fallback = import.meta.env.VITE_ADSENSE_SLOT_DEFAULT?.trim() || "";
-  return specific || fallback || "";
+  return specific || fallback || DEFAULT_AD_SLOT;
 }
 
 export function isAdsConfigured(placement) {
