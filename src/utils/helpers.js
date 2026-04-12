@@ -60,6 +60,39 @@ export function novelChapterSubtitle(novel) {
   return '—';
 }
 
+/**
+ * Lượt yêu thích trên bản ghi `novels` — một số DB dùng `like_count` / `favorite_count` thay vì `likes`.
+ * Thứ tự: ưu tiên cột “đếm” thường gặp khi import, rồi `likes` (UI cập nhật qua Supabase).
+ */
+export function novelLikeCount(novel) {
+  if (!novel || typeof novel !== 'object') return 0;
+  const keys = [
+    'like_count',
+    'likes',
+    'favorite_count',
+    'favourite_count',
+    'favorites_count',
+    'luot_yeu_thich',
+    'yeu_thich',
+  ];
+  for (const key of keys) {
+    const v = novel[key];
+    if (v == null || v === '') continue;
+    const n = Number(v);
+    if (Number.isFinite(n)) return Math.max(0, n);
+  }
+  const stats = novel.stats;
+  if (stats && typeof stats === 'object') {
+    for (const key of ['likes', 'like_count', 'favorite_count']) {
+      const v = stats[key];
+      if (v == null || v === '') continue;
+      const n = Number(v);
+      if (Number.isFinite(n)) return Math.max(0, n);
+    }
+  }
+  return 0;
+}
+
 // Format Date
 export const formatDate = (dateString) => {
   if (!dateString) return '';

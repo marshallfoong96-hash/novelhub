@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
-import { formatNumber, formatDate, normalizeAuthorLabel } from '../utils/helpers';
+import { formatNumber, formatDate, normalizeAuthorLabel, novelLikeCount } from '../utils/helpers';
 import AdSlot from '../components/AdSlot';
 import NovelCard from '../components/NovelCard';
 import DonateModal from '../components/DonateModal';
@@ -159,9 +159,11 @@ function NovelDetail() {
     localStorage.setItem('mi_favorites', JSON.stringify(next));
     setIsFavorited(willFavorite);
 
-    const currentLikes = Number(novel.likes || 0);
+    const currentLikes = novelLikeCount(novel);
     const nextLikes = willFavorite ? currentLikes + 1 : Math.max(0, currentLikes - 1);
-    setNovel((prev) => (prev ? { ...prev, likes: nextLikes } : prev));
+    setNovel((prev) =>
+      prev ? { ...prev, likes: nextLikes, like_count: nextLikes } : prev
+    );
     await supabase.from('novels').update({ likes: nextLikes }).eq('id', id);
 
     showNotice(willFavorite ? 'Đã thêm vào yêu thích.' : 'Đã bỏ yêu thích.');
@@ -467,7 +469,7 @@ function NovelDetail() {
                       <dt className="text-muted-foreground shrink-0">Yêu thích:</dt>
                       <dd className="inline-flex items-center gap-1 text-foreground">
                         <Heart className="h-3.5 w-3.5 text-accent" aria-hidden />
-                        {formatNumber(novel.likes ?? 0)}
+                        {formatNumber(novelLikeCount(novel))}
                       </dd>
                     </div>
                     <div className="flex flex-wrap items-center gap-x-2 gap-y-1">

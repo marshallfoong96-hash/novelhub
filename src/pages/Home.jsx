@@ -25,7 +25,7 @@ import Pagination from '../components/Pagination';
 import AdSlot from '../components/AdSlot';
 import BrandLogo from '../components/BrandLogo';
 import { branding } from '../lib/branding';
-import { formatNumber, formatDate, novelChapterSubtitle } from '../utils/helpers';
+import { formatNumber, formatDate, novelChapterSubtitle, novelLikeCount } from '../utils/helpers';
 
 function getGenreMeta(genre) {
   return {
@@ -693,12 +693,6 @@ function heroFeaturedChapterLabel(novel) {
   return `${x.toLocaleString('vi-VN')} chương`;
 }
 
-function heroFeaturedLikes(novel) {
-  const v = novel?.likes ?? novel?.like_count ?? novel?.favorite_count;
-  const n = Number(v);
-  return formatNumber(Number.isFinite(n) ? n : 0);
-}
-
 function HeroSection({ featuredNovels }) {
   const slides = featuredNovels.slice(0, 5);
   const slideCount = slides.length;
@@ -876,7 +870,7 @@ function HeroSection({ featuredNovels }) {
             </span>
             <span className="flex items-center gap-1">
               <Heart className="w-3.5 h-3.5" />
-              {heroFeaturedLikes(featured)}
+              {formatNumber(novelLikeCount(featured))}
             </span>
           </div>
           <div className="flex items-center gap-3">
