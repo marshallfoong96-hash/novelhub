@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { authAPI } from '../api/services';
-import { supabase } from '../lib/supabase';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 const AuthContext = createContext(null);
 
@@ -12,14 +12,16 @@ export const AuthProvider = ({ children }) => {
   // 初始化：檢查登入狀態
   // =====================
   useEffect(() => {
+    if (!isSupabaseConfigured || !supabase) {
+      setLoading(false);
+      return undefined;
+    }
+
     checkAuth();
 
-    // 監聽登入/登出
-    const { data: listener } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        setUser(session?.user || null);
-      }
-    );
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user || null);
+    });
 
     return () => {
       listener.subscription.unsubscribe();
@@ -27,15 +29,28 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const checkAuth = async () => {
-    const { data } = await supabase.auth.getUser();
-    setUser(data?.user || null);
-    setLoading(false);
+    if (!supabase) {
+      setLoading(false);
+      return;
+    }
+    try {
+      const { data } = await supabase.auth.getUser();
+      setUser(data?.user || null);
+    } catch (e) {
+      console.error('[Auth] getUser failed:', e);
+      setUser(null);
+    } finally {
+      setLoading(false);
+    }
   };
 
   // =====================
   // 登入
   // =====================
   const login = async (email, password) => {
+    if (!supabase) {
+      return { success: false, message: 'Chưa cấu hình đăng nhập.' };
+    }
     const { data, error } = await authAPI.login(email, password);
 
     if (error) {
@@ -54,6 +69,9 @@ export const AuthProvider = ({ children }) => {
   };
 
   const loginWithGoogle = async () => {
+    if (!supabase) {
+      return { success: false, message: 'Chưa cấu hình đăng nhập.' };
+    }
     const { error } = await authAPI.loginWithGoogle();
 
     if (error) {
@@ -70,6 +88,9 @@ export const AuthProvider = ({ children }) => {
   // 註冊
   // =====================
   const register = async (username, email, password) => {
+    if (!supabase) {
+      return { success: false, message: 'Chưa cấu hình đăng nhập.' };
+    }
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -97,7 +118,7 @@ export const AuthProvider = ({ children }) => {
   // 登出
   // =====================
   const logout = async () => {
-    await supabase.auth.signOut();
+    if (supabase) await supabase.auth.signOut();
     setUser(null);
   };
 

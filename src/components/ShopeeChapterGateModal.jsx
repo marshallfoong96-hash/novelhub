@@ -40,11 +40,10 @@ export default function ShopeeChapterGateModal({ open, onClose }) {
     finish();
   };
 
+  /** 僅頂部左右兩顆，不與下方橘色 CTA 重疊；右側避開關閉鈕 */
   const deco = [
-    { src: getSticker(0), className: 'left-1 top-14 -rotate-12', size: 'h-11 w-11 sm:h-12 sm:w-12' },
-    { src: getSticker(2), className: 'right-1 top-20 rotate-6', size: 'h-9 w-9 sm:h-10 sm:w-10' },
-    { src: getSticker(4), className: 'left-1 bottom-24 rotate-6', size: 'h-9 w-9 sm:h-10 sm:w-10' },
-    { src: getSticker(1), className: 'right-1 bottom-20 -rotate-12', size: 'h-11 w-11 sm:h-12 sm:w-12' },
+    { src: getSticker(0), className: 'left-3 top-3 -rotate-6', size: 'h-8 w-8 sm:h-9 sm:w-9' },
+    { src: getSticker(2), className: 'right-14 top-3 rotate-6', size: 'h-8 w-8 sm:h-9 sm:w-9' },
   ];
 
   return (
@@ -60,7 +59,7 @@ export default function ShopeeChapterGateModal({ open, onClose }) {
             key={i}
             src={d.src}
             alt=""
-            className={`pointer-events-none absolute z-0 select-none rounded-full object-cover opacity-90 shadow-md ring-2 ring-white/40 dark:ring-white/10 ${d.className} ${d.size}`}
+            className={`pointer-events-none absolute z-0 select-none rounded-full object-cover opacity-85 shadow-sm ring-2 ring-white/40 dark:ring-white/10 ${d.className} ${d.size}`}
             draggable={false}
           />
         ))}
@@ -74,7 +73,7 @@ export default function ShopeeChapterGateModal({ open, onClose }) {
           <X className="h-5 w-5" />
         </button>
 
-        <div className="relative z-[1] px-4 pb-4 pt-10 text-center">
+        <div className="relative z-[1] px-4 pb-4 pt-[2.75rem] text-center sm:pt-12">
           <h2 id="shopee-gate-title" className="text-[15px] font-semibold leading-snug text-foreground sm:text-base">
             Mời bạn CLICK vào liên kết bên dưới để mở khóa toàn bộ chương truyện!
           </h2>

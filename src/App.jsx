@@ -1,30 +1,32 @@
-import { useEffect, lazy, Suspense } from 'react';
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import { useEffect, Suspense } from 'react';
+import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { loadAdsenseScript } from './lib/adsConfig';
+import { lazyWithRetry } from './lib/lazyWithRetry';
 import Header from './components/Header';
+import { RouteErrorBoundary } from './components/RouteErrorBoundary';
 import { BookOpen, Users, PenTool, Mail, Github, Facebook } from 'lucide-react';
 import BrandLogo from './components/BrandLogo';
 
-const Home = lazy(() => import('./pages/Home'));
-const Login = lazy(() => import('./pages/Login'));
-const Register = lazy(() => import('./pages/Register'));
-const NovelDetail = lazy(() => import('./pages/NovelDetail'));
-const ChapterRead = lazy(() => import('./pages/ChapterRead'));
-const BrowseNovels = lazy(() => import('./pages/BrowseNovels'));
-const ReadingHistory = lazy(() => import('./pages/ReadingHistory'));
-const BookmarkedNovels = lazy(() => import('./pages/BookmarkedNovels'));
-const GenreManager = lazy(() => import('./pages/GenreManager'));
-const AboutPage = lazy(() =>
+const Home = lazyWithRetry(() => import('./pages/Home'));
+const Login = lazyWithRetry(() => import('./pages/Login'));
+const Register = lazyWithRetry(() => import('./pages/Register'));
+const NovelDetail = lazyWithRetry(() => import('./pages/NovelDetail'));
+const ChapterRead = lazyWithRetry(() => import('./pages/ChapterRead'));
+const BrowseNovels = lazyWithRetry(() => import('./pages/BrowseNovels'));
+const ReadingHistory = lazyWithRetry(() => import('./pages/ReadingHistory'));
+const BookmarkedNovels = lazyWithRetry(() => import('./pages/BookmarkedNovels'));
+const GenreManager = lazyWithRetry(() => import('./pages/GenreManager'));
+const AboutPage = lazyWithRetry(() =>
   import('./pages/InfoPage').then((m) => ({ default: m.AboutPage }))
 );
-const PrivacyPage = lazy(() =>
+const PrivacyPage = lazyWithRetry(() =>
   import('./pages/InfoPage').then((m) => ({ default: m.PrivacyPage }))
 );
-const TermsPage = lazy(() =>
+const TermsPage = lazyWithRetry(() =>
   import('./pages/InfoPage').then((m) => ({ default: m.TermsPage }))
 );
-const ContactPage = lazy(() =>
+const ContactPage = lazyWithRetry(() =>
   import('./pages/InfoPage').then((m) => ({ default: m.ContactPage }))
 );
 
@@ -33,6 +35,38 @@ function RoutePageFallback() {
     <div className="min-h-[40vh] flex items-center justify-center" aria-busy="true">
       <p className="text-muted-foreground text-sm animate-pulse">Đang tải...</p>
     </div>
+  );
+}
+
+function RoutedMain() {
+  const location = useLocation();
+  return (
+    <RouteErrorBoundary key={location.pathname + location.search}>
+      <Suspense fallback={<RoutePageFallback />}>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/chapter/:id" element={<ChapterRead />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/truyen/:slug" element={<NovelDetail />} />
+          <Route path="/hot" element={<BrowseNovels mode="hot" />} />
+          <Route path="/truyen-moi" element={<BrowseNovels mode="recent" />} />
+          <Route path="/truyen-full" element={<BrowseNovels mode="completed" />} />
+          <Route path="/truyen-dang-ra" element={<BrowseNovels mode="ongoing" />} />
+          <Route path="/so-chuong/:range" element={<BrowseNovels mode="chapterRange" />} />
+          <Route path="/lich-su" element={<ReadingHistory />} />
+          <Route path="/danh-dau" element={<BookmarkedNovels />} />
+          <Route path="/quan-ly-the-loai" element={<GenreManager />} />
+          <Route path="/the-loai" element={<BrowseNovels mode="all" />} />
+          <Route path="/the-loai/:slug" element={<BrowseNovels mode="category" />} />
+          <Route path="/gioi-thieu" element={<AboutPage />} />
+          <Route path="/chinh-sach" element={<PrivacyPage />} />
+          <Route path="/terms" element={<TermsPage />} />
+          <Route path="/lien-he" element={<ContactPage />} />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </Suspense>
+    </RouteErrorBoundary>
   );
 }
 
@@ -47,30 +81,7 @@ function App() {
         <div className="min-h-screen bg-background flex flex-col">
           <Header />
           <main className="flex-1 w-full max-w-7xl mx-auto px-4 py-6">
-            <Suspense fallback={<RoutePageFallback />}>
-              <Routes>
-                <Route path="/" element={<Home />} />
-                <Route path="/chapter/:id" element={<ChapterRead />} />
-                <Route path="/login" element={<Login />} />
-                <Route path="/register" element={<Register />} />
-                <Route path="/truyen/:slug" element={<NovelDetail />} />
-                <Route path="/hot" element={<BrowseNovels mode="hot" />} />
-                <Route path="/truyen-moi" element={<BrowseNovels mode="recent" />} />
-                <Route path="/truyen-full" element={<BrowseNovels mode="completed" />} />
-                <Route path="/truyen-dang-ra" element={<BrowseNovels mode="ongoing" />} />
-                <Route path="/so-chuong/:range" element={<BrowseNovels mode="chapterRange" />} />
-                <Route path="/lich-su" element={<ReadingHistory />} />
-                <Route path="/danh-dau" element={<BookmarkedNovels />} />
-                <Route path="/quan-ly-the-loai" element={<GenreManager />} />
-                <Route path="/the-loai" element={<BrowseNovels mode="all" />} />
-                <Route path="/the-loai/:slug" element={<BrowseNovels mode="category" />} />
-                <Route path="/gioi-thieu" element={<AboutPage />} />
-                <Route path="/chinh-sach" element={<PrivacyPage />} />
-                <Route path="/terms" element={<TermsPage />} />
-                <Route path="/lien-he" element={<ContactPage />} />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </Suspense>
+            <RoutedMain />
           </main>
           <Footer />
         </div>
