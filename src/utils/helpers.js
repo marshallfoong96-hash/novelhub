@@ -61,11 +61,18 @@ export function novelChapterSubtitle(novel) {
 }
 
 /**
- * Lượt yêu thích trên bản ghi `novels` — một số DB dùng `like_count` / `favorite_count` thay vì `likes`.
- * Thứ tự: ưu tiên cột “đếm” thường gặp khi import, rồi `likes` (UI cập nhật qua Supabase).
+ * Lượt hiển thị cho icon tim (Yêu thích) trên `novels`.
+ * - Ưu tiên: `like_count`, `likes`, các cột favorite…
+ * - Nếu bảng **không có** `likes` / `like_count` (PostgREST không trả key), dùng `follow_count`
+ *   — nhiều project chỉ có cột này (như screenshot Supabase của bạn).
+ * - Nếu đã có `likes` hoặc `like_count` (kể cả = 0) thì **không** gộp `follow_count` (tránh trùng với “Theo dõi”).
  */
 export function novelLikeCount(novel) {
   if (!novel || typeof novel !== 'object') return 0;
+  const hasLikesOrLikeCount =
+    Object.prototype.hasOwnProperty.call(novel, 'likes') ||
+    Object.prototype.hasOwnProperty.call(novel, 'like_count');
+
   const keys = [
     'like_count',
     'likes',
@@ -75,22 +82,47 @@ export function novelLikeCount(novel) {
     'luot_yeu_thich',
     'yeu_thich',
   ];
+
+  let best = 0;
   for (const key of keys) {
+    if (!Object.prototype.hasOwnProperty.call(novel, key)) continue;
     const v = novel[key];
     if (v == null || v === '') continue;
     const n = Number(v);
-    if (Number.isFinite(n)) return Math.max(0, n);
+    if (Number.isFinite(n)) best = Math.max(best, n);
   }
+
   const stats = novel.stats;
   if (stats && typeof stats === 'object') {
     for (const key of ['likes', 'like_count', 'favorite_count']) {
       const v = stats[key];
       if (v == null || v === '') continue;
       const n = Number(v);
-      if (Number.isFinite(n)) return Math.max(0, n);
+      if (Number.isFinite(n)) best = Math.max(best, n);
     }
   }
-  return 0;
+
+  if (!hasLikesOrLikeCount && Object.prototype.hasOwnProperty.call(novel, 'follow_count')) {
+    const fc = Number(novel.follow_count);
+    if (Number.isFinite(fc)) best = Math.max(best, fc);
+  }
+
+  return Math.max(0, best);
+}
+
+/**
+ * Giá trị nền khi bấm Yêu thích để **ghi** vào cột `likes` (chỉ sửa `likes`, không sửa follow_count).
+ * - Đã có cột `likes` trong JSON → dùng `likes`.
+ * - Chưa có / null (trước khi chạy SQL) → dùng `follow_count` làm điểm xuất phát một lần.
+ */
+export function novelFavoriteWriteBase(novel) {
+  if (!novel || typeof novel !== 'object') return 0;
+  if (Object.prototype.hasOwnProperty.call(novel, 'likes')) {
+    const n = Number(novel.likes);
+    return Number.isFinite(n) ? Math.max(0, n) : 0;
+  }
+  const fc = Number(novel.follow_count);
+  return Number.isFinite(fc) ? Math.max(0, fc) : 0;
 }
 
 // Format Date

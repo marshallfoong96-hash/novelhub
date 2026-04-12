@@ -19,7 +19,13 @@ import {
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
-import { formatNumber, formatDate, normalizeAuthorLabel, novelLikeCount } from '../utils/helpers';
+import {
+  formatNumber,
+  formatDate,
+  normalizeAuthorLabel,
+  novelLikeCount,
+  novelFavoriteWriteBase,
+} from '../utils/helpers';
 import AdSlot from '../components/AdSlot';
 import NovelCard from '../components/NovelCard';
 import DonateModal from '../components/DonateModal';
@@ -159,11 +165,9 @@ function NovelDetail() {
     localStorage.setItem('mi_favorites', JSON.stringify(next));
     setIsFavorited(willFavorite);
 
-    const currentLikes = novelLikeCount(novel);
-    const nextLikes = willFavorite ? currentLikes + 1 : Math.max(0, currentLikes - 1);
-    setNovel((prev) =>
-      prev ? { ...prev, likes: nextLikes, like_count: nextLikes } : prev
-    );
+    const base = novelFavoriteWriteBase(novel);
+    const nextLikes = willFavorite ? base + 1 : Math.max(0, base - 1);
+    setNovel((prev) => (prev ? { ...prev, likes: nextLikes } : prev));
     await supabase.from('novels').update({ likes: nextLikes }).eq('id', id);
 
     showNotice(willFavorite ? 'Đã thêm vào yêu thích.' : 'Đã bỏ yêu thích.');
