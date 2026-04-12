@@ -25,7 +25,7 @@ import Pagination from '../components/Pagination';
 import AdSlot from '../components/AdSlot';
 import BrandLogo from '../components/BrandLogo';
 import { branding } from '../lib/branding';
-import { formatNumber, formatDate, normalizeAuthorLabel } from '../utils/helpers';
+import { formatNumber, formatDate, novelChapterSubtitle } from '../utils/helpers';
 
 function getGenreMeta(genre) {
   return {
@@ -187,15 +187,23 @@ function Home() {
             }
 
             const firstChapterMap = {};
+            const latestChapterMap = {};
             (chapterRows || []).forEach((chapter) => {
-              if (!firstChapterMap[chapter.novel_id]) {
-                firstChapterMap[chapter.novel_id] = chapter.id;
+              const nid = chapter.novel_id;
+              if (!firstChapterMap[nid]) {
+                firstChapterMap[nid] = chapter.id;
+              }
+              const cn = Number(chapter.chapter_number);
+              if (nid != null && !Number.isNaN(cn)) {
+                const prev = latestChapterMap[nid];
+                if (prev == null || cn > prev) latestChapterMap[nid] = cn;
               }
             });
 
             const novelsWithFirstChapter = (novels || []).map((novel) => ({
               ...novel,
-              first_chapter_id: firstChapterMap[novel.id] || null
+              first_chapter_id: firstChapterMap[novel.id] || null,
+              latest_chapter_number: latestChapterMap[novel.id] ?? null,
             }));
 
             return { novelsWithFirstChapter, genresData };
@@ -950,9 +958,7 @@ function UpdateRow({ novel }) {
               FULL
             </span>
           )}
-          <span className="text-xs text-muted-foreground">
-            {normalizeAuthorLabel(novel.author) || 'Đang cập nhật'}
-          </span>
+          <span className="text-xs text-muted-foreground">{novelChapterSubtitle(novel)}</span>
         </div>
       </div>
       <div className="flex-shrink-0 text-right">

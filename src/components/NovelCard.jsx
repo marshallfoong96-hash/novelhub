@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
-import { Eye, BookOpen, CheckCircle, Flame } from 'lucide-react';
-import { formatNumber, normalizeAuthorLabel } from '../utils/helpers';
+import { Eye, CheckCircle } from 'lucide-react';
+import { formatNumber, novelChapterSubtitle } from '../utils/helpers';
 
 function NovelCard({ novel, showStatus = false, variant = 'default' }) {
   /** Lưới 3 cột mobile — bìa đầy ô, chữ nhỏ (tham chiếu LINE Webtoon). */
@@ -34,7 +34,7 @@ function NovelCard({ novel, showStatus = false, variant = 'default' }) {
             {novel.title}
           </h3>
           <p className="mt-0.5 line-clamp-1 text-[9px] text-muted-foreground sm:text-[10px]">
-            {normalizeAuthorLabel(novel.author) || 'Đang cập nhật'}
+            {novelChapterSubtitle(novel)}
           </p>
         </div>
       </Link>
@@ -122,7 +122,7 @@ function NovelCard({ novel, showStatus = false, variant = 'default' }) {
             {novel.title}
           </h3>
           <p className="text-[10px] text-muted-foreground mt-0.5 line-clamp-1">
-            {normalizeAuthorLabel(novel.author) || 'Đang cập nhật'}
+            {novelChapterSubtitle(novel)}
           </p>
         </div>
       </Link>
@@ -169,7 +169,7 @@ function NovelCard({ novel, showStatus = false, variant = 'default' }) {
         {novel.title}
       </h3>
       <p className="text-xs text-muted-foreground mt-1">
-        {normalizeAuthorLabel(novel.author) || 'Đang cập nhật'}
+        {novelChapterSubtitle(novel)}
       </p>
     </Link>
   );

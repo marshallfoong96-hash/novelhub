@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Bookmark } from "lucide-react";
 import NovelCard from "../components/NovelCard";
 import { supabase, isSupabaseConfigured } from "../lib/supabase";
+import { enrichNovelsWithLatestChapter } from "../lib/enrichNovelsLatestChapter";
 
 function readBookmarkIds() {
   try {
@@ -47,7 +48,7 @@ function BookmarkedNovels() {
         const rows = data || [];
         const order = new Map(ids.map((id, i) => [id, i]));
         rows.sort((a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0));
-        setNovels(rows);
+        setNovels(await enrichNovelsWithLatestChapter(supabase, rows));
       }
       setLoading(false);
     })();

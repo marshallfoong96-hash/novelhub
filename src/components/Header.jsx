@@ -22,7 +22,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { fetchAllGenresRows, fetchGenresCached, primeGenresCache } from '../lib/cachedQueries';
 import BrandLogo from './BrandLogo';
-import { normalizeAuthorLabel } from '../utils/helpers';
+import { novelChapterSubtitle } from '../utils/helpers';
+import { enrichNovelsWithLatestChapter } from '../lib/enrichNovelsLatestChapter';
 
 function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -195,14 +196,15 @@ function Header() {
         setHotSuggestions([]);
       } else {
         const rows = data || [];
-        setSearchResults(rows);
-        if (rows.length === 0) {
+        const enriched = await enrichNovelsWithLatestChapter(supabase, rows);
+        setSearchResults(enriched);
+        if (enriched.length === 0) {
           const { data: hotData } = await supabase
             .from('novels')
             .select('id,title,author,cover_url,view_count')
             .order('view_count', { ascending: false })
             .limit(6);
-          setHotSuggestions(hotData || []);
+          setHotSuggestions(await enrichNovelsWithLatestChapter(supabase, hotData || []));
         } else {
           setHotSuggestions([]);
         }
@@ -369,7 +371,7 @@ function Header() {
                                   <div className="min-w-0">
                                     <p className="text-sm text-foreground line-clamp-1">{item.title}</p>
                                     <p className="text-xs text-muted-foreground line-clamp-1">
-                                      {normalizeAuthorLabel(item.author) || 'Đang cập nhật'}
+                                      {novelChapterSubtitle(item)}
                                     </p>
                                   </div>
                                 </Link>
@@ -396,7 +398,7 @@ function Header() {
                               <div className="min-w-0">
                                 <p className="text-sm text-foreground line-clamp-1">{item.title}</p>
                                 <p className="text-xs text-muted-foreground line-clamp-1">
-                                  {normalizeAuthorLabel(item.author) || 'Đang cập nhật'}
+                                  {novelChapterSubtitle(item)}
                                 </p>
                               </div>
                             </Link>
@@ -598,7 +600,7 @@ function Header() {
                               <div className="min-w-0">
                                 <p className="text-sm text-foreground line-clamp-1">{item.title}</p>
                                 <p className="text-xs text-muted-foreground line-clamp-1">
-                                  {normalizeAuthorLabel(item.author) || 'Đang cập nhật'}
+                                  {novelChapterSubtitle(item)}
                                 </p>
                               </div>
                             </Link>
@@ -628,7 +630,7 @@ function Header() {
                           <div className="min-w-0">
                             <p className="text-sm text-foreground line-clamp-1">{item.title}</p>
                             <p className="text-xs text-muted-foreground line-clamp-1">
-                              {normalizeAuthorLabel(item.author) || 'Đang cập nhật'}
+                              {novelChapterSubtitle(item)}
                             </p>
                           </div>
                         </Link>

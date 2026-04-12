@@ -5,6 +5,7 @@ import NovelCard from "../components/NovelCard";
 import Pagination from "../components/Pagination";
 import { supabase, isSupabaseConfigured } from "../lib/supabase";
 import { fetchGenresCached } from "../lib/cachedQueries";
+import { enrichNovelsWithLatestChapter } from "../lib/enrichNovelsLatestChapter";
 
 function normalize(value) {
   return String(value || "").toLowerCase().trim();
@@ -138,7 +139,8 @@ function BrowseNovels({ mode = "all" }) {
       }
       const rows = data || [];
       const ordered = sliceIds.map((id) => rows.find((n) => n.id === id)).filter(Boolean);
-      setNovels((prev) => (replace ? ordered : [...prev, ...ordered]));
+      const enriched = await enrichNovelsWithLatestChapter(supabase, ordered);
+      setNovels((prev) => (replace ? enriched : [...prev, ...enriched]));
       setPage(pageIndex);
       setLoading(false);
       return;
@@ -147,7 +149,10 @@ function BrowseNovels({ mode = "all" }) {
     if (mode === "chapterRange") {
       const from = pageIndex * PAGE_SIZE;
       const to = from + PAGE_SIZE;
-      const chunk = chapterRangePool.slice(from, to);
+      const chunk = chapterRangePool.slice(from, to).map((n) => ({
+        ...n,
+        latest_chapter_number: chapterCounts[n.id] ?? n.latest_chapter_number ?? null,
+      }));
       setNovels((prev) => (replace ? chunk : [...prev, ...chunk]));
       setPage(pageIndex);
       setLoading(false);
@@ -179,10 +184,11 @@ function BrowseNovels({ mode = "all" }) {
     }
 
     const newRows = data || [];
-    setNovels((prev) => (replace ? newRows : [...prev, ...newRows]));
+    const enriched = await enrichNovelsWithLatestChapter(supabase, newRows);
+    setNovels((prev) => (replace ? enriched : [...prev, ...enriched]));
     setPage(pageIndex);
     setLoading(false);
-  }, [buildQuery, mode, slug, activeGenre, chapterRangePool, categorySortedIds, genres.length]);
+  }, [buildQuery, mode, slug, activeGenre, chapterRangePool, categorySortedIds, genres.length, chapterCounts]);
 
   useEffect(() => {
     if (mode !== "category") {

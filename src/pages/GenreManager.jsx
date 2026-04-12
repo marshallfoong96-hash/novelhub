@@ -4,7 +4,8 @@ import { supabase, isSupabaseConfigured } from "../lib/supabase";
 import { clearTtlCache } from "../lib/ttlCache";
 import { fetchAllGenresRows } from "../lib/cachedQueries";
 import { HOME_DASHBOARD_CACHE_KEY, GENRES_CACHE_KEY } from "../lib/cacheKeys";
-import { normalizeAuthorLabel } from "../utils/helpers";
+import { novelChapterSubtitle } from "../utils/helpers";
+import { enrichNovelsWithLatestChapter } from "../lib/enrichNovelsLatestChapter";
 
 const coverPool = [
   "https://images.unsplash.com/photo-1509248961158-e54f6934749c?auto=format&fit=crop&w=900&q=80",
@@ -69,7 +70,8 @@ function GenreManager() {
         });
       }
 
-      setNovels(novelsRes.data || []);
+      const rawList = novelsRes.data || [];
+      setNovels(await enrichNovelsWithLatestChapter(supabase, rawList));
       setGenres(genresList);
       setNovelGenreMap(nextMap);
       setLoading(false);
@@ -407,7 +409,7 @@ function GenreManager() {
                     <h3 className="text-sm font-semibold text-foreground line-clamp-1">{novel.title}</h3>
                   </button>
                   <p className="text-xs text-muted-foreground">
-                    {normalizeAuthorLabel(novel.author) || "Đang cập nhật"}
+                    {novelChapterSubtitle(novel)}
                   </p>
                 </div>
 

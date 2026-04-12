@@ -24,6 +24,7 @@ import AdSlot from '../components/AdSlot';
 import NovelCard from '../components/NovelCard';
 import DonateModal from '../components/DonateModal';
 import { fetchAllChaptersForNovel } from '../lib/fetchAllChapters';
+import { enrichNovelsWithLatestChapter } from '../lib/enrichNovelsLatestChapter';
 
 function genreBrowsePath(g) {
   if (g.slug != null && String(g.slug).trim() !== '') {
@@ -309,7 +310,8 @@ function NovelDetail() {
             .in('id', capped);
           const rows = relatedRows || [];
           rows.sort((a, b) => (b.view_count || 0) - (a.view_count || 0));
-          setRelatedNovels(rows.slice(0, 6));
+          const top = rows.slice(0, 6);
+          setRelatedNovels(await enrichNovelsWithLatestChapter(supabase, top));
         }
       } else {
         setRelatedNovels([]);

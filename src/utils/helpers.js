@@ -46,6 +46,20 @@ export const formatNumber = (num) => {
   return num.toString();
 };
 
+/**
+ * Dòng phụ dưới tiêu đề thẻ truyện: **số chương** (không dùng tác giả / "Đang cập nhật").
+ * Cần `latest_chapter_number` — Home gắn sẵn; list khác gọi `enrichNovelsWithLatestChapter`.
+ */
+export function novelChapterSubtitle(novel) {
+  const raw = novel?.latest_chapter_number;
+  const n = Number(raw);
+  if (raw != null && !Number.isNaN(n)) {
+    if (n <= 0) return 'Chưa có chương';
+    return `${n.toLocaleString('vi-VN')} chương`;
+  }
+  return '—';
+}
+
 // Format Date
 export const formatDate = (dateString) => {
   if (!dateString) return '';
