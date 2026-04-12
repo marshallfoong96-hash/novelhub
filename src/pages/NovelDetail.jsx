@@ -160,15 +160,36 @@ function NovelDetail() {
     const id = novel.id;
     let f = JSON.parse(localStorage.getItem('mi_favorites') || '[]');
     if (!Array.isArray(f)) f = [];
+    const favoritesBefore = [...f];
     const willFavorite = !f.includes(id);
     const next = willFavorite ? [...f, id] : f.filter((x) => x !== id);
     localStorage.setItem('mi_favorites', JSON.stringify(next));
     setIsFavorited(willFavorite);
 
     const base = novelFavoriteWriteBase(novel);
-    const nextLikes = willFavorite ? base + 1 : Math.max(0, base - 1);
-    setNovel((prev) => (prev ? { ...prev, likes: nextLikes } : prev));
-    await supabase.from('novels').update({ likes: nextLikes }).eq('id', id);
+    const delta = willFavorite ? 1 : -1;
+    const optimistic = Math.max(0, base + delta);
+    setNovel((prev) => (prev ? { ...prev, likes: optimistic } : prev));
+
+    const { data: rpcVal, error } = await supabase.rpc('adjust_novel_likes', {
+      p_novel_id: id,
+      p_delta: delta,
+    });
+
+    if (error) {
+      console.warn('[NovelDetail] adjust_novel_likes:', error);
+      localStorage.setItem('mi_favorites', JSON.stringify(favoritesBefore));
+      setIsFavorited(!willFavorite);
+      setNovel((prev) => (prev ? { ...prev, likes: base } : prev));
+      showNotice(
+        'Không cập nhật được yêu thích trên máy chủ. Chạy SQL `supabase/adjust_novel_likes.sql` trong Supabase (Dashboard → SQL).'
+      );
+      return;
+    }
+
+    if (rpcVal != null) {
+      setNovel((p) => (p ? { ...p, likes: Number(rpcVal) } : p));
+    }
 
     showNotice(willFavorite ? 'Đã thêm vào yêu thích.' : 'Đã bỏ yêu thích.');
   };
