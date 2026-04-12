@@ -675,6 +675,30 @@ function Home() {
   );
 }
 
+/** Đề cử carousel: DB dùng snake_case; số chương lấy từ `latest_chapter_number` (bundle Home đã gắn), không dùng `totalChapters` (không tồn tại). */
+function heroFeaturedViewCount(novel) {
+  const v = novel?.view_count ?? novel?.views ?? novel?.read_count;
+  const n = Number(v);
+  return formatNumber(Number.isFinite(n) ? n : 0);
+}
+
+function heroFeaturedChapterLabel(novel) {
+  const raw =
+    novel?.latest_chapter_number ??
+    novel?.totalChapters ??
+    novel?.chapter_count ??
+    novel?.total_chapters;
+  const n = Number(raw);
+  const x = Number.isFinite(n) && n > 0 ? n : 0;
+  return `${x.toLocaleString('vi-VN')} chương`;
+}
+
+function heroFeaturedLikes(novel) {
+  const v = novel?.likes ?? novel?.like_count ?? novel?.favorite_count;
+  const n = Number(v);
+  return formatNumber(Number.isFinite(n) ? n : 0);
+}
+
 function HeroSection({ featuredNovels }) {
   const slides = featuredNovels.slice(0, 5);
   const slideCount = slides.length;
@@ -844,15 +868,15 @@ function HeroSection({ featuredNovels }) {
           <div className="flex items-center gap-4 text-xs text-muted-foreground mb-4">
             <span className="flex items-center gap-1">
               <Eye className="w-3.5 h-3.5" />
-              {formatNumber(featured?.view_count || 0)}
+              {heroFeaturedViewCount(featured)}
             </span>
             <span className="flex items-center gap-1">
               <BookOpen className="w-3.5 h-3.5" />
-              {featured?.totalChapters || 0} chương
+              {heroFeaturedChapterLabel(featured)}
             </span>
             <span className="flex items-center gap-1">
               <Heart className="w-3.5 h-3.5" />
-              {formatNumber(featured?.likes || 0)}
+              {heroFeaturedLikes(featured)}
             </span>
           </div>
           <div className="flex items-center gap-3">
