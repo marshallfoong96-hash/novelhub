@@ -23,7 +23,8 @@ export class RouteErrorBoundary extends Component {
           role="alert"
         >
           <p className="max-w-md text-sm text-muted-foreground">
-            Đã xảy ra lỗi khi tải trang. Bạn có thể thử tải lại hoặc chuyển sang trang khác.
+            Đã xảy ra lỗi khi tải trang (đôi khi do trình duyệt đang dùng bản cũ sau khi cập nhật). Hãy
+            tải lại trang hoặc dùng tải lại bỏ qua bộ nhớ đệm (Ctrl+F5).
           </p>
           <div className="flex flex-wrap items-center justify-center gap-2">
             <button

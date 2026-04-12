@@ -1,22 +1,13 @@
 import { lazy } from 'react';
+import { isChunkOrModuleLoadError, tryHardReloadOnceForStaleChunks } from './chunkRecovery';
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-function isChunkLoadError(err) {
-  if (!err) return false;
-  const msg = String(err.message || err);
-  return (
-    err.name === 'ChunkLoadError' ||
-    /Loading chunk [\w-]+ failed/i.test(msg) ||
-    /Failed to fetch dynamically imported module/i.test(msg) ||
-    /Importing a module script failed/i.test(msg) ||
-    /error loading dynamically imported module/i.test(msg)
-  );
-}
+const hang = () => new Promise(() => {});
 
 /**
- * Wraps React.lazy so a flaky network / stale deploy chunk load is retried before failing.
- * Reduces blank screens when navigating between code-split routes.
+ * Wraps React.lazy: retries transient network errors, then one full reload for stale
+ * post-deploy chunks (404 on hashed files). See chunkRecovery.js.
  */
 export function lazyWithRetry(factory, { retries = 2, delayMs = 350 } = {}) {
   return lazy(async () => {
@@ -26,9 +17,12 @@ export function lazyWithRetry(factory, { retries = 2, delayMs = 350 } = {}) {
         return await factory();
       } catch (err) {
         lastErr = err;
-        if (!isChunkLoadError(err) || attempt === retries) break;
+        if (!isChunkOrModuleLoadError(err) || attempt === retries) break;
         await sleep(delayMs * (attempt + 1));
       }
+    }
+    if (isChunkOrModuleLoadError(lastErr) && tryHardReloadOnceForStaleChunks()) {
+      await hang();
     }
     throw lastErr;
   });
