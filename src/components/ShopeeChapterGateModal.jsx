@@ -1,17 +1,17 @@
 import { useEffect } from 'react';
 import { X } from 'lucide-react';
-import { SHOPEE_AFFILIATE_URL } from '../lib/shopeeGate';
-import { branding } from '../lib/branding';
+import { SHOPEE_AFFILIATE_URL, markShopeeGateSessionConsumed } from '../lib/shopeeGate';
+import { branding, getSticker } from '../lib/branding';
 
 /**
- * Pop-up khi sang chương số lớn hơn chương vừa đọc (liền kề hoặc nhảy cóc) trong cùng truyện.
- * CTA: mở Shopee tab mới + đóng modal (đã ở đúng chương).
+ * Một lần mỗi tab: lần đầu đọc tiến chương (cùng truyện) — đóng / CTA → không hiện lại đến khi đóng tab.
  */
 export default function ShopeeChapterGateModal({ open, onClose }) {
   useEffect(() => {
     if (!open) return;
     const onKey = (e) => {
       if (e.key === 'Escape') {
+        markShopeeGateSessionConsumed();
         onClose();
       }
     };
@@ -26,14 +26,26 @@ export default function ShopeeChapterGateModal({ open, onClose }) {
 
   if (!open) return null;
 
-  const handleCta = () => {
-    window.open(SHOPEE_AFFILIATE_URL, '_blank', 'noopener,noreferrer');
+  const finish = () => {
+    markShopeeGateSessionConsumed();
     onClose();
   };
 
-  const handleDismiss = () => {
-    onClose();
+  const handleCta = () => {
+    window.open(SHOPEE_AFFILIATE_URL, '_blank', 'noopener,noreferrer');
+    finish();
   };
+
+  const handleDismiss = () => {
+    finish();
+  };
+
+  const deco = [
+    { src: getSticker(0), className: 'left-1 top-14 -rotate-12', size: 'h-11 w-11 sm:h-12 sm:w-12' },
+    { src: getSticker(2), className: 'right-1 top-20 rotate-6', size: 'h-9 w-9 sm:h-10 sm:w-10' },
+    { src: getSticker(4), className: 'left-1 bottom-24 rotate-6', size: 'h-9 w-9 sm:h-10 sm:w-10' },
+    { src: getSticker(1), className: 'right-1 bottom-20 -rotate-12', size: 'h-11 w-11 sm:h-12 sm:w-12' },
+  ];
 
   return (
     <div
@@ -42,7 +54,17 @@ export default function ShopeeChapterGateModal({ open, onClose }) {
       aria-modal="true"
       aria-labelledby="shopee-gate-title"
     >
-      <div className="relative my-auto w-full max-w-md rounded-2xl border border-border bg-card shadow-2xl">
+      <div className="relative my-auto w-full max-w-md overflow-visible rounded-2xl border border-border bg-card shadow-2xl">
+        {deco.map((d, i) => (
+          <img
+            key={i}
+            src={d.src}
+            alt=""
+            className={`pointer-events-none absolute z-0 select-none rounded-full object-cover opacity-90 shadow-md ring-2 ring-white/40 dark:ring-white/10 ${d.className} ${d.size}`}
+            draggable={false}
+          />
+        ))}
+
         <button
           type="button"
           onClick={handleDismiss}
@@ -52,7 +74,7 @@ export default function ShopeeChapterGateModal({ open, onClose }) {
           <X className="h-5 w-5" />
         </button>
 
-        <div className="px-4 pb-4 pt-10 text-center">
+        <div className="relative z-[1] px-4 pb-4 pt-10 text-center">
           <h2 id="shopee-gate-title" className="text-[15px] font-semibold leading-snug text-foreground sm:text-base">
             Mời bạn CLICK vào liên kết bên dưới để mở khóa toàn bộ chương truyện!
           </h2>

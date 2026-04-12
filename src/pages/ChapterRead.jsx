@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import AdSlot from "../components/AdSlot";
 import ShopeeChapterGateModal from "../components/ShopeeChapterGateModal";
-import { lastChapterStorageKey } from "../lib/shopeeGate";
+import { lastChapterStorageKey, isShopeeGateSessionConsumed } from "../lib/shopeeGate";
 
 export default function ChapterRead() {
   const { id } = useParams();
@@ -142,8 +142,8 @@ export default function ChapterRead() {
   }, [id]);
 
   /**
-   * Shopee gate: sang chương **số lớn hơn** chương vừa đọc trong tab (cùng truyện) — gồm liền kề (10→11) và nhảy cóc (10→15).
-   * Không hiện khi lần đầu vào một chương (chưa có prev), khi refresh cùng chương, hoặc khi lùi chương.
+   * Shopee gate: chỉ **một lần mỗi tab** — lần đầu đọc **tiến** tới chương số lớn hơn (cùng truyện, kể cả nhảy cóc).
+   * Sau khi đóng / bấm CTA → không hiện nữa đến khi đóng tab (sessionStorage).
    */
   useEffect(() => {
     if (loading || !chapter) return;
@@ -171,9 +171,13 @@ export default function ChapterRead() {
     if (!isForwardInNovel) {
       setShowShopeeGate(false);
       shopeeGateOpenedForChapterRef.current = null;
-    } else if (shopeeGateOpenedForChapterRef.current !== chapter.id) {
-      shopeeGateOpenedForChapterRef.current = chapter.id;
-      setShowShopeeGate(true);
+    } else if (!isShopeeGateSessionConsumed()) {
+      if (shopeeGateOpenedForChapterRef.current !== chapter.id) {
+        shopeeGateOpenedForChapterRef.current = chapter.id;
+        setShowShopeeGate(true);
+      }
+    } else {
+      setShowShopeeGate(false);
     }
 
     queueMicrotask(() => {
