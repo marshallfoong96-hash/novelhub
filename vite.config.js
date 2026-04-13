@@ -5,6 +5,20 @@ export default defineConfig({
   plugins: [react()],
   build: {
     outDir: 'dist',
-    sourcemap: true
-  }
+    sourcemap: process.env.SOURCEMAP === 'true',
+    target: 'es2020',
+    minify: 'esbuild',
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (!id.includes('node_modules')) return;
+          if (id.includes('@supabase')) return 'supabase';
+          if (id.includes('lucide-react')) return 'icons';
+          if (id.includes('react-router')) return 'router';
+          if (id.includes('react-dom') || id.includes('/react/')) return 'react-vendor';
+        },
+      },
+    },
+    chunkSizeWarningLimit: 900,
+  },
 });

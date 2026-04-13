@@ -107,6 +107,7 @@ function Home() {
 
   useEffect(() => {
     const onInvalidate = () => {
+      clearTtlCache(HOME_DASHBOARD_CACHE_KEY);
       setHomeRefreshGeneration((n) => n + 1);
     };
     window.addEventListener("mitruyen:invalidate-home-cache", onInvalidate);
@@ -165,42 +166,81 @@ function Home() {
           DEFAULT_DATA_TTL_MS,
           async () => {
             const genresData = await fetchGenresCached(DEFAULT_DATA_TTL_MS);
-            const { data: novels, error } = await supabase
-              .from("novels")
-              .select("*")
-              .order("created_at", { ascending: false });
 
-            if (error) {
-              console.error(error);
-              throw error;
+            /** Giới hạn hai truy vấn song song — không tải toàn bộ bảng novels (trước đây rất chậm khi dữ liệu lớn). */
+            const HOME_NOVEL_RECENT = 320;
+            const HOME_NOVEL_HOT = 320;
+
+            const [recentRes, hotRes] = await Promise.all([
+              supabase
+                .from("novels")
+                .select("*")
+                .order("created_at", { ascending: false })
+                .limit(HOME_NOVEL_RECENT),
+              supabase
+                .from("novels")
+                .select("*")
+                .order("view_count", { ascending: false })
+                .limit(HOME_NOVEL_HOT),
+            ]);
+
+            if (recentRes.error) {
+              console.error(recentRes.error);
+              throw recentRes.error;
+            }
+            if (hotRes.error) {
+              console.error(hotRes.error);
+              throw hotRes.error;
             }
 
-            const novelIds = (novels || []).map((novel) => novel.id);
-            let chapterRows = [];
-            if (novelIds.length > 0) {
-              const chapterResult = await supabase
-                .from("chapters")
-                .select("id,novel_id,chapter_number")
-                .in("novel_id", novelIds)
-                .order("chapter_number", { ascending: true });
-              chapterRows = chapterResult.data || [];
-            }
+            const merged = new Map();
+            for (const n of recentRes.data || []) merged.set(n.id, n);
+            for (const n of hotRes.data || []) merged.set(n.id, n);
+            const novels = [...merged.values()];
 
+            const novelIds = novels.map((novel) => novel.id);
             const firstChapterMap = {};
             const latestChapterMap = {};
-            (chapterRows || []).forEach((chapter) => {
-              const nid = chapter.novel_id;
-              if (!firstChapterMap[nid]) {
-                firstChapterMap[nid] = chapter.id;
-              }
-              const cn = Number(chapter.chapter_number);
-              if (nid != null && !Number.isNaN(cn)) {
-                const prev = latestChapterMap[nid];
-                if (prev == null || cn > prev) latestChapterMap[nid] = cn;
-              }
-            });
 
-            const novelsWithFirstChapter = (novels || []).map((novel) => ({
+            if (novelIds.length > 0) {
+              const { data: statRows, error: statError } = await supabase.rpc(
+                "novel_chapter_stats",
+                { p_novel_ids: novelIds }
+              );
+
+              if (!statError && Array.isArray(statRows)) {
+                statRows.forEach((row) => {
+                  const nid = row.novel_id;
+                  if (row.first_chapter_id != null) firstChapterMap[nid] = row.first_chapter_id;
+                  if (row.latest_chapter_number != null) {
+                    const cn = Number(row.latest_chapter_number);
+                    if (!Number.isNaN(cn)) latestChapterMap[nid] = cn;
+                  }
+                });
+              } else {
+                console.warn(
+                  "[Home] novel_chapter_stats RPC — chạy `supabase/novel_chapter_stats.sql` để tải nhanh. Fallback:",
+                  statError?.message || statError
+                );
+                const chapterResult = await supabase
+                  .from("chapters")
+                  .select("id,novel_id,chapter_number")
+                  .in("novel_id", novelIds)
+                  .order("chapter_number", { ascending: true });
+                const chapterRows = chapterResult.data || [];
+                chapterRows.forEach((chapter) => {
+                  const nid = chapter.novel_id;
+                  if (!firstChapterMap[nid]) firstChapterMap[nid] = chapter.id;
+                  const cn = Number(chapter.chapter_number);
+                  if (nid != null && !Number.isNaN(cn)) {
+                    const prev = latestChapterMap[nid];
+                    if (prev == null || cn > prev) latestChapterMap[nid] = cn;
+                  }
+                });
+              }
+            }
+
+            const novelsWithFirstChapter = novels.map((novel) => ({
               ...novel,
               first_chapter_id: firstChapterMap[novel.id] || null,
               latest_chapter_number: latestChapterMap[novel.id] ?? null,
@@ -255,7 +295,6 @@ function Home() {
 
   useEffect(() => {
     if (location.pathname !== "/") return;
-    clearTtlCache(HOME_DASHBOARD_CACHE_KEY);
     let silent = false;
     try {
       silent = sessionStorage.getItem("mi_home_loaded_once") === "1";
