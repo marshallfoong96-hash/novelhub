@@ -129,6 +129,24 @@ export const AuthProvider = ({ children }) => {
     };
   };
 
+  const resendSignupConfirmation = async (email) => {
+    if (!supabase) {
+      return { success: false, message: 'Chưa cấu hình đăng nhập.' };
+    }
+    const { error } = await supabase.auth.resend({
+      type: 'signup',
+      email: email.trim(),
+      options: {
+        emailRedirectTo:
+          typeof window !== 'undefined' ? `${window.location.origin}/` : undefined,
+      },
+    });
+    if (error) {
+      return { success: false, message: error.message || 'Không thể gửi lại email.' };
+    }
+    return { success: true, message: 'Đã gửi lại email xác nhận. Vui lòng kiểm tra hộp thư.' };
+  };
+
   // =====================
   // 登出
   // =====================
@@ -143,6 +161,7 @@ export const AuthProvider = ({ children }) => {
     loading,
     login,
     register,
+    resendSignupConfirmation,
     logout
   };
 

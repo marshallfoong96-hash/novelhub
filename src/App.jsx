@@ -11,6 +11,7 @@ import BrandLogo from './components/BrandLogo';
 const Home = lazyWithRetry(() => import('./pages/Home'));
 const Login = lazyWithRetry(() => import('./pages/Login'));
 const Register = lazyWithRetry(() => import('./pages/Register'));
+const RegisterSuccess = lazyWithRetry(() => import('./pages/RegisterSuccess'));
 const NovelDetail = lazyWithRetry(() => import('./pages/NovelDetail'));
 const ChapterRead = lazyWithRetry(() => import('./pages/ChapterRead'));
 const BrowseNovels = lazyWithRetry(() => import('./pages/BrowseNovels'));
@@ -48,6 +49,7 @@ function RoutedMain() {
           <Route path="/" element={<Home />} />
           <Route path="/chapter/:id" element={<ChapterRead />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/register/success" element={<RegisterSuccess />} />
           <Route path="/register" element={<Register />} />
           <Route path="/truyen/:slug" element={<NovelDetail />} />
           <Route path="/hot" element={<BrowseNovels mode="hot" />} />
