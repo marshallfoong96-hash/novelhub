@@ -10,6 +10,7 @@ function Register() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [info, setInfo] = useState('');
   const [loading, setLoading] = useState(false);
   
   const { register } = useAuth();
@@ -30,12 +31,20 @@ function Register() {
     }
 
     setLoading(true);
+    setInfo('');
 
     try {
       const result = await register(username, email, password);
-      
+
       if (result.success) {
-        navigate('/');
+        if (result.needsEmailConfirmation) {
+          setInfo(
+            result.message ||
+              'Đã gửi email xác nhận. Vui lòng mở link trong email, sau đó quay lại đăng nhập.'
+          );
+        } else {
+          navigate('/');
+        }
       } else {
         setError(result.message);
       }
@@ -48,7 +57,6 @@ function Register() {
 
   const features = [
     'Truy cập hàng nghìn truyện hay',
-    'Công cụ viết truyện AI thông minh',
     'Lưu tiến độ đọc đa thiết bị',
     'Tham gia cộng đồng sáng tác',
   ];
@@ -80,6 +88,11 @@ function Register() {
 
         {/* Form Card */}
         <div className="bg-card border border-border rounded-lg p-6">
+          {info && (
+            <div className="mb-4 p-3 bg-emerald-500/10 border border-emerald-500/25 rounded-lg text-sm text-emerald-800 dark:text-emerald-200">
+              {info}
+            </div>
+          )}
           {error && (
             <div className="mb-4 p-3 bg-destructive/10 border border-destructive/20 rounded-lg text-destructive text-sm">
               {error}

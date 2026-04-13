@@ -75,26 +75,57 @@ export const AuthProvider = ({ children }) => {
     if (!supabase) {
       return { success: false, message: 'Chưa cấu hình đăng nhập.' };
     }
+
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        data: { username }
-      }
+        data: { username },
+        emailRedirectTo:
+          typeof window !== 'undefined' ? `${window.location.origin}/` : undefined,
+      },
     });
 
     if (error) {
       return {
         success: false,
-        message: error.message || 'Registration failed'
+        message: error.message || 'Registration failed',
       };
     }
 
-    setUser(data.user);
+    /** Có session → đã đăng nhập (thường gặp khi tắt “Confirm email” trong Supabase). */
+    if (data.session?.user) {
+      setUser(data.session.user);
+      return { success: true, user: data.session.user };
+    }
+
+    /** Không có session: thử đăng nhập ngay (khi không bắt xác nhận email). */
+    const { data: signInData, error: signInError } =
+      await supabase.auth.signInWithPassword({ email, password });
+
+    if (signInData?.session?.user) {
+      setUser(signInData.session.user);
+      return { success: true, user: signInData.session.user };
+    }
+
+    /**
+     * signUp thành công nhưng không có session + đăng nhập ngay không được
+     * → thường là Supabase bật “Confirm email”: user phải bấm link trong mail trước.
+     */
+    if (data.user) {
+      return {
+        success: true,
+        needsEmailConfirmation: true,
+        message:
+          'Đã tạo tài khoản. Vui lòng kiểm tra email và bấm link xác nhận, sau đó đăng nhập tại đây.',
+      };
+    }
 
     return {
-      success: true,
-      user: data.user
+      success: false,
+      message:
+        signInError?.message ||
+        'Không thể hoàn tất đăng nhập sau khi đăng ký. Vui lòng thử đăng nhập thủ công.',
     };
   };
 
