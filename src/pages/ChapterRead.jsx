@@ -16,7 +16,7 @@ import { lastChapterStorageKey, isShopeeGateSessionConsumed } from "../lib/shope
 import { branding } from "../lib/branding";
 
 /**
- * 非空行分段；在約 50% 處（段落索引 floor((n-1)/2) 之後）插入來源標示。
+ * Non-empty lines as paragraphs; insert attribution after index floor((n-1)/2) (~50%).
  */
 function splitChapterParagraphs(content) {
   const paragraphs = (content ?? "").split("\n").map((p) => p.trim()).filter(Boolean);
@@ -640,7 +640,7 @@ export default function ChapterRead() {
                   <p className="mb-5 text-justify">{paragraph}</p>
                   {index === insertAfter && (
                     <p className="mb-5 border-y border-border/70 py-3 text-center text-[0.85em] leading-relaxed text-muted-foreground">
-                      ------ 出自《{bookTitle}》{" "}
+                      —— Nguồn: 《{bookTitle}》 tại{" "}
                       <a
                         href={siteUrl}
                         target="_blank"
@@ -648,8 +648,8 @@ export default function ChapterRead() {
                         className="font-medium text-accent underline underline-offset-2 hover:opacity-90"
                       >
                         mitruyen.me
-                      </a>{" "}
-                      ------------ 轉載請註明出處
+                      </a>
+                      {" — Vui lòng ghi rõ nguồn khi chia sẻ hoặc đăng tải lại."}
                     </p>
                   )}
                 </Fragment>
