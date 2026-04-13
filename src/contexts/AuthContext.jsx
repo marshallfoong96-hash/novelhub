@@ -68,22 +68,6 @@ export const AuthProvider = ({ children }) => {
     };
   };
 
-  const loginWithGoogle = async () => {
-    if (!supabase) {
-      return { success: false, message: 'Chưa cấu hình đăng nhập.' };
-    }
-    const { error } = await authAPI.loginWithGoogle();
-
-    if (error) {
-      return {
-        success: false,
-        message: error.message || 'Google login failed'
-      };
-    }
-
-    return { success: true };
-  };
-
   // =====================
   // 註冊
   // =====================
@@ -127,7 +111,6 @@ export const AuthProvider = ({ children }) => {
     isAuthenticated: !!user,
     loading,
     login,
-    loginWithGoogle,
     register,
     logout
   };

@@ -10,7 +10,7 @@ function Login() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   
-  const { login, loginWithGoogle } = useAuth();
+  const { login } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -29,16 +29,6 @@ function Login() {
     } catch (err) {
       setError('Đăng nhập thất bại. Vui lòng thử lại.');
     } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleGoogleLogin = async () => {
-    setError('');
-    setLoading(true);
-    const result = await loginWithGoogle();
-    if (!result.success) {
-      setError(result.message);
       setLoading(false);
     }
   };
@@ -67,17 +57,6 @@ function Login() {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            <button
-              type="button"
-              onClick={handleGoogleLogin}
-              disabled={loading}
-              className="w-full py-2.5 border border-border rounded-lg text-sm font-medium hover:bg-secondary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Continue with Google
-            </button>
-
-            <div className="text-center text-xs text-muted-foreground">hoặc</div>
-
             <div>
               <label className="block text-sm font-medium text-foreground mb-1.5">
                 Email

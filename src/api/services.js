@@ -12,19 +12,6 @@ export const authAPI = {
     return await supabase.auth.signInWithPassword({ email, password });
   },
 
-  loginWithGoogle: async () => {
-    /** Phải khớp một mục trong Supabase → Authentication → URL Configuration → Redirect URLs (vd. http://localhost:3000/**) */
-    const redirectTo = window.location.href.split("#")[0];
-
-    return await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo,
-        skipBrowserRedirect: false,
-      },
-    });
-  },
-
   getMe: async () => {
     return await supabase.auth.getUser();
   }
