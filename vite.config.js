@@ -3,6 +3,11 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig({
   plugins: [react()],
+  /** Trùng cổng hay dùng với Supabase / Google OAuth (Redirect URLs: http://localhost:3000/**) */
+  server: {
+    port: 3000,
+    strictPort: true,
+  },
   build: {
     outDir: 'dist',
     sourcemap: process.env.SOURCEMAP === 'true',

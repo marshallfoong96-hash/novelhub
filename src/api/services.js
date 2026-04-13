@@ -13,11 +13,15 @@ export const authAPI = {
   },
 
   loginWithGoogle: async () => {
+    /** Phải khớp một mục trong Supabase → Authentication → URL Configuration → Redirect URLs (vd. http://localhost:3000/**) */
+    const redirectTo = window.location.href.split("#")[0];
+
     return await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: window.location.origin
-      }
+        redirectTo,
+        skipBrowserRedirect: false,
+      },
     });
   },
 
