@@ -1,28 +1,19 @@
 import { useEffect } from 'react';
-import { X } from 'lucide-react';
 import { SHOPEE_AFFILIATE_URL, markShopeeGateSessionConsumed } from '../lib/shopeeGate';
 import { branding, getSticker } from '../lib/branding';
 
 /**
- * Một lần mỗi tab: lần đầu đọc tiến chương (cùng truyện) — đóng / CTA → không hiện lại đến khi đóng tab.
+ * Một lần mỗi tab: lần đầu đọc tiến chương (cùng truyện) — chỉ đóng sau khi bấm liên kết Shopee; không hiện lại đến khi đóng tab.
  */
 export default function ShopeeChapterGateModal({ open, onClose }) {
   useEffect(() => {
     if (!open) return;
-    const onKey = (e) => {
-      if (e.key === 'Escape') {
-        markShopeeGateSessionConsumed();
-        onClose();
-      }
-    };
-    document.addEventListener('keydown', onKey);
     const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     return () => {
-      document.removeEventListener('keydown', onKey);
       document.body.style.overflow = prev;
     };
-  }, [open, onClose]);
+  }, [open]);
 
   if (!open) return null;
 
@@ -36,14 +27,10 @@ export default function ShopeeChapterGateModal({ open, onClose }) {
     finish();
   };
 
-  const handleDismiss = () => {
-    finish();
-  };
-
-  /** 僅頂部左右兩顆，不與下方橘色 CTA 重疊；右側避開關閉鈕 */
+  /** 僅頂部左右兩顆，不與下方橘色 CTA 重疊 */
   const deco = [
     { src: getSticker(0), className: 'left-3 top-3 -rotate-6', size: 'h-8 w-8 sm:h-9 sm:w-9' },
-    { src: getSticker(2), className: 'right-14 top-3 rotate-6', size: 'h-8 w-8 sm:h-9 sm:w-9' },
+    { src: getSticker(2), className: 'right-3 top-3 rotate-6', size: 'h-8 w-8 sm:h-9 sm:w-9' },
   ];
 
   return (
@@ -64,16 +51,7 @@ export default function ShopeeChapterGateModal({ open, onClose }) {
           />
         ))}
 
-        <button
-          type="button"
-          onClick={handleDismiss}
-          className="absolute right-2 top-2 z-10 flex h-9 w-9 items-center justify-center rounded-full text-red-600 transition hover:bg-red-50 dark:hover:bg-red-950/40"
-          aria-label="Đóng"
-        >
-          <X className="h-5 w-5" />
-        </button>
-
-        <div className="relative z-[1] px-4 pb-4 pt-[2.75rem] text-center sm:pt-12">
+        <div className="relative z-[1] px-4 pb-4 pt-10 text-center sm:pt-12">
           <h2 id="shopee-gate-title" className="text-[15px] font-semibold leading-snug text-foreground sm:text-base">
             Mời bạn CLICK vào liên kết bên dưới để mở khóa toàn bộ chương truyện!
           </h2>
