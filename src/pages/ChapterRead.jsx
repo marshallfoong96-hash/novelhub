@@ -1,4 +1,4 @@
-import { useState, useEffect, useLayoutEffect, useRef } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef, Fragment } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { supabase, isSupabaseConfigured } from "../lib/supabase";
 import { clearTtlCache } from "../lib/ttlCache";
@@ -13,6 +13,17 @@ import {
 import AdSlot from "../components/AdSlot";
 import ShopeeChapterGateModal from "../components/ShopeeChapterGateModal";
 import { lastChapterStorageKey, isShopeeGateSessionConsumed } from "../lib/shopeeGate";
+import { branding } from "../lib/branding";
+
+/**
+ * 非空行分段；在約 50% 處（段落索引 floor((n-1)/2) 之後）插入來源標示。
+ */
+function splitChapterParagraphs(content) {
+  const paragraphs = (content ?? "").split("\n").map((p) => p.trim()).filter(Boolean);
+  const n = paragraphs.length;
+  if (n === 0) return { paragraphs: [], insertAfter: -1 };
+  return { paragraphs, insertAfter: Math.floor((n - 1) / 2) };
+}
 
 export default function ChapterRead() {
   const { id } = useParams();
@@ -608,19 +619,42 @@ export default function ChapterRead() {
 
         <AdSlot placement="chapterTop" className="mb-4" minHeightClass="min-h-[90px] sm:min-h-[100px]" />
 
-        {/* Chapter Content */}
-        <div className={`border rounded-lg p-5 sm:p-6 md:p-8 transition-colors ${themeClasses[readingTheme] || themeClasses.light}`}>
-          <article 
-            className="max-w-none"
+        {/* Chapter Content — chặn copy/paste trên nội dung (không chặn toàn site; không phải DRM tuyệt đối). */}
+        <div
+          className={`border rounded-lg p-5 sm:p-6 md:p-8 transition-colors select-none [-webkit-touch-callout:none] ${themeClasses[readingTheme] || themeClasses.light}`}
+          onCopy={(e) => e.preventDefault()}
+          onCut={(e) => e.preventDefault()}
+          onContextMenu={(e) => e.preventDefault()}
+          onDragStart={(e) => e.preventDefault()}
+        >
+          <article
+            className="max-w-none select-none"
             style={{ fontSize: `${fontSize}px`, lineHeight: lineHeight, maxWidth: `${contentWidth}px`, margin: "0 auto" }}
           >
-            {(chapter.content?.split('\n') || []).map((paragraph, index) => (
-              paragraph.trim() && (
-                <p key={index} className="mb-5 text-justify">
-                  {paragraph}
-                </p>
-              )
-            ))}
+            {(() => {
+              const { paragraphs, insertAfter } = splitChapterParagraphs(chapter.content);
+              const bookTitle = novel?.title?.trim() || branding.siteName;
+              const siteUrl = `https://${branding.domain}`;
+              return paragraphs.map((paragraph, index) => (
+                <Fragment key={index}>
+                  <p className="mb-5 text-justify">{paragraph}</p>
+                  {index === insertAfter && (
+                    <p className="mb-5 border-y border-border/70 py-3 text-center text-[0.85em] leading-relaxed text-muted-foreground">
+                      ------ 出自《{bookTitle}》{" "}
+                      <a
+                        href={siteUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-medium text-accent underline underline-offset-2 hover:opacity-90"
+                      >
+                        mitruyen.me
+                      </a>{" "}
+                      ------------ 轉載請註明出處
+                    </p>
+                  )}
+                </Fragment>
+              ));
+            })()}
           </article>
         </div>
 
