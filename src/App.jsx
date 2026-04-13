@@ -16,6 +16,7 @@ const ChapterRead = lazyWithRetry(() => import('./pages/ChapterRead'));
 const BrowseNovels = lazyWithRetry(() => import('./pages/BrowseNovels'));
 const ReadingHistory = lazyWithRetry(() => import('./pages/ReadingHistory'));
 const BookmarkedNovels = lazyWithRetry(() => import('./pages/BookmarkedNovels'));
+const Membership = lazyWithRetry(() => import('./pages/Membership'));
 const GenreManager = lazyWithRetry(() => import('./pages/GenreManager'));
 const AboutPage = lazyWithRetry(() =>
   import('./pages/InfoPage').then((m) => ({ default: m.AboutPage }))
@@ -56,6 +57,8 @@ function RoutedMain() {
           <Route path="/so-chuong/:range" element={<BrowseNovels mode="chapterRange" />} />
           <Route path="/lich-su" element={<ReadingHistory />} />
           <Route path="/danh-dau" element={<BookmarkedNovels />} />
+          <Route path="/profile" element={<Membership />} />
+          <Route path="/thanh-vien" element={<Membership />} />
           <Route path="/quan-ly-the-loai" element={<GenreManager />} />
           <Route path="/the-loai" element={<BrowseNovels mode="all" />} />
           <Route path="/the-loai/:slug" element={<BrowseNovels mode="category" />} />
@@ -122,6 +125,7 @@ function Footer() {
       { label: 'Thể loại', to: '/#the-loai-grid' },
       { label: 'Đánh dấu', to: '/danh-dau' },
       { label: 'Lịch sử đọc', to: '/lich-su' },
+      { label: 'Thành viên', to: '/profile' },
     ],
     create: [
       { label: 'Truyện Hot', to: '/hot' },

@@ -40,6 +40,7 @@ function Header() {
   const [genresRefreshing, setGenresRefreshing] = useState(false);
   const searchBoxRef = useRef(null);
   const drawerSwipeStart = useRef({ x: 0, y: 0 });
+  const forceHomeTopRef = useRef(false);
 
   const handleDrawerTouchStart = (e) => {
     const t = e.touches[0];
@@ -164,15 +165,28 @@ function Header() {
     }
   };
 
-  /** Mark logo = home: go to `/`, or scroll top / clear hash when already on home. */
-  const handleHomeMarkClick = (e) => {
-    if (location.pathname !== '/') return;
-    e.preventDefault();
-    if (location.hash || location.search) {
-      navigate({ pathname: '/', search: '', hash: '' }, { replace: true });
-    }
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+  const forceScrollTop = () => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
   };
+
+  /** Mark logo = home: always go to home top, never keep hash position. */
+  const handleHomeMarkClick = (e) => {
+    e.preventDefault();
+    forceHomeTopRef.current = true;
+    navigate({ pathname: '/', search: '', hash: '' });
+    requestAnimationFrame(() => {
+      requestAnimationFrame(forceScrollTop);
+    });
+  };
+
+  useEffect(() => {
+    if (!forceHomeTopRef.current) return;
+    if (location.pathname !== '/' || location.hash || location.search) return;
+    forceScrollTop();
+    forceHomeTopRef.current = false;
+  }, [location.pathname, location.hash, location.search]);
 
   useEffect(() => {
     const keyword = searchQuery.trim();

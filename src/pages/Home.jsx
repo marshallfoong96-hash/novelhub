@@ -27,6 +27,13 @@ import BrandLogo from '../components/BrandLogo';
 import { branding } from '../lib/branding';
 import { formatNumber, formatDate, novelChapterSubtitle, novelLikeCount } from '../utils/helpers';
 
+/**
+ * Trang chủ chỉ cần các cột hiển thị / sort — tránh `select *` khi bảng `novels` có thêm cột lớn hoặc JSON.
+ * Nếu Supabase báo lỗi cột, mở Table Editor đối chiếu tên cột rồi sửa chuỗi này.
+ */
+const HOME_NOVEL_LIST_SELECT =
+  "id,title,cover_url,view_count,status,created_at,description,likes,follow_count";
+
 function getGenreMeta(genre) {
   return {
     ...genre,
@@ -174,12 +181,12 @@ function Home() {
             const [recentRes, hotRes] = await Promise.all([
               supabase
                 .from("novels")
-                .select("*")
+                .select(HOME_NOVEL_LIST_SELECT)
                 .order("created_at", { ascending: false })
                 .limit(HOME_NOVEL_RECENT),
               supabase
                 .from("novels")
-                .select("*")
+                .select(HOME_NOVEL_LIST_SELECT)
                 .order("view_count", { ascending: false })
                 .limit(HOME_NOVEL_HOT),
             ]);
