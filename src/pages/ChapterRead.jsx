@@ -12,8 +12,20 @@ import {
 } from "lucide-react";
 import AdSlot from "../components/AdSlot";
 import ShopeeChapterGateModal from "../components/ShopeeChapterGateModal";
-import { lastChapterStorageKey, isShopeeGateSessionConsumed } from "../lib/shopeeGate";
-import { branding } from "../lib/branding";
+import {
+  lastChapterStorageKey,
+  isShopeeGateSessionConsumed,
+  warmShopeeAffiliateForReader,
+  preloadShopeeGateStickers,
+} from "../lib/shopeeGate";
+import { branding, getSticker } from "../lib/branding";
+import {
+  getCachedTocRows,
+  setCachedTocRows,
+  READER_CHAPTER_SELECT,
+  READER_NOVEL_SELECT,
+  READER_TOC_METADATA_SELECT,
+} from "../lib/readerTocSessionCache";
 
 /**
  * Non-empty lines as paragraphs; insert attribution after index floor((n-1)/2) (~50%).
@@ -23,6 +35,20 @@ function splitChapterParagraphs(content) {
   const n = paragraphs.length;
   if (n === 0) return { paragraphs: [], insertAfter: -1 };
   return { paragraphs, insertAfter: Math.floor((n - 1) / 2) };
+}
+
+const CHAPTER_BODY_CACHE_MAX = 10;
+
+function chapterCacheTouch(map, row) {
+  if (!row?.id) return;
+  const k = Number(row.id);
+  if (Number.isNaN(k)) return;
+  if (map.has(k)) map.delete(k);
+  map.set(k, row);
+  while (map.size > CHAPTER_BODY_CACHE_MAX) {
+    const first = map.keys().next().value;
+    map.delete(first);
+  }
 }
 
 export default function ChapterRead() {
@@ -50,6 +76,11 @@ export default function ChapterRead() {
   const viewBumpDedupRef = useRef({ key: '', at: 0 });
   /** Tránh mở Shopee gate 2 lần (Strict Mode) cho cùng một chapter.id */
   const shopeeGateOpenedForChapterRef = useRef(null);
+  /** LRU: chapter id → row (đọc liên tục / prefetch hàng xóm). */
+  const chapterBodyCacheRef = useRef(new Map());
+  /** Bỏ qua kết quả novel/mục lục nếu đã chuyển chương (fetch nền). */
+  const novelTocFetchGenRef = useRef(0);
+  const shopeeAssetsWarmRef = useRef(false);
   const formatDate = (date) => {
     return new Date(date).toLocaleString();
   };
@@ -57,6 +88,16 @@ export default function ChapterRead() {
   useEffect(() => {
     fetchChapter();
   }, [id]);
+
+  /** Preconnect + prefetch Shopee affiliate + sticker ảnh modal — gate mở là đã sẵn sàng bấm. */
+  useEffect(() => {
+    if (!chapter) return;
+    warmShopeeAffiliateForReader();
+    if (!shopeeAssetsWarmRef.current) {
+      shopeeAssetsWarmRef.current = true;
+      preloadShopeeGateStickers(getSticker);
+    }
+  }, [chapter?.id]);
 
   /** Đổi chương hoặc mới vào từ trang truyện → về đầu trang ngay (trước khi vẽ). */
   useLayoutEffect(() => {
@@ -284,52 +325,150 @@ export default function ChapterRead() {
       setLoading(false);
       return;
     }
-    try {
-      setLoading(true);
+
+    const gen = ++novelTocFetchGenRef.current;
+    const numId = parseInt(id, 10);
+    if (Number.isNaN(numId)) {
       setChapter(null);
       setNovel(null);
+      setAllChapters([]);
+      setLoading(false);
+      return;
+    }
 
-      // Fetch the chapter
-      const { data: chapterData, error: chapterError } = await supabase
-        .from("chapters")
-        .select("*")
-        .eq("id", parseInt(id))
-        .single();
-
-      if (chapterError) {
-        console.error('[v0] Error fetching chapter:', chapterError);
-        return;
+    const applyTocForNovel = async (novelIdForToc, g) => {
+      const nid = Number(novelIdForToc);
+      if (Number.isNaN(nid)) return;
+      let sessionRows = getCachedTocRows(nid);
+      if (sessionRows?.length) {
+        if (g !== novelTocFetchGenRef.current) return;
+        setAllChapters(sessionRows);
       }
-
-      setChapter(chapterData);
-
-      if (chapterData?.novel_id) {
-        // Fetch the novel info
-        const { data: novelData, error: novelError } = await supabase
-          .from("novels")
-          .select("*")
-          .eq("id", chapterData.novel_id)
-          .single();
-
-        if (!novelError) {
-          setNovel(novelData);
-        }
-
-        try {
-          const chaptersData = await fetchAllChaptersForNovel(
-            supabase,
-            chapterData.novel_id,
-            "id, chapter_number, title"
-          );
-          setAllChapters(chaptersData || []);
-        } catch (chaptersError) {
-          console.error("[v0] chapters list:", chaptersError);
+      try {
+        const chaptersData = await fetchAllChaptersForNovel(
+          supabase,
+          nid,
+          READER_TOC_METADATA_SELECT
+        );
+        if (g !== novelTocFetchGenRef.current) return;
+        const list = chaptersData || [];
+        setAllChapters(list);
+        setCachedTocRows(nid, list);
+      } catch (chaptersError) {
+        console.error("[v0] chapters list:", chaptersError);
+        if (g === novelTocFetchGenRef.current && !sessionRows?.length) {
           setAllChapters([]);
         }
       }
+    };
+
+    const cached = chapterBodyCacheRef.current.get(numId);
+    if (cached) {
+      const nid = cached.novel_id;
+      const tocReady =
+        novel?.id != null &&
+        nid != null &&
+        Number(novel.id) === Number(nid) &&
+        allChapters.length > 0;
+      if (tocReady) {
+        setChapter(cached);
+        setLoading(false);
+        return;
+      }
+      setChapter(cached);
+      setLoading(false);
+      if (nid != null) {
+        void (async () => {
+          try {
+            const { data: novelData, error: novelError } = await supabase
+              .from('novels')
+              .select(READER_NOVEL_SELECT)
+              .eq('id', nid)
+              .single();
+            if (gen !== novelTocFetchGenRef.current) return;
+            if (!novelError && novelData) setNovel(novelData);
+          } catch (e) {
+            console.error('[v0] novel fetch:', e);
+          }
+          if (gen !== novelTocFetchGenRef.current) return;
+          await applyTocForNovel(nid, gen);
+        })();
+      }
+      return;
+    }
+
+    try {
+      setLoading(true);
+      if (chapter != null && Number(chapter.id) !== numId) {
+        setChapter(null);
+      }
+
+      const { data: chapterData, error: chapterError } = await supabase
+        .from('chapters')
+        .select(READER_CHAPTER_SELECT)
+        .eq('id', numId)
+        .single();
+
+      if (chapterError || !chapterData) {
+        console.error('[v0] Error fetching chapter:', chapterError);
+        setChapter(null);
+        setNovel(null);
+        setAllChapters([]);
+        setLoading(false);
+        return;
+      }
+
+      chapterCacheTouch(chapterBodyCacheRef.current, chapterData);
+
+      if (gen !== novelTocFetchGenRef.current) return;
+
+      const novelId = chapterData.novel_id;
+      const sameBookTocReady =
+        novel?.id != null &&
+        novelId != null &&
+        Number(novel.id) === Number(novelId) &&
+        allChapters.length > 0;
+
+      if (sameBookTocReady) {
+        setChapter(chapterData);
+        setLoading(false);
+        if (allChapters.length > 0 && novelId != null) {
+          setCachedTocRows(novelId, allChapters);
+        }
+        return;
+      }
+
+      if (novel?.id != null && novelId != null && Number(novel.id) !== Number(novelId)) {
+        setNovel(null);
+        setAllChapters([]);
+      }
+
+      setChapter(chapterData);
+      setLoading(false);
+
+      if (novelId == null) return;
+
+      void (async () => {
+        try {
+          const { data: novelData, error: novelError } = await supabase
+            .from('novels')
+            .select(READER_NOVEL_SELECT)
+            .eq('id', novelId)
+            .single();
+
+          if (gen !== novelTocFetchGenRef.current) return;
+          if (!novelError && novelData) {
+            setNovel(novelData);
+          }
+        } catch (e) {
+          console.error('[v0] novel fetch:', e);
+        }
+
+        if (gen !== novelTocFetchGenRef.current) return;
+        await applyTocForNovel(novelId, gen);
+      })();
     } catch (error) {
       console.error('[v0] Error fetching chapter:', error);
-    } finally {
       setLoading(false);
     }
   };
@@ -354,7 +493,27 @@ export default function ChapterRead() {
   const prevChapter = currentIndex > 0 ? allChapters[currentIndex - 1] : null;
   const nextChapter = currentIndex < allChapters.length - 1 ? allChapters[currentIndex + 1] : null;
 
-  if (loading) {
+  /** Prefetch trước/sau — lần bấm Tiếp/Trước thường trúng LRU cache. */
+  useEffect(() => {
+    if (!isSupabaseConfigured || !supabase || !chapter || loading) return;
+    const ids = [prevChapter?.id, nextChapter?.id]
+      .filter((x) => x != null)
+      .map((x) => Number(x))
+      .filter((n) => !Number.isNaN(n));
+    for (const cid of ids) {
+      if (chapterBodyCacheRef.current.has(cid)) continue;
+      supabase
+        .from('chapters')
+        .select(READER_CHAPTER_SELECT)
+        .eq('id', cid)
+        .single()
+        .then(({ data, error }) => {
+          if (!error && data) chapterCacheTouch(chapterBodyCacheRef.current, data);
+        });
+    }
+  }, [chapter?.id, prevChapter?.id, nextChapter?.id, loading]);
+
+  if (loading && !chapter) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="flex flex-col items-center gap-4">

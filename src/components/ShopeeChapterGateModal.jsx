@@ -1,9 +1,14 @@
 import { useEffect } from 'react';
-import { SHOPEE_AFFILIATE_URL, markShopeeGateSessionConsumed } from '../lib/shopeeGate';
+import {
+  SHOPEE_AFFILIATE_URL,
+  markShopeeGateSessionConsumed,
+  warmShopeeAffiliateForReader,
+} from '../lib/shopeeGate';
 import { branding, getSticker } from '../lib/branding';
 
 /**
  * Một lần mỗi tab: lần đầu đọc tiến chương (cùng truyện) — chỉ đóng sau khi bấm liên kết Shopee; không hiện lại đến khi đóng tab.
+ * CTA / ảnh trang trí: ưu tiên nút bấm (không phụ thuộc ảnh sticker); preconnect + prefetch URL khi mở.
  */
 export default function ShopeeChapterGateModal({ open, onClose }) {
   useEffect(() => {
@@ -13,6 +18,11 @@ export default function ShopeeChapterGateModal({ open, onClose }) {
     return () => {
       document.body.style.overflow = prev;
     };
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    warmShopeeAffiliateForReader();
   }, [open]);
 
   if (!open) return null;
@@ -27,7 +37,7 @@ export default function ShopeeChapterGateModal({ open, onClose }) {
     finish();
   };
 
-  /** 僅頂部左右兩顆，不與下方橘色 CTA 重疊 */
+  /** Chỉ hai sticker góc trên — không đè lên CTA cam. */
   const deco = [
     { src: getSticker(0), className: 'left-3 top-3 -rotate-6', size: 'h-8 w-8 sm:h-9 sm:w-9' },
     { src: getSticker(2), className: 'right-3 top-3 rotate-6', size: 'h-8 w-8 sm:h-9 sm:w-9' },
@@ -48,6 +58,9 @@ export default function ShopeeChapterGateModal({ open, onClose }) {
             alt=""
             className={`pointer-events-none absolute z-0 select-none rounded-full object-cover opacity-85 shadow-sm ring-2 ring-white/40 dark:ring-white/10 ${d.className} ${d.size}`}
             draggable={false}
+            loading="eager"
+            decoding="async"
+            fetchPriority="high"
           />
         ))}
 
@@ -55,13 +68,6 @@ export default function ShopeeChapterGateModal({ open, onClose }) {
           <h2 id="shopee-gate-title" className="text-[15px] font-semibold leading-snug text-foreground sm:text-base">
             Mời bạn CLICK vào liên kết bên dưới để mở khóa toàn bộ chương truyện!
           </h2>
-          <button
-            type="button"
-            onClick={handleCta}
-            className="mt-3 text-sm font-medium text-blue-600 underline underline-offset-2 hover:text-blue-700 dark:text-blue-400"
-          >
-            Mở ưu đãi Shopee (miễn phí)
-          </button>
 
           <button
             type="button"
@@ -77,6 +83,19 @@ export default function ShopeeChapterGateModal({ open, onClose }) {
               </span>
             </div>
           </button>
+
+          <a
+            href={SHOPEE_AFFILIATE_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-3 inline-block text-sm font-medium text-blue-600 underline underline-offset-2 hover:text-blue-700 dark:text-blue-400"
+            onClick={(e) => {
+              e.preventDefault();
+              handleCta();
+            }}
+          >
+            Mở ưu đãi Shopee (miễn phí)
+          </a>
 
           <p className="mt-4 text-[11px] leading-relaxed text-muted-foreground">
             {branding.siteName} và đội ngũ Editor xin chân thành cảm ơn.
