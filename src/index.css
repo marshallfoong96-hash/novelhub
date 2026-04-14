@@ -209,9 +209,15 @@ html {
   animation: marquee 30s linear infinite;
 }
 
-/* Reading progress */
+@media (prefers-reduced-motion: reduce) {
+  .animate-marquee {
+    animation: none;
+  }
+}
+
+/* Reading progress — no width transition (avoids extra compositing while scrolling) */
 .reading-progress {
-  @apply fixed top-0 left-0 h-1 bg-accent z-50 transition-all duration-150;
+  @apply fixed top-0 left-0 h-1 bg-accent z-50;
 }
 
 /* UI polish helpers */

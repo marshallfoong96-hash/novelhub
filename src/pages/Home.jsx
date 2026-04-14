@@ -768,10 +768,28 @@ function HeroSection({ featuredNovels }) {
   useEffect(() => {
     if (slideCount === 0) return;
     setShowFullDescription(false);
-    const timer = setInterval(() => {
+    let timer;
+    const tick = () => {
       setCurrentSlide((prev) => (prev + 1) % slideCount);
-    }, 5000);
-    return () => clearInterval(timer);
+    };
+    const start = () => {
+      clearInterval(timer);
+      timer = setInterval(tick, 5000);
+    };
+    const onVisibility = () => {
+      if (document.visibilityState === 'hidden') {
+        clearInterval(timer);
+        timer = undefined;
+      } else {
+        start();
+      }
+    };
+    start();
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
   }, [slideCount]);
 
   useEffect(() => {

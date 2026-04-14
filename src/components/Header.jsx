@@ -39,6 +39,8 @@ function Header() {
   const [mobileGenresOpen, setMobileGenresOpen] = useState(true);
   const [genres, setGenres] = useState([]);
   const [genresRefreshing, setGenresRefreshing] = useState(false);
+  /** Pause infinite marquee when tab in background — saves GPU/battery on mobile. */
+  const [announcementAnimActive, setAnnouncementAnimActive] = useState(true);
   const searchBoxRef = useRef(null);
   const drawerSwipeStart = useRef({ x: 0, y: 0 });
   const forceHomeTopRef = useRef(false);
@@ -81,6 +83,22 @@ function Header() {
     return () => {
       window.removeEventListener('scroll', handleScroll);
       if (raf) cancelAnimationFrame(raf);
+    };
+  }, []);
+
+  useEffect(() => {
+    const sync = () =>
+      setAnnouncementAnimActive(
+        document.visibilityState === 'visible' &&
+          !window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      );
+    sync();
+    document.addEventListener('visibilitychange', sync);
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    mq.addEventListener?.('change', sync);
+    return () => {
+      document.removeEventListener('visibilitychange', sync);
+      mq.removeEventListener?.('change', sync);
     };
   }, []);
 
@@ -277,7 +295,12 @@ function Header() {
     <>
       {/* Announcement Bar */}
       <div className="site-announcement-bar bg-gradient-to-r from-accent via-[#e11d48] to-[#f43f7d] text-white py-2 text-center overflow-hidden shadow-sm">
-        <div className="animate-marquee whitespace-nowrap inline-block font-semibold tracking-wide text-[13px] sm:text-sm">
+        <div
+          className="animate-marquee whitespace-nowrap inline-block font-semibold tracking-wide text-[13px] sm:text-sm"
+          style={{
+            animationPlayState: announcementAnimActive ? 'running' : 'paused',
+          }}
+        >
           <span className="mx-10">Chào mừng đến Mi Truyện (mitruyen.me) — nền tảng đọc truyện trực tuyến</span>
           <span className="mx-10">Cập nhật liên tục nhiều tác phẩm mới mỗi ngày</span>
           <span className="mx-10">Đăng ký để lưu truyện yêu thích và đồng bộ lịch sử đọc</span>

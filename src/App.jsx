@@ -77,7 +77,13 @@ function RoutedMain() {
 
 function App() {
   useEffect(() => {
-    loadAdsenseScript();
+    const run = () => loadAdsenseScript();
+    if (typeof window.requestIdleCallback === 'function') {
+      const id = window.requestIdleCallback(run, { timeout: 4500 });
+      return () => window.cancelIdleCallback(id);
+    }
+    const t = window.setTimeout(run, 3500);
+    return () => window.clearTimeout(t);
   }, []);
 
   return (
