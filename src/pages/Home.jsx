@@ -25,6 +25,7 @@ import Pagination from '../components/Pagination';
 import AdSlot from '../components/AdSlot';
 import BrandLogo from '../components/BrandLogo';
 import { branding } from '../lib/branding';
+import { coverImageProps } from '../lib/coverImageProps';
 import { formatNumber, formatDate, novelChapterSubtitle, novelLikeCount } from '../utils/helpers';
 
 /**
@@ -504,8 +505,14 @@ function Home() {
                 hotNovels.length > 0 ? (
                   <>
                     <div className="novel-feed-grid">
-                      {hotPagedSlice.map((novel) => (
-                        <NovelCard key={novel.id} novel={novel} showStatus variant="webtoon" />
+                      {hotPagedSlice.map((novel, i) => (
+                        <NovelCard
+                          key={novel.id}
+                          novel={novel}
+                          showStatus
+                          variant="webtoon"
+                          coverPriority={i < 9}
+                        />
                       ))}
                     </div>
                     <Pagination
@@ -550,8 +557,14 @@ function Home() {
                 completedNovels.length > 0 ? (
                   <>
                     <div className="novel-feed-grid">
-                      {fullPagedSlice.map((novel) => (
-                        <NovelCard key={novel.id} novel={novel} showStatus variant="webtoon" />
+                      {fullPagedSlice.map((novel, i) => (
+                        <NovelCard
+                          key={novel.id}
+                          novel={novel}
+                          showStatus
+                          variant="webtoon"
+                          coverPriority={i < 9}
+                        />
                       ))}
                     </div>
                     <Pagination
@@ -582,8 +595,8 @@ function Home() {
             />
             <div className="section-shell overflow-hidden">
               <div className="max-h-[560px] overflow-y-auto divide-y divide-border">
-                {newUpdates.map((novel) => (
-                  <UpdateRow key={`stream-${novel.id}`} novel={novel} />
+                {newUpdates.map((novel, idx) => (
+                  <UpdateRow key={`stream-${novel.id}`} novel={novel} streamIndex={idx} />
                 ))}
               </div>
             </div>
@@ -648,6 +661,7 @@ function Home() {
                     src={novel.cover_url || '/default-cover.jpg'}
                     alt=""
                     className="h-14 w-10 shrink-0 rounded-md object-cover object-top ring-1 ring-border/60 shadow-sm"
+                    {...coverImageProps(index < 6)}
                   />
                   <div className="min-w-0 flex-1">
                     <h4 className="text-xs font-medium text-foreground line-clamp-2">
@@ -865,6 +879,7 @@ function HeroSection({ featuredNovels }) {
           src={featured?.cover_url || '/default-cover.jpg'}
           alt={featured?.title}
             className="w-full h-full object-contain"
+            {...coverImageProps(true)}
           />
           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-card md:block hidden" />
           <div className="absolute inset-0 bg-gradient-to-t from-card via-transparent to-transparent md:hidden" />
@@ -1000,7 +1015,7 @@ function EmptyTabNotice({ text = "Đang cập nhật dữ liệu cho mục này.
   );
 }
 
-function UpdateRow({ novel }) {
+function UpdateRow({ novel, streamIndex = 0 }) {
   return (
     <div className="flex items-center gap-3 p-3 hover:bg-secondary/30 transition-colors">
       <Link to={`/truyen/${novel.id}`} className="flex-shrink-0">
@@ -1008,6 +1023,7 @@ function UpdateRow({ novel }) {
           src={novel.cover_url || '/default-cover.jpg'}
           alt={novel.title}
           className="w-10 h-14 object-contain rounded"
+          {...coverImageProps(streamIndex < 12)}
         />
       </Link>
       <div className="flex-1 min-w-0">
@@ -1063,6 +1079,7 @@ function TopViewsSection({ novels }) {
               src={novel.cover_url || '/default-cover.jpg'}
               alt={novel.title}
               className="w-12 h-16 object-contain rounded flex-shrink-0"
+              {...coverImageProps(index < 4)}
             />
             <div className="flex-1 min-w-0">
               <h4 className="text-xs font-medium text-foreground line-clamp-2 group-hover:text-accent transition-colors">

@@ -28,6 +28,7 @@ import {
 } from '../utils/helpers';
 import AdSlot from '../components/AdSlot';
 import NovelCard from '../components/NovelCard';
+import { coverImageProps } from '../lib/coverImageProps';
 import DonateModal from '../components/DonateModal';
 import { fetchAllChaptersForNovel } from '../lib/fetchAllChapters';
 import { enrichNovelsWithLatestChapter } from '../lib/enrichNovelsLatestChapter';
@@ -38,6 +39,10 @@ function genreBrowsePath(g) {
   }
   return `/the-loai/${g.id}`;
 }
+
+/** Mục lục chỉ cần metadata — không select `content` (tránh tải hàng MB trên di động). */
+const NOVEL_DETAIL_CHAPTER_SELECT =
+  'id, novel_id, chapter_number, title, created_at';
 
 function NovelDetail() {
   const { slug } = useParams(); // This is now the novel ID
@@ -58,6 +63,8 @@ function NovelDetail() {
   const [descNeedsToggle, setDescNeedsToggle] = useState(false);
   const [showDonateModal, setShowDonateModal] = useState(false);
   const descBlockRef = useRef(null);
+  /** Bỏ qua setState phụ khi đổi truyện nhanh (fetch nền). */
+  const detailSecondaryGenRef = useRef(0);
   const { isAuthenticated, user } = useAuth();
 
   const descriptionText = novel?.description != null ? String(novel.description).trim() : '';
@@ -238,125 +245,151 @@ function NovelDetail() {
   };
 
   const fetchNovelData = async () => {
+    const gen = ++detailSecondaryGenRef.current;
     try {
       setLoading(true);
-      
-      // Fetch novel by ID
-      const { data: novelData, error: novelError } = await supabase
-        .from('novels')
-        .select('*')
-        .eq('id', parseInt(slug))
-        .single();
+      setNovel(null);
+      setChapters([]);
+      setRelatedNovels([]);
+      setNovelGenres([]);
 
-      if (novelError) {
-        console.error('[v0] Error fetching novel:', novelError);
-        setNovel(null);
-        setNovelGenres([]);
+      const novelId = parseInt(slug, 10);
+      if (Number.isNaN(novelId)) {
+        setLoading(false);
         return;
       }
 
-      setNovel(novelData);
+      const { data: novelData, error: novelError } = await supabase
+        .from('novels')
+        .select('*')
+        .eq('id', novelId)
+        .single();
 
-      const novelId = parseInt(slug, 10);
-
-      /**
-       * Chỉ dùng 2 truy vấn đơn: `novel_genres` → id, rồi `genres` → tên.
-       * (Không embed `genres(...)` — tránh lỗi khi thiếu FK hoặc RLS lồng nhau.)
-       * Nếu Table Editor có dữ liệu mà API trả 0 dòng: chạy `enable_novel_genres_public_read.sql` trên Supabase.
-       */
-      const { data: ngRows, error: ngErr } = await supabase
-        .from('novel_genres')
-        .select('genre_id')
-        .eq('novel_id', novelId);
-      if (ngErr) {
-        console.error('[v0] novel_genres:', ngErr);
-      }
-
-      const genreIdSet = new Set();
-      (ngRows || []).forEach((r) => {
-        if (r.genre_id != null && r.genre_id !== '') genreIdSet.add(Number(r.genre_id));
-      });
-      if (novelData.genre_id != null && novelData.genre_id !== '') {
-        genreIdSet.add(Number(novelData.genre_id));
-      }
-
-      const mergedGenreIds = [...genreIdSet];
-      if (mergedGenreIds.length === 0) {
+      if (novelError || !novelData) {
+        console.error('[v0] Error fetching novel:', novelError);
+        setNovel(null);
         setNovelGenres([]);
-      } else {
-        const { data: genreRows, error: genresLookupErr } = await supabase
-          .from('genres')
-          .select('id,name,slug')
-          .in('id', mergedGenreIds);
-        if (genresLookupErr) {
-          console.error('[v0] genres for novel:', genresLookupErr);
-          setNovelGenres([]);
-        } else {
-          const byId = new Map((genreRows || []).map((g) => [Number(g.id), g]));
-          const sorted = mergedGenreIds
-            .map((gid) => {
-              const g = byId.get(gid);
-              if (g) return g;
-              return { id: gid, name: `Thể loại #${gid}`, slug: null };
-            })
-            .sort((a, b) =>
-              String(a.name || '').localeCompare(String(b.name || ''), 'vi')
-            );
-          setNovelGenres(sorted);
-        }
+        setLoading(false);
+        return;
       }
 
-      let primaryGenreId = novelData?.genre_id || null;
-      if (!primaryGenreId && ngRows?.[0]?.genre_id != null) {
-        primaryGenreId = ngRows[0].genre_id;
-      }
+      if (gen !== detailSecondaryGenRef.current) return;
 
-      if (primaryGenreId) {
-        const merged = new Set();
-        const { data: junctionRows, error: junctionError } = await supabase
-          .from('novel_genres')
-          .select('novel_id')
-          .eq('genre_id', primaryGenreId);
-        if (!junctionError && junctionRows) {
-          junctionRows.forEach((row) => merged.add(row.novel_id));
-        }
-        const { data: directRows } = await supabase
-          .from('novels')
-          .select('id')
-          .eq('genre_id', primaryGenreId);
-        (directRows || []).forEach((row) => merged.add(row.id));
-        merged.delete(novelId);
-        const candidateIds = [...merged];
-        if (candidateIds.length === 0) {
-          setRelatedNovels([]);
-        } else {
-          const capped = candidateIds.slice(0, 48);
-          const { data: relatedRows } = await supabase
+      setNovel(novelData);
+      setLoading(false);
+
+      void (async () => {
+        const stale = () => gen !== detailSecondaryGenRef.current;
+
+        try {
+          const [ngRes, chaptersData] = await Promise.all([
+            supabase.from('novel_genres').select('genre_id').eq('novel_id', novelId),
+            fetchAllChaptersForNovel(
+              supabase,
+              novelId,
+              NOVEL_DETAIL_CHAPTER_SELECT
+            ).catch((chaptersError) => {
+              console.error('[v0] Error fetching chapters:', chaptersError);
+              return [];
+            }),
+          ]);
+
+          if (stale()) return;
+
+          const { data: ngRows, error: ngErr } = ngRes;
+          setChapters(Array.isArray(chaptersData) ? chaptersData : []);
+
+          if (ngErr) {
+            console.error('[v0] novel_genres:', ngErr);
+          }
+
+          const genreIdSet = new Set();
+          (ngRows || []).forEach((r) => {
+            if (r.genre_id != null && r.genre_id !== '') genreIdSet.add(Number(r.genre_id));
+          });
+          if (novelData.genre_id != null && novelData.genre_id !== '') {
+            genreIdSet.add(Number(novelData.genre_id));
+          }
+
+          const mergedGenreIds = [...genreIdSet];
+          if (mergedGenreIds.length === 0) {
+            if (!stale()) setNovelGenres([]);
+          } else {
+            const { data: genreRows, error: genresLookupErr } = await supabase
+              .from('genres')
+              .select('id,name,slug')
+              .in('id', mergedGenreIds);
+            if (stale()) return;
+            if (genresLookupErr) {
+              console.error('[v0] genres for novel:', genresLookupErr);
+              setNovelGenres([]);
+            } else {
+              const byId = new Map((genreRows || []).map((g) => [Number(g.id), g]));
+              const sorted = mergedGenreIds
+                .map((gid) => {
+                  const g = byId.get(gid);
+                  if (g) return g;
+                  return { id: gid, name: `Thể loại #${gid}`, slug: null };
+                })
+                .sort((a, b) =>
+                  String(a.name || '').localeCompare(String(b.name || ''), 'vi')
+                );
+              setNovelGenres(sorted);
+            }
+          }
+
+          if (stale()) return;
+
+          let primaryGenreId = novelData?.genre_id || null;
+          if (!primaryGenreId && ngRows?.[0]?.genre_id != null) {
+            primaryGenreId = ngRows[0].genre_id;
+          }
+
+          if (!primaryGenreId) {
+            setRelatedNovels([]);
+            return;
+          }
+
+          const merged = new Set();
+          const { data: junctionRows, error: junctionError } = await supabase
+            .from('novel_genres')
+            .select('novel_id')
+            .eq('genre_id', primaryGenreId);
+          if (!junctionError && junctionRows) {
+            junctionRows.forEach((row) => merged.add(row.novel_id));
+          }
+          const { data: directRows } = await supabase
             .from('novels')
-            .select('*')
-            .in('id', capped);
-          const rows = relatedRows || [];
-          rows.sort((a, b) => (b.view_count || 0) - (a.view_count || 0));
-          const top = rows.slice(0, 6);
-          setRelatedNovels(await enrichNovelsWithLatestChapter(supabase, top));
+            .select('id')
+            .eq('genre_id', primaryGenreId);
+          (directRows || []).forEach((row) => merged.add(row.id));
+          merged.delete(novelId);
+          const candidateIds = [...merged];
+          if (stale()) return;
+
+          if (candidateIds.length === 0) {
+            setRelatedNovels([]);
+          } else {
+            const capped = candidateIds.slice(0, 48);
+            const { data: relatedRows } = await supabase
+              .from('novels')
+              .select('*')
+              .in('id', capped);
+            if (stale()) return;
+            const rows = relatedRows || [];
+            rows.sort((a, b) => (b.view_count || 0) - (a.view_count || 0));
+            const top = rows.slice(0, 6);
+            const enriched = await enrichNovelsWithLatestChapter(supabase, top);
+            if (stale()) return;
+            setRelatedNovels(enriched);
+          }
+        } catch (e) {
+          console.error('[v0] novel detail secondary:', e);
         }
-      } else {
-        setRelatedNovels([]);
-      }
-
-      // Fetch chapters (nhiều hơn 1000 chương vẫn lấy đủ — xem fetchAllChaptersForNovel)
-      try {
-        const chaptersData = await fetchAllChaptersForNovel(supabase, parseInt(slug, 10), '*');
-        setChapters(chaptersData || []);
-      } catch (chaptersError) {
-        console.error('[v0] Error fetching chapters:', chaptersError);
-        setChapters([]);
-      }
-
+      })();
     } catch (error) {
       console.error('[v0] Error fetching novel data:', error);
       setNovelGenres([]);
-    } finally {
       setLoading(false);
     }
   };
@@ -426,6 +459,7 @@ function NovelDetail() {
                       src={novel.cover_url || '/default-cover.jpg'}
                       alt={novel.title}
                       className="w-full h-full object-contain"
+                      {...coverImageProps(true)}
                     />
                     {novel.status === 'completed' && (
                       <span className="absolute top-2 right-2 px-2 py-0.5 bg-[hsl(var(--success))] text-white text-[10px] font-bold rounded flex items-center gap-1 shadow-sm">
@@ -642,8 +676,14 @@ function NovelDetail() {
                 <Link to="/#the-loai-grid" className="text-xs text-accent hover:underline">Xem thể loại</Link>
               </div>
               <div className="novel-feed-grid">
-                {relatedNovels.map((item) => (
-                  <NovelCard key={item.id} novel={item} showStatus variant="webtoon" />
+                {relatedNovels.map((item, i) => (
+                  <NovelCard
+                    key={item.id}
+                    novel={item}
+                    showStatus
+                    variant="webtoon"
+                    coverPriority={i < 9}
+                  />
                 ))}
               </div>
             </section>

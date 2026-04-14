@@ -24,6 +24,7 @@ import { fetchAllGenresRows, fetchGenresCached, primeGenresCache } from '../lib/
 import BrandLogo from './BrandLogo';
 import { novelChapterSubtitle } from '../utils/helpers';
 import { enrichNovelsWithLatestChapter } from '../lib/enrichNovelsLatestChapter';
+import { coverImageProps } from '../lib/coverImageProps';
 
 function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -370,7 +371,7 @@ function Header() {
                           <div>
                             <p className="text-[11px] text-muted-foreground px-2 py-1">Không tìm thấy. Gợi ý truyện hot:</p>
                             <div className="space-y-1">
-                              {hotSuggestions.map((item) => (
+                              {hotSuggestions.map((item, hi) => (
                                 <Link
                                   key={`search-hot-${item.id}`}
                                   to={`/truyen/${item.id}`}
@@ -381,6 +382,7 @@ function Header() {
                                     src={item.cover_url || '/default-cover.jpg'}
                                     alt={item.title}
                                     className="w-9 h-12 rounded object-cover flex-shrink-0"
+                                    {...coverImageProps(hi < 6)}
                                   />
                                   <div className="min-w-0">
                                     <p className="text-sm text-foreground line-clamp-1">{item.title}</p>
@@ -397,7 +399,7 @@ function Header() {
                         )
                       ) : (
                         <div className="space-y-1">
-                          {searchResults.map((item) => (
+                          {searchResults.map((item, ri) => (
                             <Link
                               key={`search-${item.id}`}
                               to={`/truyen/${item.id}`}
@@ -408,6 +410,7 @@ function Header() {
                                 src={item.cover_url || '/default-cover.jpg'}
                                 alt={item.title}
                                 className="w-9 h-12 rounded object-cover flex-shrink-0"
+                                {...coverImageProps(ri < 6)}
                               />
                               <div className="min-w-0">
                                 <p className="text-sm text-foreground line-clamp-1">{item.title}</p>
@@ -596,7 +599,7 @@ function Header() {
                       <div>
                         <p className="text-[11px] text-muted-foreground px-3 py-2">Không tìm thấy. Gợi ý truyện hot:</p>
                         <div className="divide-y divide-border">
-                          {hotSuggestions.map((item) => (
+                          {hotSuggestions.map((item, hi) => (
                             <Link
                               key={`m-search-hot-${item.id}`}
                               to={`/truyen/${item.id}`}
@@ -610,6 +613,7 @@ function Header() {
                                 src={item.cover_url || '/default-cover.jpg'}
                                 alt={item.title}
                                 className="w-8 h-10 rounded object-cover flex-shrink-0"
+                                {...coverImageProps(hi < 6)}
                               />
                               <div className="min-w-0">
                                 <p className="text-sm text-foreground line-clamp-1">{item.title}</p>
@@ -626,7 +630,7 @@ function Header() {
                     )
                   ) : (
                     <div className="divide-y divide-border">
-                      {searchResults.map((item) => (
+                      {searchResults.map((item, ri) => (
                         <Link
                           key={`m-search-${item.id}`}
                           to={`/truyen/${item.id}`}
@@ -640,6 +644,7 @@ function Header() {
                             src={item.cover_url || '/default-cover.jpg'}
                             alt={item.title}
                             className="w-8 h-10 rounded object-cover flex-shrink-0"
+                            {...coverImageProps(ri < 6)}
                           />
                           <div className="min-w-0">
                             <p className="text-sm text-foreground line-clamp-1">{item.title}</p>

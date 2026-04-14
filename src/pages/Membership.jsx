@@ -16,6 +16,7 @@ import { supabase, isSupabaseConfigured } from "../lib/supabase";
 import { fetchGenresCached } from "../lib/cachedQueries";
 import { enrichNovelsWithLatestChapter } from "../lib/enrichNovelsLatestChapter";
 import NovelCard from "../components/NovelCard";
+import { coverImageProps } from "../lib/coverImageProps";
 import {
   LS_FAVORITES,
   LS_FOLLOWS,
@@ -278,8 +279,14 @@ export default function Membership() {
           </div>
         ) : (
           <div className="novel-feed-grid">
-            {favoriteNovels.map((novel) => (
-              <NovelCard key={novel.id} novel={novel} showStatus variant="webtoon" />
+            {favoriteNovels.map((novel, i) => (
+              <NovelCard
+                key={novel.id}
+                novel={novel}
+                showStatus
+                variant="webtoon"
+                coverPriority={i < 9}
+              />
             ))}
           </div>
         )}
@@ -299,8 +306,14 @@ export default function Membership() {
           </div>
         ) : (
           <div className="novel-feed-grid">
-            {followNovels.map((novel) => (
-              <NovelCard key={novel.id} novel={novel} showStatus variant="webtoon" />
+            {followNovels.map((novel, i) => (
+              <NovelCard
+                key={novel.id}
+                novel={novel}
+                showStatus
+                variant="webtoon"
+                coverPriority={i < 9}
+              />
             ))}
           </div>
         )}
@@ -327,7 +340,7 @@ export default function Membership() {
           </div>
         ) : (
           <div className="divide-y divide-border rounded-lg border border-border">
-            {historyItems.map((item) => (
+            {historyItems.map((item, idx) => (
               <div
                 key={`${item.chapterId}-${item.readAt}`}
                 className="flex items-stretch gap-3 p-3 hover:bg-secondary/30"
@@ -340,6 +353,7 @@ export default function Membership() {
                     src={item.coverUrl || "/default-cover.jpg"}
                     alt=""
                     className="h-20 w-14 shrink-0 rounded bg-secondary object-cover"
+                    {...coverImageProps(idx < 8)}
                   />
                   <div className="min-w-0 flex-1">
                     <h3 className="line-clamp-2 text-sm font-medium text-foreground">

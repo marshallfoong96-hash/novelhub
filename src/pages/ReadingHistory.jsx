@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { History, BookOpen, Clock } from "lucide-react";
+import { coverImageProps } from "../lib/coverImageProps";
 
 function ReadingHistory() {
   const [items, setItems] = useState([]);
@@ -29,7 +30,7 @@ function ReadingHistory() {
         </div>
       ) : (
         <div className="bg-card border border-border rounded-lg divide-y divide-border">
-          {items.map((item) => (
+          {items.map((item, idx) => (
             <Link
               key={`${item.chapterId}-${item.readAt}`}
               to={`/chapter/${item.chapterId}`}
@@ -39,6 +40,7 @@ function ReadingHistory() {
                 src={item.coverUrl || "/default-cover.jpg"}
                 alt={item.title}
                 className="w-12 h-16 object-contain rounded bg-secondary"
+                {...coverImageProps(idx < 10)}
               />
               <div className="min-w-0 flex-1">
                 <h3 className="text-sm font-medium text-foreground line-clamp-1">{item.title}</h3>

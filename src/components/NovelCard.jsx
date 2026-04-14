@@ -1,8 +1,10 @@
 import { Link } from 'react-router-dom';
 import { Eye, CheckCircle } from 'lucide-react';
+import { coverImageProps } from '../lib/coverImageProps';
 import { formatNumber, novelChapterSubtitle } from '../utils/helpers';
 
-function NovelCard({ novel, showStatus = false, variant = 'default' }) {
+function NovelCard({ novel, showStatus = false, variant = 'default', coverPriority = false }) {
+  const imgExtra = coverImageProps(coverPriority);
   /** Lưới 3 cột mobile — bìa đầy ô, chữ nhỏ (tham chiếu LINE Webtoon). */
   if (variant === 'webtoon') {
     return (
@@ -12,6 +14,7 @@ function NovelCard({ novel, showStatus = false, variant = 'default' }) {
             src={novel.cover_url || '/default-cover.jpg'}
             alt={novel.title}
             className="h-full w-full object-cover object-top transition-transform duration-300 group-hover:scale-[1.03]"
+            {...imgExtra}
           />
           {showStatus && (
             <div className="absolute left-1 top-1 flex flex-col gap-0.5">
@@ -50,6 +53,7 @@ function NovelCard({ novel, showStatus = false, variant = 'default' }) {
             src={novel.cover_url || '/default-cover.jpg'}
             alt={novel.title}
             className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
+            {...imgExtra}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-foreground/80 via-foreground/20 to-transparent" />
           
@@ -92,6 +96,7 @@ function NovelCard({ novel, showStatus = false, variant = 'default' }) {
             src={novel.cover_url || '/default-cover.jpg'}
             alt={novel.title}
             className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
+            {...imgExtra}
           />
           
           {/* Overlay */}
@@ -137,6 +142,7 @@ function NovelCard({ novel, showStatus = false, variant = 'default' }) {
           src={novel.cover_url || '/default-cover.jpg'}
           alt={novel.title}
           className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
+          {...imgExtra}
         />
         
         {/* Overlay with stats */}

@@ -90,8 +90,14 @@ function BookmarkedNovels() {
         </div>
       ) : (
         <div className="novel-feed-grid">
-          {novels.map((novel) => (
-            <NovelCard key={novel.id} novel={novel} showStatus variant="webtoon" />
+          {novels.map((novel, i) => (
+            <NovelCard
+              key={novel.id}
+              novel={novel}
+              showStatus
+              variant="webtoon"
+              coverPriority={i < 9}
+            />
           ))}
         </div>
       )}

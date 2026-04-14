@@ -479,9 +479,14 @@ function BrowseNovels({ mode = "all" }) {
       ) : (
         <>
           <div className="novel-feed-grid">
-            {novels.map((novel) => (
+            {novels.map((novel, i) => (
               <div key={novel.id} className="relative min-w-0">
-                <NovelCard novel={novel} showStatus variant="webtoon" />
+                <NovelCard
+                  novel={novel}
+                  showStatus
+                  variant="webtoon"
+                  coverPriority={i < 9}
+                />
                 {mode === "chapterRange" && (
                   <span className="absolute right-1 top-7 z-[1] rounded bg-foreground/85 px-1 py-0.5 text-[8px] font-medium text-background">
                     {chapterCounts[novel.id] || 0} chương
