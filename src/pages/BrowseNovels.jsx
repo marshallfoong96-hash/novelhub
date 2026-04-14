@@ -353,11 +353,20 @@ function BrowseNovels({ mode = "all" }) {
   }, [mode, chapterRangePool]);
 
   useEffect(() => {
+    let raf = 0;
     const handleScroll = () => {
-      setShowBackTop(window.scrollY > 480);
+      if (raf) return;
+      raf = requestAnimationFrame(() => {
+        raf = 0;
+        const next = window.scrollY > 480;
+        setShowBackTop((prev) => (prev === next ? prev : next));
+      });
     };
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      if (raf) cancelAnimationFrame(raf);
+    };
   }, []);
 
   const totalPages = useMemo(

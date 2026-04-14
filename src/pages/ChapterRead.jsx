@@ -67,7 +67,8 @@ export default function ChapterRead() {
   const [lineHeight, setLineHeight] = useState(1.8);
   const [contentWidth, setContentWidth] = useState(760);
   const [readingTheme, setReadingTheme] = useState("light");
-  const [readingProgress, setReadingProgress] = useState(0);
+  /** DOM-only progress bar — avoids setState on every scroll (major battery saver on mobile). */
+  const readingProgressBarRef = useRef(null);
   const [showTocDrawer, setShowTocDrawer] = useState(false);
   const [showShopeeGate, setShowShopeeGate] = useState(false);
   const isAuthenticated = true;
@@ -309,16 +310,31 @@ export default function ChapterRead() {
   }, [fontSize, lineHeight, contentWidth, readingTheme]);
 
   useEffect(() => {
-    const handleScroll = () => {
+    let raf = 0;
+    const tick = () => {
+      const bar = readingProgressBarRef.current;
+      if (!bar) return;
       const scrollTop = window.scrollY;
       const docHeight = document.documentElement.scrollHeight - window.innerHeight;
-      const progress = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
-      setReadingProgress(Math.min(progress, 100));
+      const progress = docHeight > 0 ? Math.min((scrollTop / docHeight) * 100, 100) : 0;
+      bar.style.width = `${progress}%`;
     };
-
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+    const schedule = () => {
+      if (raf) return;
+      raf = requestAnimationFrame(() => {
+        raf = 0;
+        tick();
+      });
+    };
+    window.addEventListener("scroll", schedule, { passive: true });
+    window.addEventListener("resize", schedule, { passive: true });
+    schedule();
+    return () => {
+      window.removeEventListener("scroll", schedule);
+      window.removeEventListener("resize", schedule);
+      if (raf) cancelAnimationFrame(raf);
+    };
+  }, [id, loading, chapter?.id]);
 
   const fetchChapter = async () => {
     if (!isSupabaseConfigured || !supabase) {
@@ -550,9 +566,11 @@ export default function ChapterRead() {
   return (
     <>
       {/* Reading Progress Bar */}
-      <div 
-        className="reading-progress" 
-        style={{ width: `${readingProgress}%` }}
+      <div
+        ref={readingProgressBarRef}
+        className="reading-progress"
+        style={{ width: "0%" }}
+        aria-hidden
       />
 
       <div className="max-w-4xl mx-auto pb-24">

@@ -68,11 +68,20 @@ function Header() {
     (location.pathname === '/' && location.hash === '#kham-pha-truyen-hot');
 
   useEffect(() => {
+    let raf = 0;
     const handleScroll = () => {
-      setIsScrolled(window.scrollY > 10);
+      if (raf) return;
+      raf = requestAnimationFrame(() => {
+        raf = 0;
+        const next = window.scrollY > 10;
+        setIsScrolled((prev) => (prev === next ? prev : next));
+      });
     };
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      if (raf) cancelAnimationFrame(raf);
+    };
   }, []);
 
   useEffect(() => {

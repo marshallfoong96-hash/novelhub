@@ -176,8 +176,8 @@ function Home() {
             const genresData = await fetchGenresCached(DEFAULT_DATA_TTL_MS);
 
             /** Giới hạn hai truy vấn song song — không tải toàn bộ bảng novels (trước đây rất chậm khi dữ liệu lớn). */
-            const HOME_NOVEL_RECENT = 320;
-            const HOME_NOVEL_HOT = 320;
+            const HOME_NOVEL_RECENT = 120;
+            const HOME_NOVEL_HOT = 120;
 
             const [recentRes, hotRes] = await Promise.all([
               supabase
@@ -511,7 +511,7 @@ function Home() {
                           novel={novel}
                           showStatus
                           variant="webtoon"
-                          coverPriority={i < 9}
+                          coverPriority={i < 4}
                         />
                       ))}
                     </div>
@@ -563,7 +563,7 @@ function Home() {
                           novel={novel}
                           showStatus
                           variant="webtoon"
-                          coverPriority={i < 9}
+                          coverPriority={i < 4}
                         />
                       ))}
                     </div>
@@ -595,7 +595,7 @@ function Home() {
             />
             <div className="section-shell overflow-hidden">
               <div className="max-h-[560px] overflow-y-auto divide-y divide-border">
-                {newUpdates.map((novel, idx) => (
+                {newUpdates.slice(0, 60).map((novel, idx) => (
                   <UpdateRow key={`stream-${novel.id}`} novel={novel} streamIndex={idx} />
                 ))}
               </div>
@@ -661,7 +661,7 @@ function Home() {
                     src={novel.cover_url || '/default-cover.jpg'}
                     alt=""
                     className="h-14 w-10 shrink-0 rounded-md object-cover object-top ring-1 ring-border/60 shadow-sm"
-                    {...coverImageProps(index < 6)}
+                    {...coverImageProps(index < 3)}
                   />
                   <div className="min-w-0 flex-1">
                     <h4 className="text-xs font-medium text-foreground line-clamp-2">
@@ -1023,7 +1023,7 @@ function UpdateRow({ novel, streamIndex = 0 }) {
           src={novel.cover_url || '/default-cover.jpg'}
           alt={novel.title}
           className="w-10 h-14 object-contain rounded"
-          {...coverImageProps(streamIndex < 12)}
+          {...coverImageProps(streamIndex < 3)}
         />
       </Link>
       <div className="flex-1 min-w-0">
@@ -1079,7 +1079,7 @@ function TopViewsSection({ novels }) {
               src={novel.cover_url || '/default-cover.jpg'}
               alt={novel.title}
               className="w-12 h-16 object-contain rounded flex-shrink-0"
-              {...coverImageProps(index < 4)}
+              {...coverImageProps(index < 2)}
             />
             <div className="flex-1 min-w-0">
               <h4 className="text-xs font-medium text-foreground line-clamp-2 group-hover:text-accent transition-colors">
