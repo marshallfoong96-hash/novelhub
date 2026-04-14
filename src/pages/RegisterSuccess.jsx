@@ -121,8 +121,8 @@ function RegisterSuccess() {
         </div>
 
         <p className="mt-4 text-[10px] text-muted-foreground text-center leading-relaxed">
-          Không thấy email? Kiểm tra thư mục spam / khuyến mãi. Nếu vẫn không có, thử gửi lại sau
-          vài phút.
+          Không thấy email? Kiểm tra Spam / Promotions (Gmail) / tab Social. Đợi 5–15 phút rồi bấm
+          &quot;Gửi lại&quot;. Nếu vẫn không có sau nhiều lần, vui lòng liên hệ hỗ trợ trang.
         </p>
       </div>
     </div>

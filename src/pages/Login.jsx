@@ -126,13 +126,6 @@ function Login() {
             </p>
           </div>
         </div>
-
-        {/* Demo Credentials */}
-        <div className="mt-4 p-3 bg-secondary/50 border border-border rounded-lg">
-          <p className="text-xs text-muted-foreground text-center">
-            <span className="font-medium">Demo:</span> admin@mitruyen.me / admin123
-          </p>
-        </div>
       </div>
     </div>
   );

@@ -4,6 +4,14 @@ import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 const AuthContext = createContext(null);
 
+/** Supabase puts this in confirmation emails. Prefer `VITE_SITE_URL` on Vercel so links always use production domain, not a preview URL. */
+function getEmailRedirectBase() {
+  if (typeof window === 'undefined') return undefined;
+  const fromEnv = import.meta.env.VITE_SITE_URL?.trim();
+  const origin = fromEnv || window.location.origin;
+  return `${origin.replace(/\/$/, '')}/`;
+}
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -81,8 +89,7 @@ export const AuthProvider = ({ children }) => {
       password,
       options: {
         data: { username },
-        emailRedirectTo:
-          typeof window !== 'undefined' ? `${window.location.origin}/` : undefined,
+        emailRedirectTo: getEmailRedirectBase(),
       },
     });
 
@@ -137,8 +144,7 @@ export const AuthProvider = ({ children }) => {
       type: 'signup',
       email: email.trim(),
       options: {
-        emailRedirectTo:
-          typeof window !== 'undefined' ? `${window.location.origin}/` : undefined,
+        emailRedirectTo: getEmailRedirectBase(),
       },
     });
     if (error) {
