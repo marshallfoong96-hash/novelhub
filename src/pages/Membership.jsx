@@ -52,6 +52,10 @@ export default function Membership() {
   const [favoriteNovels, setFavoriteNovels] = useState([]);
   const [followNovels, setFollowNovels] = useState([]);
   const [loadingNovels, setLoadingNovels] = useState(true);
+  const mergedIds = useMemo(
+    () => [...new Set([...favoriteIds, ...followIds])],
+    [favoriteIds, followIds]
+  );
 
   const reloadLocal = useCallback(() => {
     setFavoriteIds(readNumericIdArray(LS_FAVORITES));
@@ -98,7 +102,6 @@ export default function Membership() {
   }, []);
 
   useEffect(() => {
-    const mergedIds = [...new Set([...favoriteIds, ...followIds])];
     if (!isSupabaseConfigured || !supabase || mergedIds.length === 0) {
       setFavoriteNovels([]);
       setFollowNovels([]);
@@ -127,7 +130,7 @@ export default function Membership() {
     return () => {
       cancelled = true;
     };
-  }, [favoriteIds, followIds]);
+  }, [favoriteIds, followIds, mergedIds]);
 
   const toggleGenreSlug = (slug) => {
     const s = String(slug || "").trim();
