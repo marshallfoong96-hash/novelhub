@@ -10,8 +10,11 @@ import {
   Sun,
   Flame,
   Clock,
+  Bell,
   CheckCircle,
   History,
+  Heart,
+  Users,
   ChevronDown,
   List,
   ChevronRight,
@@ -25,6 +28,14 @@ import BrandLogo from './BrandLogo';
 import { novelChapterSubtitle } from '../utils/helpers';
 import { enrichNovelsWithLatestChapter } from '../lib/enrichNovelsLatestChapter';
 import { coverImageProps } from '../lib/coverImageProps';
+import {
+  LS_BOOKMARKS,
+  LS_FAVORITES,
+  LS_FOLLOWS,
+  LS_READING_HISTORY,
+  readNumericIdArray,
+  readReadingHistory,
+} from '../lib/memberStorage';
 
 function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -36,12 +47,20 @@ function Header() {
   const [hotSuggestions, setHotSuggestions] = useState([]);
   const [searchLoading, setSearchLoading] = useState(false);
   const [showSearchDropdown, setShowSearchDropdown] = useState(false);
+  const [memberMenuOpen, setMemberMenuOpen] = useState(false);
+  const [notificationOpen, setNotificationOpen] = useState(false);
+  const [notificationItems, setNotificationItems] = useState([]);
+  const [notificationLoading, setNotificationLoading] = useState(false);
+  const [notificationUnread, setNotificationUnread] = useState(0);
+  const [notificationFilter, setNotificationFilter] = useState('all');
   const [mobileGenresOpen, setMobileGenresOpen] = useState(true);
   const [genres, setGenres] = useState([]);
   const [genresRefreshing, setGenresRefreshing] = useState(false);
   /** Pause infinite marquee when tab in background — saves GPU/battery on mobile. */
   const [announcementAnimActive, setAnnouncementAnimActive] = useState(true);
   const searchBoxRef = useRef(null);
+  const memberMenuRef = useRef(null);
+  const notificationRef = useRef(null);
   const drawerSwipeStart = useRef({ x: 0, y: 0 });
   const forceHomeTopRef = useRef(false);
 
@@ -63,6 +82,139 @@ function Header() {
     }
   };
   const { user, isAuthenticated, logout } = useAuth();
+  const notificationSeenKey = useMemo(() => {
+    if (!user?.id) return null;
+    return `mi_notifications_last_seen__uid_${user.id}`;
+  }, [user?.id]);
+
+  const filteredNotifications = useMemo(() => {
+    if (notificationFilter === 'all') return notificationItems;
+    return notificationItems.filter((item) => item.type === notificationFilter);
+  }, [notificationItems, notificationFilter]);
+
+  const notificationTypeCount = useMemo(() => {
+    const update = notificationItems.filter((i) => i.type === 'update').length;
+    const resume = notificationItems.filter((i) => i.type === 'resume').length;
+    return {
+      all: notificationItems.length,
+      update,
+      resume,
+    };
+  }, [notificationItems]);
+
+  const loadNotifications = useMemo(
+    () => async () => {
+      if (!isAuthenticated || !supabase || !isSupabaseConfigured) {
+        setNotificationItems([]);
+        setNotificationUnread(0);
+        return;
+      }
+      setNotificationLoading(true);
+      try {
+        const followIds = readNumericIdArray(LS_FOLLOWS);
+        const favoriteIds = readNumericIdArray(LS_FAVORITES);
+        const bookmarkIds = readNumericIdArray(LS_BOOKMARKS);
+        const readingHistory = readReadingHistory();
+        const sourceNovelIds = [...new Set([...followIds, ...favoriteIds, ...bookmarkIds])].slice(0, 24);
+
+        let novelRows = [];
+        if (sourceNovelIds.length > 0) {
+          const { data } = await supabase
+            .from('novels')
+            .select('id,title,cover_url')
+            .in('id', sourceNovelIds);
+          novelRows = data || [];
+        }
+        const novelMap = new Map((novelRows || []).map((n) => [Number(n.id), n]));
+
+        const lastReadByNovel = new Map();
+        (readingHistory || []).forEach((item) => {
+          const novelId = Number(item?.novelId);
+          const chapterNumber = Number(item?.chapterNumber);
+          if (!Number.isFinite(novelId) || !Number.isFinite(chapterNumber)) return;
+          const prev = lastReadByNovel.get(novelId);
+          if (!prev || chapterNumber > prev.chapterNumber) {
+            lastReadByNovel.set(novelId, {
+              chapterNumber,
+              chapterId: item?.chapterId,
+              readAt: item?.readAt,
+            });
+          }
+        });
+
+        const notif = [];
+        if (sourceNovelIds.length > 0) {
+          const { data: chapterRows } = await supabase
+            .from('chapters')
+            .select('id,novel_id,chapter_number,title,created_at')
+            .in('novel_id', sourceNovelIds)
+            .order('created_at', { ascending: false })
+            .limit(180);
+          const latestChapterMap = new Map();
+          (chapterRows || []).forEach((row) => {
+            const novelId = Number(row.novel_id);
+            if (!Number.isFinite(novelId) || latestChapterMap.has(novelId)) return;
+            latestChapterMap.set(novelId, row);
+          });
+
+          latestChapterMap.forEach((latest, novelId) => {
+            const novel = novelMap.get(novelId);
+            if (!novel) return;
+            const lastRead = lastReadByNovel.get(novelId);
+            const latestChapterNo = Number(latest.chapter_number) || 0;
+            const seenChapterNo = Number(lastRead?.chapterNumber) || 0;
+            if (!lastRead || latestChapterNo > seenChapterNo) {
+              notif.push({
+                id: `upd-${novelId}-${latest.id}`,
+                type: 'update',
+                ts: latest.created_at || new Date().toISOString(),
+                title: 'Có chương mới',
+                text: `${novel.title} vừa cập nhật chương ${latest.chapter_number}.`,
+                to: `/chapter/${latest.id}`,
+                cover: novel.cover_url || '/default-cover.jpg',
+              });
+            }
+          });
+        }
+
+        const recentByNovel = [];
+        const seenNovel = new Set();
+        (readingHistory || []).forEach((item) => {
+          const novelId = Number(item?.novelId);
+          if (!Number.isFinite(novelId) || seenNovel.has(novelId)) return;
+          seenNovel.add(novelId);
+          recentByNovel.push(item);
+        });
+        recentByNovel.slice(0, 3).forEach((item) => {
+          notif.push({
+            id: `resume-${item.novelId}-${item.chapterId}`,
+            type: 'resume',
+            ts: item.readAt || new Date().toISOString(),
+            title: 'Tiếp tục đọc',
+            text: `${item.title} - quay lại chương ${item.chapterNumber}.`,
+            to: `/chapter/${item.chapterId}`,
+            cover: item.coverUrl || '/default-cover.jpg',
+          });
+        });
+
+        const sorted = notif
+          .sort((a, b) => new Date(b.ts).getTime() - new Date(a.ts).getTime())
+          .slice(0, 12);
+        setNotificationItems(sorted);
+
+        const lastSeenTs = notificationSeenKey ? Number(localStorage.getItem(notificationSeenKey) || 0) : 0;
+        const unread = sorted.filter((n) => new Date(n.ts).getTime() > lastSeenTs).length;
+        setNotificationUnread(unread);
+      } catch {
+        setNotificationItems([]);
+        setNotificationUnread(0);
+      } finally {
+        setNotificationLoading(false);
+      }
+    },
+    [isAuthenticated, notificationSeenKey]
+  );
+
   const location = useLocation();
   const navigate = useNavigate();
   const isHotRecommend =
@@ -133,18 +285,46 @@ function Header() {
     setIsMenuOpen(false);
     setShowSearch(false);
     setShowSearchDropdown(false);
+    setMemberMenuOpen(false);
+    setNotificationOpen(false);
   }, [location.pathname]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (!searchBoxRef.current) return;
-      if (!searchBoxRef.current.contains(event.target)) {
+      if (searchBoxRef.current && !searchBoxRef.current.contains(event.target)) {
         setShowSearchDropdown(false);
+      }
+      if (memberMenuRef.current && !memberMenuRef.current.contains(event.target)) {
+        setMemberMenuOpen(false);
+      }
+      if (notificationRef.current && !notificationRef.current.contains(event.target)) {
+        setNotificationOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  useEffect(() => {
+    loadNotifications();
+  }, [loadNotifications, location.pathname]);
+
+  useEffect(() => {
+    if (!notificationOpen || !notificationSeenKey) return;
+    const now = Date.now();
+    localStorage.setItem(notificationSeenKey, String(now));
+    setNotificationUnread(0);
+  }, [notificationOpen, notificationSeenKey]);
+
+  const markAllNotificationsRead = () => {
+    if (!notificationSeenKey) return;
+    const newestTs = notificationItems.reduce((maxTs, item) => {
+      const t = new Date(item.ts).getTime();
+      return Number.isFinite(t) && t > maxTs ? t : maxTs;
+    }, Date.now());
+    localStorage.setItem(notificationSeenKey, String(newestTs));
+    setNotificationUnread(0);
+  };
 
   useEffect(() => {
     const fetchGenres = async () => {
@@ -379,7 +559,7 @@ function Header() {
             </div>
 
             {/* Right Side Actions */}
-            <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+            <div className="relative flex items-center gap-1 sm:gap-2 shrink-0" ref={memberMenuRef}>
               {/* Search Bar - Desktop */}
               <form onSubmit={handleSearch} className="hidden md:flex">
                 <div className="relative" ref={searchBoxRef}>
@@ -477,6 +657,115 @@ function Header() {
                 {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
               </button>
 
+              {isAuthenticated ? (
+                <div className="relative" ref={notificationRef}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setNotificationOpen((v) => !v);
+                      setMemberMenuOpen(false);
+                    }}
+                    className="relative p-2 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-lg transition-colors"
+                    aria-label="Thông báo"
+                    title="Thông báo"
+                  >
+                    <Bell className="w-5 h-5" />
+                    {notificationUnread > 0 ? (
+                      <span className="absolute -right-0.5 -top-0.5 min-w-[1rem] rounded-full bg-accent px-1 text-[10px] font-bold leading-4 text-accent-foreground">
+                        {notificationUnread > 9 ? '9+' : notificationUnread}
+                      </span>
+                    ) : null}
+                  </button>
+                  {notificationOpen ? (
+                    <div className="absolute right-0 top-[calc(100%+0.4rem)] z-[82] w-[min(92vw,22rem)] rounded-xl border border-border bg-card p-2 shadow-xl">
+                      <div className="mb-1 flex items-center justify-between px-2 py-1">
+                        <p className="text-sm font-semibold text-foreground">Thông báo</p>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={markAllNotificationsRead}
+                            className="text-xs text-muted-foreground hover:text-foreground hover:underline"
+                          >
+                            Đánh dấu đã đọc
+                          </button>
+                          <button
+                            type="button"
+                            onClick={loadNotifications}
+                            className="text-xs text-accent hover:underline"
+                          >
+                            Làm mới
+                          </button>
+                        </div>
+                      </div>
+                      <div className="mb-2 flex gap-1 px-2">
+                        <button
+                          type="button"
+                          onClick={() => setNotificationFilter('all')}
+                          className={`rounded-full px-2.5 py-1 text-[11px] font-medium ${
+                            notificationFilter === 'all'
+                              ? 'bg-accent text-accent-foreground'
+                              : 'bg-secondary text-muted-foreground hover:text-foreground'
+                          }`}
+                        >
+                          Tất cả ({notificationTypeCount.all})
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setNotificationFilter('update')}
+                          className={`rounded-full px-2.5 py-1 text-[11px] font-medium ${
+                            notificationFilter === 'update'
+                              ? 'bg-accent text-accent-foreground'
+                              : 'bg-secondary text-muted-foreground hover:text-foreground'
+                          }`}
+                        >
+                          Cập nhật ({notificationTypeCount.update})
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setNotificationFilter('resume')}
+                          className={`rounded-full px-2.5 py-1 text-[11px] font-medium ${
+                            notificationFilter === 'resume'
+                              ? 'bg-accent text-accent-foreground'
+                              : 'bg-secondary text-muted-foreground hover:text-foreground'
+                          }`}
+                        >
+                          Tiếp tục ({notificationTypeCount.resume})
+                        </button>
+                      </div>
+                      {notificationLoading ? (
+                        <p className="px-2 py-3 text-xs text-muted-foreground">Đang tải thông báo...</p>
+                      ) : filteredNotifications.length === 0 ? (
+                        <p className="px-2 py-3 text-xs text-muted-foreground">
+                          Chưa có thông báo trong mục này.
+                        </p>
+                      ) : (
+                        <div className="max-h-[22rem] space-y-1 overflow-y-auto">
+                          {filteredNotifications.map((item) => (
+                            <Link
+                              key={item.id}
+                              to={item.to}
+                              onClick={() => setNotificationOpen(false)}
+                              className="flex items-center gap-2 rounded-lg px-2 py-2 hover:bg-secondary"
+                            >
+                              <img
+                                src={item.cover}
+                                alt=""
+                                className="h-10 w-8 shrink-0 rounded object-cover"
+                                {...coverImageProps(false)}
+                              />
+                              <div className="min-w-0">
+                                <p className="line-clamp-1 text-xs font-semibold text-foreground">{item.title}</p>
+                                <p className="line-clamp-2 text-[11px] text-muted-foreground">{item.text}</p>
+                              </div>
+                            </Link>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
+
               {/* Bookmarks + history */}
               <Link
                 to="/danh-dau"
@@ -498,8 +787,9 @@ function Header() {
               {/* Auth — compact on mobile (MonkeyD-style) */}
               <div className="flex md:hidden items-center gap-1">
                 {isAuthenticated ? (
-                  <Link
-                    to="/profile"
+                  <button
+                    type="button"
+                    onClick={() => setMemberMenuOpen((v) => !v)}
                     className="p-1.5 rounded-lg hover:bg-secondary transition-colors"
                     aria-label="Hồ sơ"
                   >
@@ -510,7 +800,7 @@ function Header() {
                         <User className="w-4 h-4 text-accent" />
                       )}
                     </div>
-                  </Link>
+                  </button>
                 ) : (
                   <>
                     <Link
@@ -533,8 +823,9 @@ function Header() {
               <div className="hidden md:flex items-center gap-2">
                 {isAuthenticated ? (
                   <div className="flex items-center gap-2">
-                    <Link 
-                      to="/profile" 
+                    <button
+                      type="button"
+                      onClick={() => setMemberMenuOpen((v) => !v)}
                       className="flex items-center gap-2 px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:bg-secondary rounded-lg transition-colors"
                     >
                       <div className="w-6 h-6 rounded-full bg-accent/20 flex items-center justify-center overflow-hidden">
@@ -549,7 +840,8 @@ function Header() {
                         )}
                       </div>
                       <span className="font-medium max-w-[80px] truncate">{user?.username}</span>
-                    </Link>
+                      <ChevronDown className={`h-3.5 w-3.5 transition-transform ${memberMenuOpen ? 'rotate-180' : ''}`} />
+                    </button>
                     <button
                       onClick={logout}
                       className="text-xs text-muted-foreground hover:text-destructive px-2 py-1 transition-colors"
@@ -574,6 +866,63 @@ function Header() {
                   </>
                 )}
               </div>
+
+              {isAuthenticated && memberMenuOpen ? (
+                <div className="absolute right-0 top-[calc(100%+0.4rem)] z-[80] w-60 rounded-xl border border-border bg-card p-2 shadow-xl">
+                  <Link
+                    to="/profile"
+                    onClick={() => setMemberMenuOpen(false)}
+                    className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-foreground hover:bg-secondary"
+                  >
+                    <User className="h-4 w-4 text-accent" />
+                    Trung tâm thành viên
+                  </Link>
+                  <Link
+                    to="/profile#liked-novels"
+                    onClick={() => setMemberMenuOpen(false)}
+                    className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-foreground hover:bg-secondary"
+                  >
+                    <Heart className="h-4 w-4 text-rose-500" />
+                    Truyện đã thích
+                  </Link>
+                  <Link
+                    to="/profile#following-novels"
+                    onClick={() => setMemberMenuOpen(false)}
+                    className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-foreground hover:bg-secondary"
+                  >
+                    <Users className="h-4 w-4 text-sky-600" />
+                    Truyện theo dõi
+                  </Link>
+                  <Link
+                    to="/danh-dau"
+                    onClick={() => setMemberMenuOpen(false)}
+                    className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-foreground hover:bg-secondary"
+                  >
+                    <Bookmark className="h-4 w-4 text-amber-600" />
+                    Truyện đánh dấu
+                  </Link>
+                  <Link
+                    to="/lich-su"
+                    onClick={() => setMemberMenuOpen(false)}
+                    className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-foreground hover:bg-secondary"
+                  >
+                    <History className="h-4 w-4 text-emerald-600" />
+                    Lịch sử đọc
+                  </Link>
+                  <div className="my-1 border-t border-border" />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMemberMenuOpen(false);
+                      logout();
+                    }}
+                    className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-destructive hover:bg-destructive/10"
+                  >
+                    <X className="h-4 w-4" />
+                    Đăng xuất
+                  </button>
+                </div>
+              ) : null}
 
             </div>
           </div>

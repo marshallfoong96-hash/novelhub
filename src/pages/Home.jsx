@@ -890,16 +890,16 @@ function HeroSection({ featuredNovels }) {
 
       <div className="grid gap-0 md:grid-cols-2">
         {/* Featured Novel Image */}
-        <div className="relative aspect-[4/3] md:aspect-auto md:h-[320px]">
-        <img
-          src={featured?.cover_url || '/default-cover.jpg'}
-          alt={featured?.title}
+        <Link to={`/truyen/${featured?.id}`} className="relative block aspect-[4/3] md:aspect-auto md:h-[320px]">
+          <img
+            src={featured?.cover_url || '/default-cover.jpg'}
+            alt={featured?.title}
             className="w-full h-full object-contain"
             {...coverImageProps(true)}
           />
           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-card md:block hidden" />
           <div className="absolute inset-0 bg-gradient-to-t from-card via-transparent to-transparent md:hidden" />
-          
+
           {/* Badge */}
           <div className="absolute top-3 left-3 flex gap-2">
             <span className="px-2 py-1 bg-accent text-accent-foreground text-xs font-semibold rounded flex items-center gap-1">
@@ -917,7 +917,7 @@ function HeroSection({ featuredNovels }) {
               </span>
             )}
           </div>
-        </div>
+        </Link>
 
         {/* Featured Novel Info */}
         <div className="p-6 flex flex-col justify-center">

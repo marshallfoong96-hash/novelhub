@@ -165,6 +165,26 @@ export default function Membership() {
       .filter((g) => g.slug);
   }, [genres]);
 
+  const historyNovelCount = useMemo(() => {
+    return new Set(
+      (historyItems || [])
+        .map((item) => Number(item?.novelId))
+        .filter((id) => Number.isFinite(id) && id > 0)
+    ).size;
+  }, [historyItems]);
+
+  useEffect(() => {
+    const hash = String(location.hash || "");
+    if (!hash) return;
+    const id = hash.replace(/^#/, "");
+    if (!id) return;
+    const el = document.getElementById(id);
+    if (!el) return;
+    window.requestAnimationFrame(() => {
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }, [location.hash]);
+
   return (
     <div className="space-y-8 pb-10">
       <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
@@ -189,7 +209,10 @@ export default function Membership() {
 
       {/* Stats — kiểu dashboard */}
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
+        <Link
+          to="/profile#liked-novels"
+          className="rounded-xl border border-border bg-card p-4 shadow-sm transition-colors hover:bg-secondary/35"
+        >
           <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
             <Heart className="h-4 w-4 text-rose-500" />
             Đã thích
@@ -197,8 +220,11 @@ export default function Membership() {
           <p className="mt-2 text-2xl font-bold tabular-nums text-foreground">
             {favoriteIds.length}
           </p>
-        </div>
-        <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
+        </Link>
+        <Link
+          to="/profile#following-novels"
+          className="rounded-xl border border-border bg-card p-4 shadow-sm transition-colors hover:bg-secondary/35"
+        >
           <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
             <Users className="h-4 w-4 text-sky-600" />
             Đang theo dõi
@@ -206,8 +232,11 @@ export default function Membership() {
           <p className="mt-2 text-2xl font-bold tabular-nums text-foreground">
             {followIds.length}
           </p>
-        </div>
-        <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
+        </Link>
+        <Link
+          to="/danh-dau"
+          className="rounded-xl border border-border bg-card p-4 shadow-sm transition-colors hover:bg-secondary/35"
+        >
           <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
             <Bookmark className="h-4 w-4 text-amber-600" />
             Đánh dấu
@@ -215,16 +244,19 @@ export default function Membership() {
           <p className="mt-2 text-2xl font-bold tabular-nums text-foreground">
             {bookmarkIds.length}
           </p>
-        </div>
-        <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
+        </Link>
+        <Link
+          to="/profile#reading-history"
+          className="rounded-xl border border-border bg-card p-4 shadow-sm transition-colors hover:bg-secondary/35"
+        >
           <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
             <History className="h-4 w-4 text-emerald-600" />
             Lịch sử đọc
           </div>
           <p className="mt-2 text-2xl font-bold tabular-nums text-foreground">
-            {historyItems.length}
+            {historyNovelCount}
           </p>
-        </div>
+        </Link>
       </div>
 
       {/* Thiết lập thể loại (tags) */}
@@ -267,7 +299,7 @@ export default function Membership() {
       </section>
 
       {/* Truyện đã thích */}
-      <section>
+      <section id="liked-novels">
         <div className="mb-3 flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <Heart className="h-5 w-5 text-rose-500" />
@@ -296,7 +328,7 @@ export default function Membership() {
       </section>
 
       {/* Theo dõi */}
-      <section>
+      <section id="following-novels">
         <div className="mb-3 flex items-center gap-2">
           <Users className="h-5 w-5 text-sky-600" />
           <h2 className="text-base font-semibold text-foreground">Truyện đang theo dõi</h2>
@@ -323,7 +355,7 @@ export default function Membership() {
       </section>
 
       {/* Lịch sử đọc — phía dưới */}
-      <section className="rounded-xl border border-border bg-card p-4 sm:p-5">
+      <section id="reading-history" className="rounded-xl border border-border bg-card p-4 sm:p-5">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <History className="h-5 w-5 text-emerald-600" />
