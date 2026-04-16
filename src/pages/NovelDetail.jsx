@@ -467,6 +467,11 @@ function NovelDetail() {
                         FULL
                       </span>
                     )}
+                    {novel.status === 'ongoing' && (
+                      <span className="absolute top-2 right-2 px-2 py-0.5 bg-accent text-accent-foreground text-[10px] font-bold rounded shadow-sm">
+                        Đang ra
+                      </span>
+                    )}
                   </div>
                 </div>
 
@@ -546,7 +551,11 @@ function NovelDetail() {
                       <div className="flex flex-wrap gap-x-2 gap-y-1">
                         <dt className="text-muted-foreground shrink-0">Trạng thái:</dt>
                         <dd className="text-foreground">
-                          {novel.status === 'completed' ? 'Đã đủ bộ' : 'Đang tiến hành'}
+                          {novel.status === 'completed'
+                            ? 'Đã đủ bộ'
+                            : novel.status === 'ongoing'
+                              ? 'Đang ra'
+                              : 'Đang tiến hành'}
                         </dd>
                       </div>
                     )}

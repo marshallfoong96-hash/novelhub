@@ -913,6 +913,11 @@ function HeroSection({ featuredNovels }) {
                 FULL
               </span>
             )}
+            {featured?.status === 'ongoing' && (
+              <span className="px-2 py-1 bg-accent text-accent-foreground text-xs font-semibold rounded">
+                Đang ra
+              </span>
+            )}
           </div>
         </div>
 
@@ -1056,6 +1061,11 @@ function UpdateRow({ novel, streamIndex = 0 }) {
               FULL
             </span>
           )}
+          {novel.status === 'ongoing' && (
+            <span className="text-[10px] px-1.5 py-0.5 bg-accent/10 text-accent rounded font-medium">
+              Đang ra
+            </span>
+          )}
           <span className="text-xs text-muted-foreground">{novelChapterSubtitle(novel)}</span>
         </div>
       </div>
@@ -1109,9 +1119,15 @@ function TopViewsSection({ novels }) {
                   {formatNumber(novel.view_count || 0)}
                 </span>
               </div>
-              {novel.status === 'completed' && (
-                <span className="inline-block mt-1 text-[9px] px-1.5 py-0.5 bg-[hsl(var(--success))]/10 text-[hsl(var(--success))] rounded font-medium">
-                  FULL
+              {(novel.status === 'completed' || novel.status === 'ongoing') && (
+                <span
+                  className={`inline-block mt-1 text-[9px] px-1.5 py-0.5 rounded font-medium ${
+                    novel.status === 'completed'
+                      ? 'bg-[hsl(var(--success))]/10 text-[hsl(var(--success))]'
+                      : 'bg-accent/15 text-accent'
+                  }`}
+                >
+                  {novel.status === 'completed' ? 'FULL' : 'Đang ra'}
                 </span>
               )}
             </div>

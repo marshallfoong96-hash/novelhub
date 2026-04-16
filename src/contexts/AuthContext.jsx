@@ -76,6 +76,30 @@ export const AuthProvider = ({ children }) => {
     };
   };
 
+  /** Google OAuth — bật Google trong Supabase → Authentication → Providers; Redirect URL: Site URL (ví dụ `https://domain.com/`). */
+  const loginWithGoogle = async () => {
+    if (!supabase) {
+      return { success: false, message: 'Chưa cấu hình đăng nhập.' };
+    }
+    const redirectTo = getEmailRedirectBase();
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: redirectTo || undefined,
+      },
+    });
+    if (error) {
+      return {
+        success: false,
+        message: error.message || 'Không thể đăng nhập bằng Google.',
+      };
+    }
+    if (data?.url) {
+      window.location.assign(data.url);
+    }
+    return { success: true };
+  };
+
   // =====================
   // 註冊
   // =====================
@@ -166,6 +190,7 @@ export const AuthProvider = ({ children }) => {
     isAuthenticated: !!user,
     loading,
     login,
+    loginWithGoogle,
     register,
     resendSignupConfirmation,
     logout

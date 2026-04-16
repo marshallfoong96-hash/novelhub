@@ -23,6 +23,11 @@ function NovelCard({ novel, showStatus = false, variant = 'default', coverPriori
                   FULL
                 </span>
               )}
+              {novel.status === 'ongoing' && (
+                <span className="rounded px-1 py-0.5 bg-accent text-[8px] font-bold leading-none text-accent-foreground">
+                  Đang ra
+                </span>
+              )}
             </div>
           )}
           <div className="absolute bottom-1 right-1">
@@ -63,6 +68,11 @@ function NovelCard({ novel, showStatus = false, variant = 'default', coverPriori
               <span className="px-1.5 py-0.5 bg-[hsl(var(--success))] text-white text-[10px] font-bold rounded flex items-center gap-0.5">
                 <CheckCircle className="w-2.5 h-2.5" />
                 FULL
+              </span>
+            )}
+            {novel.status === 'ongoing' && (
+              <span className="px-1.5 py-0.5 bg-accent text-accent-foreground text-[10px] font-bold rounded">
+                Đang ra
               </span>
             )}
           </div>
@@ -110,6 +120,11 @@ function NovelCard({ novel, showStatus = false, variant = 'default', coverPriori
                   FULL
                 </span>
               )}
+              {novel.status === 'ongoing' && (
+                <span className="px-1.5 py-0.5 bg-accent text-accent-foreground text-[9px] font-bold rounded">
+                  Đang ra
+                </span>
+              )}
             </div>
           )}
           
@@ -155,6 +170,11 @@ function NovelCard({ novel, showStatus = false, variant = 'default', coverPriori
               <span className="px-2 py-0.5 bg-[hsl(var(--success))] text-white text-[10px] font-bold rounded flex items-center gap-1">
                 <CheckCircle className="w-3 h-3" />
                 FULL
+              </span>
+            )}
+            {novel.status === 'ongoing' && (
+              <span className="px-2 py-0.5 bg-accent text-accent-foreground text-[10px] font-bold rounded">
+                Đang ra
               </span>
             )}
           </div>
