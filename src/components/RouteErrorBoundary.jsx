@@ -1,4 +1,5 @@
 import { Component } from 'react';
+import ReaderErrorState from './ReaderErrorState';
 
 /**
  * Catches render errors from lazy routes (e.g. failed chunk after deploy) and runtime bugs.
@@ -22,18 +23,13 @@ export class RouteErrorBoundary extends Component {
           className="flex min-h-[50vh] flex-col items-center justify-center gap-4 px-4 text-center"
           role="alert"
         >
-          <p className="max-w-md text-sm text-muted-foreground">
-            Đã xảy ra lỗi khi tải trang (đôi khi do trình duyệt đang dùng bản cũ sau khi cập nhật). Hãy
-            tải lại trang hoặc dùng tải lại bỏ qua bộ nhớ đệm (Ctrl+F5).
-          </p>
+          <ReaderErrorState
+            title="Ôi không, tải trang thất bại."
+            message="Loading failed. Có lỗi khi tải trang (đôi khi do trình duyệt đang dùng bản cũ sau khi cập nhật)."
+            onRetry={() => window.location.reload()}
+            retryLabel="Tải lại trang"
+          />
           <div className="flex flex-wrap items-center justify-center gap-2">
-            <button
-              type="button"
-              onClick={() => window.location.reload()}
-              className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-accent-foreground hover:bg-accent/90"
-            >
-              Tải lại trang
-            </button>
             <a
               href="/"
               className="rounded-lg border border-border bg-card px-4 py-2 text-sm font-medium text-foreground hover:bg-accent/10"

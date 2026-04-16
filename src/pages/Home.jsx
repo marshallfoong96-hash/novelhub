@@ -24,6 +24,7 @@ import NovelCard from '../components/NovelCard';
 import Pagination from '../components/Pagination';
 import AdSlot from '../components/AdSlot';
 import BrandLogo from '../components/BrandLogo';
+import ReaderErrorState from '../components/ReaderErrorState';
 import { branding } from '../lib/branding';
 import { coverImageProps } from '../lib/coverImageProps';
 import { formatNumber, formatDate, novelChapterSubtitle, novelLikeCount } from '../utils/helpers';
@@ -428,15 +429,12 @@ function Home() {
 
   if (loadError) {
     return (
-      <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4 px-4 text-center">
-        <p className="max-w-md text-sm text-destructive">{loadError}</p>
-        <button
-          type="button"
-          onClick={() => fetchData({ silent: false })}
-          className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-accent-foreground hover:bg-accent/90"
-        >
-          Thử lại
-        </button>
+      <div className="min-h-[60vh]">
+        <ReaderErrorState
+          title="Ôi không, tải dữ liệu thất bại."
+          message={loadError || 'Loading failed. Vui lòng kiểm tra mạng rồi thử lại.'}
+          onRetry={() => fetchData({ silent: false })}
+        />
       </div>
     );
   }

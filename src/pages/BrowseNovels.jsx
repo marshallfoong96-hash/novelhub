@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import { BookOpen, ArrowUp } from "lucide-react";
 import NovelCard from "../components/NovelCard";
 import Pagination from "../components/Pagination";
+import ReaderErrorState from "../components/ReaderErrorState";
 import { supabase, isSupabaseConfigured } from "../lib/supabase";
 import { fetchGenresCached } from "../lib/cachedQueries";
 import { enrichNovelsWithLatestChapter } from "../lib/enrichNovelsLatestChapter";
@@ -479,7 +480,18 @@ function BrowseNovels({ mode = "all" }) {
           ))}
         </div>
       ) : error ? (
-        <div className="text-sm text-destructive">{error}</div>
+        <div className="rounded-lg border border-destructive/20 bg-destructive/5">
+          <ReaderErrorState
+            compact
+            title="Ôi không, tải danh sách thất bại."
+            message={error || "Loading failed. Vui lòng thử lại."}
+            onRetry={() => {
+              setError("");
+              setLoading(true);
+              fetchPage(0, true);
+            }}
+          />
+        </div>
       ) : novels.length === 0 ? (
         <div className="bg-card border border-border rounded-lg p-8 text-center">
           <BookOpen className="w-10 h-10 text-muted-foreground mx-auto mb-2" />

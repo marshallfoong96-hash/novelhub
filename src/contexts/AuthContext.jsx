@@ -1,8 +1,35 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { authAPI } from '../api/services';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 const AuthContext = createContext(null);
+const MEMBER_STATE_KEYS = [
+  'mi_favorites',
+  'mi_follows',
+  'mi_bookmarks',
+  'mi_reading_history',
+  'mi_member_genre_slugs',
+];
+
+function userScopedKey(uid, key) {
+  return `${key}__uid_${uid}`;
+}
+
+function saveMemberStateSnapshot(uid) {
+  if (!uid || typeof window === 'undefined') return;
+  MEMBER_STATE_KEYS.forEach((key) => {
+    const raw = localStorage.getItem(key);
+    if (raw != null) localStorage.setItem(userScopedKey(uid, key), raw);
+  });
+}
+
+function restoreMemberStateSnapshot(uid) {
+  if (!uid || typeof window === 'undefined') return;
+  MEMBER_STATE_KEYS.forEach((key) => {
+    const raw = localStorage.getItem(userScopedKey(uid, key));
+    if (raw != null) localStorage.setItem(key, raw);
+  });
+}
 
 /** Supabase puts this in confirmation emails. Prefer `VITE_SITE_URL` on Vercel so links always use production domain, not a preview URL. */
 function getEmailRedirectBase() {
@@ -15,6 +42,7 @@ function getEmailRedirectBase() {
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const activeUserIdRef = useRef(null);
 
   // =====================
   // 初始化：檢查登入狀態
@@ -28,7 +56,18 @@ export const AuthProvider = ({ children }) => {
     checkAuth();
 
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user || null);
+      const nextUser = session?.user || null;
+      const prevUserId = activeUserIdRef.current;
+      const nextUserId = nextUser?.id || null;
+
+      if (prevUserId && prevUserId !== nextUserId) {
+        saveMemberStateSnapshot(prevUserId);
+      }
+      if (nextUserId && nextUserId !== prevUserId) {
+        restoreMemberStateSnapshot(nextUserId);
+      }
+      activeUserIdRef.current = nextUserId;
+      setUser(nextUser);
     });
 
     return () => {
@@ -42,8 +81,22 @@ export const AuthProvider = ({ children }) => {
       return;
     }
     try {
+      const { data: sess } = await supabase.auth.getSession();
+      const sessionUser = sess?.session?.user || null;
+      if (sessionUser) {
+        restoreMemberStateSnapshot(sessionUser.id);
+        activeUserIdRef.current = sessionUser.id;
+        setUser(sessionUser);
+        return;
+      }
+
       const { data } = await supabase.auth.getUser();
-      setUser(data?.user || null);
+      const currentUser = data?.user || null;
+      if (currentUser?.id) {
+        restoreMemberStateSnapshot(currentUser.id);
+      }
+      activeUserIdRef.current = currentUser?.id || null;
+      setUser(currentUser);
     } catch (e) {
       console.error('[Auth] getUser failed:', e);
       setUser(null);
@@ -181,7 +234,11 @@ export const AuthProvider = ({ children }) => {
   // 登出
   // =====================
   const logout = async () => {
+    if (activeUserIdRef.current) {
+      saveMemberStateSnapshot(activeUserIdRef.current);
+    }
     if (supabase) await supabase.auth.signOut();
+    activeUserIdRef.current = null;
     setUser(null);
   };
 

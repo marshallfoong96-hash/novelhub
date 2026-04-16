@@ -28,6 +28,7 @@ import {
 } from '../utils/helpers';
 import AdSlot from '../components/AdSlot';
 import NovelCard from '../components/NovelCard';
+import ReaderErrorState from '../components/ReaderErrorState';
 import { coverImageProps } from '../lib/coverImageProps';
 import DonateModal from '../components/DonateModal';
 import { fetchAllChaptersForNovel } from '../lib/fetchAllChapters';
@@ -425,8 +426,10 @@ function NovelDetail() {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
         <div className="text-center">
-          <h2 className="text-xl font-semibold text-foreground mb-2">Không tìm thấy truyện</h2>
-          <p className="text-muted-foreground text-sm mb-6">Truyện bạn đang tìm không tồn tại.</p>
+          <ReaderErrorState
+            title="Không tìm thấy truyện"
+            message="Loading failed hoặc truyện bạn đang tìm không tồn tại."
+          />
           <Link 
             to="/" 
             className="inline-flex items-center gap-2 px-5 py-2.5 bg-accent text-accent-foreground rounded-lg text-sm font-medium hover:bg-accent/90 transition-colors"
