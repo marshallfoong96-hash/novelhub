@@ -1,4 +1,6 @@
-export const SHOPEE_AFFILIATE_URL = 'https://s.shopee.vn/2qQYMQXFhu';
+/** Shopee affiliate product link (utm + tracking params from Shopee). */
+export const SHOPEE_AFFILIATE_URL =
+  'https://shopee.vn/product/1103552734/23859356643?credential_token=8wEwiDL7YDdAYvRkQDVYQkdhVX4qviJExfFr5voz6H&exp_group=rollout&gads_t_sig=gqRjZGVrxHCFomtpsTE0MjUxOnRzc19zZGtfa2V5omt20QABpGFsZ2_SAAAAZKNkZWvAomN0xEAAAAAMRvS3L9OTXdZ5FJNxILig8p7lQ7pNpXYtdZAbsM8MQrkGmzJ0eOQRwaQfuYgAF9FAqYvxRTQ9oVrOjPOJqmNpcGhlcnRleHTElQAAAAzxcLYbOjjnUclEOBPOBkAH7RBqbpLnaIzeHmyyeAnj2ptFR9NvXDpGb47t-AI88mW1LlC5LmPticmPiq8A3XYlZzGzEVKLL63Siz722dWzhUumcKNw7zjyTakkCQrOzq8pLpqPZwX3U_UDVjQL6bQQIegyxtJcvDWbfWib8gs00oE6fv2eFgs5I4jtcdvA5HIZ&mmp_pid=an_17339790535&uls_trackid=55dv7dg2005q&utm_campaign=id_HSfgUxGdG1&utm_content=----&utm_medium=affiliates&utm_source=an_17339790535&utm_term=erfnq8mrkgyv';
 
 let networkWarmed = false;
 
