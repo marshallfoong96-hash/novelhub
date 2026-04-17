@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Eye, CheckCircle } from 'lucide-react';
 import { coverImageProps } from '../lib/coverImageProps';
+import { listCoverUrl } from '../lib/coverImageUrl';
 import { formatNumber, novelChapterSubtitle } from '../utils/helpers';
 
 function NovelCard({ novel, showStatus = false, variant = 'default', coverPriority = false }) {
@@ -11,7 +12,7 @@ function NovelCard({ novel, showStatus = false, variant = 'default', coverPriori
       <Link to={`/truyen/${novel.id}`} className="group block min-w-0">
         <div className="relative aspect-[3/4] overflow-hidden rounded-md bg-secondary ring-1 ring-border/40">
           <img
-            src={novel.cover_url || '/default-cover.jpg'}
+            src={listCoverUrl(novel.cover_url)}
             alt={novel.title}
             className="h-full w-full object-cover object-top transition-transform duration-300 group-hover:scale-[1.03]"
             {...imgExtra}
@@ -55,7 +56,7 @@ function NovelCard({ novel, showStatus = false, variant = 'default', coverPriori
       <Link to={`/truyen/${novel.id}`} className="group block">
         <div className="relative aspect-[2/3] rounded-lg overflow-hidden bg-secondary">
           <img
-            src={novel.cover_url || '/default-cover.jpg'}
+            src={listCoverUrl(novel.cover_url)}
             alt={novel.title}
             className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
             {...imgExtra}
@@ -103,7 +104,7 @@ function NovelCard({ novel, showStatus = false, variant = 'default', coverPriori
       <Link to={`/truyen/${novel.id}`} className="group block">
         <div className="relative aspect-[2/3] rounded overflow-hidden bg-secondary">
           <img
-            src={novel.cover_url || '/default-cover.jpg'}
+            src={listCoverUrl(novel.cover_url)}
             alt={novel.title}
             className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
             {...imgExtra}
@@ -154,7 +155,7 @@ function NovelCard({ novel, showStatus = false, variant = 'default', coverPriori
     <Link to={`/truyen/${novel.id}`} className="group block">
       <div className="relative aspect-[2/3] rounded-lg overflow-hidden bg-secondary mb-2">
         <img
-          src={novel.cover_url || '/default-cover.jpg'}
+          src={listCoverUrl(novel.cover_url)}
           alt={novel.title}
           className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
           {...imgExtra}

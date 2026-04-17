@@ -27,6 +27,7 @@ import BrandLogo from '../components/BrandLogo';
 import ReaderErrorState from '../components/ReaderErrorState';
 import { branding } from '../lib/branding';
 import { coverImageProps } from '../lib/coverImageProps';
+import { listCoverUrl } from '../lib/coverImageUrl';
 import { formatNumber, formatDate, novelChapterSubtitle, novelLikeCount } from '../utils/helpers';
 
 /**
@@ -39,7 +40,7 @@ const HOME_NOVEL_LIST_SELECT =
 function getGenreMeta(genre) {
   return {
     ...genre,
-    image: genre.image || genre.cover_url || genre.banner_url || '/default-cover.jpg'
+    image: listCoverUrl(genre.image || genre.cover_url || genre.banner_url || '')
   };
 }
 
@@ -656,7 +657,7 @@ function Home() {
                     {index + 1}
                   </span>
                   <img
-                    src={novel.cover_url || '/default-cover.jpg'}
+                    src={listCoverUrl(novel.cover_url)}
                     alt=""
                     className="h-14 w-10 shrink-0 rounded-md object-cover object-top ring-1 ring-border/60 shadow-sm"
                     {...coverImageProps(index < 3)}
@@ -892,7 +893,7 @@ function HeroSection({ featuredNovels }) {
         {/* Featured Novel Image */}
         <Link to={`/truyen/${featured?.id}`} className="relative block aspect-[4/3] md:aspect-auto md:h-[320px]">
           <img
-            src={featured?.cover_url || '/default-cover.jpg'}
+            src={listCoverUrl(featured?.cover_url)}
             alt={featured?.title}
             className="w-full h-full object-contain"
             {...coverImageProps(true)}
@@ -1041,7 +1042,7 @@ function UpdateRow({ novel, streamIndex = 0 }) {
     <div className="flex items-center gap-3 p-3 hover:bg-secondary/30 transition-colors">
       <Link to={`/truyen/${novel.id}`} className="flex-shrink-0">
         <img
-          src={novel.cover_url || '/default-cover.jpg'}
+          src={listCoverUrl(novel.cover_url)}
           alt={novel.title}
           className="w-10 h-14 object-contain rounded"
           {...coverImageProps(streamIndex < 3)}
@@ -1102,7 +1103,7 @@ function TopViewsSection({ novels }) {
             className="flex gap-3 p-3 hover:bg-secondary/30 transition-colors group"
           >
             <img
-              src={novel.cover_url || '/default-cover.jpg'}
+              src={listCoverUrl(novel.cover_url)}
               alt={novel.title}
               className="w-12 h-16 object-contain rounded flex-shrink-0"
               {...coverImageProps(index < 2)}

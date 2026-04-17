@@ -30,6 +30,7 @@ import AdSlot from '../components/AdSlot';
 import NovelCard from '../components/NovelCard';
 import ReaderErrorState from '../components/ReaderErrorState';
 import { coverImageProps } from '../lib/coverImageProps';
+import { detailCoverUrl } from '../lib/coverImageUrl';
 import DonateModal from '../components/DonateModal';
 import { fetchChapterTocForNovel } from '../lib/fetchAllChapters';
 import { enrichNovelsWithLatestChapter } from '../lib/enrichNovelsLatestChapter';
@@ -451,7 +452,7 @@ function NovelDetail() {
                 <div className="w-44 sm:w-48 md:w-52 flex-shrink-0 mx-auto md:mx-0">
                   <div className="relative aspect-[2/3] rounded-xl overflow-hidden bg-secondary shadow-md ring-1 ring-border/60">
                     <img
-                      src={novel.cover_url || '/default-cover.jpg'}
+                      src={detailCoverUrl(novel.cover_url)}
                       alt={novel.title}
                       className="w-full h-full object-contain"
                       {...coverImageProps(true)}

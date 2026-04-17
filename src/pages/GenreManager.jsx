@@ -6,6 +6,7 @@ import { fetchAllGenresRows } from "../lib/cachedQueries";
 import { HOME_DASHBOARD_CACHE_KEY, GENRES_CACHE_KEY } from "../lib/cacheKeys";
 import { novelChapterSubtitle } from "../utils/helpers";
 import { enrichNovelsWithLatestChapter } from "../lib/enrichNovelsLatestChapter";
+import { listCoverUrl } from "../lib/coverImageUrl";
 
 const coverPool = [
   "https://images.unsplash.com/photo-1509248961158-e54f6934749c?auto=format&fit=crop&w=900&q=80",
@@ -363,7 +364,7 @@ function GenreManager() {
             <div key={`genre-preview-${genre.id}`} className="border border-border rounded-lg overflow-hidden bg-card">
               <div className="h-20 bg-secondary">
                 <img
-                  src={genre.image || "/default-cover.jpg"}
+                  src={listCoverUrl(genre.image)}
                   alt={genre.name}
                   className="w-full h-full object-cover"
                 />

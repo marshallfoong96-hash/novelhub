@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { History, BookOpen, Clock } from "lucide-react";
 import { coverImageProps } from "../lib/coverImageProps";
+import { listCoverUrl } from "../lib/coverImageUrl";
 
 function ReadingHistory() {
   const [items, setItems] = useState([]);
@@ -37,7 +38,7 @@ function ReadingHistory() {
               className="flex items-center gap-3 p-3 hover:bg-secondary/30 transition-colors"
             >
               <img
-                src={item.coverUrl || "/default-cover.jpg"}
+                src={listCoverUrl(item.coverUrl)}
                 alt={item.title}
                 className="w-12 h-16 object-contain rounded bg-secondary"
                 {...coverImageProps(idx < 10)}

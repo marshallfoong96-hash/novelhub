@@ -7,6 +7,7 @@ import ReaderErrorState from "../components/ReaderErrorState";
 import { supabase, isSupabaseConfigured } from "../lib/supabase";
 import { fetchGenresCached } from "../lib/cachedQueries";
 import { enrichNovelsWithLatestChapter } from "../lib/enrichNovelsLatestChapter";
+import { listCoverUrl } from "../lib/coverImageUrl";
 
 function normalize(value) {
   return String(value || "").toLowerCase().trim();
@@ -25,7 +26,7 @@ function genreHeadingLabel(activeGenre, slug) {
 function getGenreMeta(genre) {
   return {
     ...genre,
-    image: genre.image || genre.cover_url || genre.banner_url || "/default-cover.jpg"
+    image: listCoverUrl(genre.image || genre.cover_url || genre.banner_url || "")
   };
 }
 

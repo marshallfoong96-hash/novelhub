@@ -33,6 +33,7 @@ import BrandLogo from './BrandLogo';
 import { novelChapterSubtitle } from '../utils/helpers';
 import { enrichNovelsWithLatestChapter } from '../lib/enrichNovelsLatestChapter';
 import { coverImageProps } from '../lib/coverImageProps';
+import { thumbCoverUrl } from '../lib/coverImageUrl';
 import {
   LS_BOOKMARKS,
   LS_FAVORITES,
@@ -176,7 +177,7 @@ function Header() {
                 title: 'Có chương mới',
                 text: `${novel.title} vừa cập nhật chương ${latest.chapter_number}.`,
                 to: `/chapter/${latest.id}`,
-                cover: novel.cover_url || '/default-cover.jpg',
+                cover: thumbCoverUrl(novel.cover_url),
               });
             }
           });
@@ -198,7 +199,7 @@ function Header() {
             title: 'Tiếp tục đọc',
             text: `${item.title} - quay lại chương ${item.chapterNumber}.`,
             to: `/chapter/${item.chapterId}`,
-            cover: item.coverUrl || '/default-cover.jpg',
+            cover: thumbCoverUrl(item.coverUrl),
           });
         });
 
@@ -580,7 +581,7 @@ function Header() {
                                   className="flex items-center gap-2 p-2 rounded-lg hover:bg-secondary transition-colors"
                                 >
                                   <img
-                                    src={item.cover_url || '/default-cover.jpg'}
+                                    src={thumbCoverUrl(item.cover_url)}
                                     alt={item.title}
                                     className="w-9 h-12 rounded object-cover flex-shrink-0"
                                     {...coverImageProps(hi < 6)}
@@ -608,7 +609,7 @@ function Header() {
                               className="flex items-center gap-2 p-2 rounded-lg hover:bg-secondary transition-colors"
                             >
                               <img
-                                src={item.cover_url || '/default-cover.jpg'}
+                                src={thumbCoverUrl(item.cover_url)}
                                 alt={item.title}
                                 className="w-9 h-12 rounded object-cover flex-shrink-0"
                                 {...coverImageProps(ri < 6)}
@@ -980,7 +981,7 @@ function Header() {
                               className="flex items-center gap-2 p-2 hover:bg-secondary transition-colors"
                             >
                               <img
-                                src={item.cover_url || '/default-cover.jpg'}
+                                src={thumbCoverUrl(item.cover_url)}
                                 alt={item.title}
                                 className="w-8 h-10 rounded object-cover flex-shrink-0"
                                 {...coverImageProps(hi < 6)}
@@ -1011,7 +1012,7 @@ function Header() {
                           className="flex items-center gap-2 p-2 hover:bg-secondary transition-colors"
                         >
                           <img
-                            src={item.cover_url || '/default-cover.jpg'}
+                            src={thumbCoverUrl(item.cover_url)}
                             alt={item.title}
                             className="w-8 h-10 rounded object-cover flex-shrink-0"
                             {...coverImageProps(ri < 6)}

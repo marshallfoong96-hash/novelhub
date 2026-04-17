@@ -5,7 +5,7 @@ import { loadAdsenseScript } from './lib/adsConfig';
 import { lazyWithRetry } from './lib/lazyWithRetry';
 import Header from './components/Header';
 import { RouteErrorBoundary } from './components/RouteErrorBoundary';
-import { BookOpen, Users, PenTool, Mail, Github, Facebook } from 'lucide-react';
+import { BookOpen, Users, PenTool, Mail } from 'lucide-react';
 import BrandLogo from './components/BrandLogo';
 
 const Home = lazyWithRetry(() => import('./pages/Home'));
@@ -177,30 +177,12 @@ function Footer() {
               </div>
             </div>
             <p className="text-muted-foreground text-xs max-w-xs leading-relaxed">
-              Nền tảng đọc truyện online hàng đầu với hàng nghìn tác phẩm hay. 
-              Hỗ trợ AI viết truyện thông minh.
+              Mi Truyện (mitruyen.me) — đọc truyện chữ online, nhiều thể loại, cập nhật thường xuyên.
+              Lưu đánh dấu và lịch sử đọc trên trình duyệt; đăng nhập để dùng cùng một tài khoản trên các thiết bị.
             </p>
             <div className="flex flex-wrap items-center gap-2">
-              <a 
-                href="https://facebook.com" 
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-8 h-8 flex items-center justify-center bg-secondary text-muted-foreground hover:text-foreground hover:bg-accent/10 rounded-lg transition-colors"
-                aria-label="Facebook"
-              >
-                <Facebook className="w-4 h-4" />
-              </a>
-              <a 
-                href="https://github.com" 
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-8 h-8 flex items-center justify-center bg-secondary text-muted-foreground hover:text-foreground hover:bg-accent/10 rounded-lg transition-colors"
-                aria-label="GitHub"
-              >
-                <Github className="w-4 h-4" />
-              </a>
-              <a 
-                href="mailto:contact@mitruyen.me" 
+              <a
+                href="mailto:contact@mitruyen.me"
                 className="w-8 h-8 flex items-center justify-center bg-secondary text-muted-foreground hover:text-foreground hover:bg-accent/10 rounded-lg transition-colors"
                 aria-label="Email"
               >

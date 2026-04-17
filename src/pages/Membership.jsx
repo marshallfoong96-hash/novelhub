@@ -18,6 +18,7 @@ import { fetchNovelsByIdsCached } from "../lib/cachedNovelQueries";
 import { enrichNovelsWithLatestChapter } from "../lib/enrichNovelsLatestChapter";
 import NovelCard from "../components/NovelCard";
 import { coverImageProps } from "../lib/coverImageProps";
+import { listCoverUrl } from "../lib/coverImageUrl";
 import {
   LS_FAVORITES,
   LS_FOLLOWS,
@@ -387,7 +388,7 @@ export default function Membership() {
                   className="relative flex min-w-0 flex-1 items-center gap-3"
                 >
                   <img
-                    src={item.coverUrl || "/default-cover.jpg"}
+                    src={listCoverUrl(item.coverUrl)}
                     alt=""
                     className="h-20 w-14 shrink-0 rounded bg-secondary object-cover"
                     {...coverImageProps(idx < 8)}
