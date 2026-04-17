@@ -1,4 +1,5 @@
 import { ExternalLink, Sparkles, BookOpen, Sword, Heart, Utensils, Briefcase, Gamepad2 } from 'lucide-react';
+import { SHOPEE_AFFILIATE_URL } from '../lib/shopeeGate';
 
 /**
  * Ad Space Component for Google AdSense CPM and Shopee Affiliate
@@ -160,7 +161,7 @@ export function ShopeeDeals({ className = '', genre = null, novelTitle = null })
             <span className="text-sm font-semibold text-accent-foreground">Gợi Ý Cho Bạn</span>
           </div>
           <a 
-            href="https://shopee.vn" 
+            href={SHOPEE_AFFILIATE_URL}
             target="_blank" 
             rel="noopener noreferrer"
             className="text-xs text-accent-foreground/80 hover:text-accent-foreground flex items-center gap-1"
@@ -181,7 +182,7 @@ export function ShopeeDeals({ className = '', genre = null, novelTitle = null })
         {recommendations.products.map((product, index) => (
           <a
             key={product.id}
-            href={`https://shopee.vn/search?keyword=${encodeURIComponent(product.name)}`}
+            href={SHOPEE_AFFILIATE_URL}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-secondary/50 transition-colors group border border-transparent hover:border-border"
