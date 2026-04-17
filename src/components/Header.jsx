@@ -24,6 +24,11 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { fetchAllGenresRows, fetchGenresCached, primeGenresCache } from '../lib/cachedQueries';
+import {
+  fetchNovelsByIdsCached,
+  fetchNovelsTitleSearchRowsCached,
+  fetchHotNovelCardsCached,
+} from '../lib/cachedNovelQueries';
 import BrandLogo from './BrandLogo';
 import { novelChapterSubtitle } from '../utils/helpers';
 import { enrichNovelsWithLatestChapter } from '../lib/enrichNovelsLatestChapter';
@@ -119,11 +124,11 @@ function Header() {
 
         let novelRows = [];
         if (sourceNovelIds.length > 0) {
-          const { data } = await supabase
-            .from('novels')
-            .select('id,title,cover_url')
-            .in('id', sourceNovelIds);
-          novelRows = data || [];
+          novelRows = await fetchNovelsByIdsCached(
+            supabase,
+            sourceNovelIds,
+            'id,title,cover_url'
+          );
         }
         const novelMap = new Map((novelRows || []).map((n) => [Number(n.id), n]));
 
@@ -362,15 +367,9 @@ function Header() {
       navigate(`/truyen/${topHit.id}`);
       return;
     }
-    const { data } = await supabase
-      .from('novels')
-      .select('id')
-      .ilike('title', `%${keyword}%`)
-      .order('view_count', { ascending: false })
-      .limit(1);
-    if (data?.[0]?.id) {
-      navigate(`/truyen/${data[0].id}`);
-    }
+    const rows = await fetchNovelsTitleSearchRowsCached(supabase, keyword);
+    const id = rows[0]?.id;
+    if (id) navigate(`/truyen/${id}`);
   };
 
   const forceScrollTop = () => {
@@ -407,29 +406,19 @@ function Header() {
 
     const timer = setTimeout(async () => {
       setSearchLoading(true);
-      const { data, error } = await supabase
-        .from('novels')
-        .select('id,title,author,cover_url,view_count')
-        .ilike('title', `%${keyword}%`)
-        .order('view_count', { ascending: false })
-        .limit(8);
-      if (error) {
-        setSearchResults([]);
-        setHotSuggestions([]);
-      } else {
-        const rows = data || [];
+      try {
+        const rows = await fetchNovelsTitleSearchRowsCached(supabase, keyword);
         const enriched = await enrichNovelsWithLatestChapter(supabase, rows);
         setSearchResults(enriched);
         if (enriched.length === 0) {
-          const { data: hotData } = await supabase
-            .from('novels')
-            .select('id,title,author,cover_url,view_count')
-            .order('view_count', { ascending: false })
-            .limit(6);
+          const hotData = await fetchHotNovelCardsCached(supabase, 6);
           setHotSuggestions(await enrichNovelsWithLatestChapter(supabase, hotData || []));
         } else {
           setHotSuggestions([]);
         }
+      } catch {
+        setSearchResults([]);
+        setHotSuggestions([]);
       }
       setSearchLoading(false);
       setShowSearchDropdown(true);

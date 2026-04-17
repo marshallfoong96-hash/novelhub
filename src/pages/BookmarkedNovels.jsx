@@ -4,6 +4,7 @@ import { Bookmark } from "lucide-react";
 import NovelCard from "../components/NovelCard";
 import { supabase, isSupabaseConfigured } from "../lib/supabase";
 import { enrichNovelsWithLatestChapter } from "../lib/enrichNovelsLatestChapter";
+import { fetchNovelsByIdsCached } from "../lib/cachedNovelQueries";
 
 function readBookmarkIds() {
   try {
@@ -39,13 +40,16 @@ function BookmarkedNovels() {
     let cancelled = false;
     (async () => {
       setLoading(true);
-      const { data, error } = await supabase.from("novels").select("*").in("id", ids);
-      if (cancelled) return;
-      if (error) {
+      let rows = [];
+      try {
+        rows = await fetchNovelsByIdsCached(supabase, ids, "*");
+      } catch (error) {
         console.error("[BookmarkedNovels]", error);
+      }
+      if (cancelled) return;
+      if (rows.length === 0 && ids.length > 0) {
         setNovels([]);
       } else {
-        const rows = data || [];
         const order = new Map(ids.map((id, i) => [id, i]));
         rows.sort((a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0));
         setNovels(await enrichNovelsWithLatestChapter(supabase, rows));

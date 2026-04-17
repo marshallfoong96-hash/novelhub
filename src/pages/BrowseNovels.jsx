@@ -35,6 +35,32 @@ function chunkArray(items, size) {
   return out;
 }
 
+const NOVEL_STATS_CHUNK = 200;
+
+/**
+ * Max chapter number per novel — same RPC as Home (`supabase/novel_chapter_stats.sql`).
+ * Avoids loading every row from `chapters` (was catastrophic at scale).
+ */
+async function fetchLatestChapterNumberMap(supabase, novelIds) {
+  const counts = {};
+  const ids = [...new Set((novelIds || []).filter((id) => id != null))];
+  for (let i = 0; i < ids.length; i += NOVEL_STATS_CHUNK) {
+    const slice = ids.slice(i, i + NOVEL_STATS_CHUNK);
+    const { data: statRows, error } = await supabase.rpc("novel_chapter_stats", {
+      p_novel_ids: slice,
+    });
+    if (error) throw error;
+    (statRows || []).forEach((row) => {
+      const nid = row.novel_id;
+      const cn = row.latest_chapter_number;
+      if (nid == null || cn == null) return;
+      const n = Number(cn);
+      if (!Number.isNaN(n)) counts[nid] = n;
+    });
+  }
+  return counts;
+}
+
 function getGenreTheme(slug) {
   const key = normalize(slug);
   const themes = {
@@ -280,6 +306,7 @@ function BrowseNovels({ mode = "all" }) {
       if (mode !== "chapterRange") return;
       if (!isSupabaseConfigured || !supabase) return;
       setLoading(true);
+      setError("");
       const { data: allNovels, error: novelsError } = await supabase
         .from("novels")
         .select("*")
@@ -290,24 +317,28 @@ function BrowseNovels({ mode = "all" }) {
         return;
       }
 
-      const { data: chaptersData, error: chaptersError } = await supabase
-        .from("chapters")
-        .select("novel_id, chapter_number");
-      if (chaptersError) {
-        setError(chaptersError.message || "Failed to load chapters.");
+      const list = allNovels || [];
+      const novelIds = list.map((n) => n.id).filter((id) => id != null);
+
+      let counts = {};
+      try {
+        counts = await fetchLatestChapterNumberMap(supabase, novelIds);
+      } catch (e) {
+        console.error("[BrowseNovels chapterRange] novel_chapter_stats:", e);
+        setError(
+          e?.message ||
+            "Không tải được thống kê chương. Chạy SQL `novel_chapter_stats` trong Supabase (xem supabase/novel_chapter_stats.sql)."
+        );
+        setChapterCounts({});
+        setChapterRangePool([]);
+        setNovels([]);
         setLoading(false);
         return;
       }
 
-      const counts = {};
-      (chaptersData || []).forEach((row) => {
-        const current = counts[row.novel_id] || 0;
-        const chapterNum = Number(row.chapter_number) || 0;
-        counts[row.novel_id] = chapterNum > current ? chapterNum : current;
-      });
       setChapterCounts(counts);
 
-      const filtered = (allNovels || []).filter((novel) => matchChapterRange(counts[novel.id] || 0));
+      const filtered = list.filter((novel) => matchChapterRange(counts[novel.id] ?? 0));
       setChapterRangePool(filtered);
       const firstChunk = filtered.slice(0, PAGE_SIZE);
       setNovels(firstChunk);

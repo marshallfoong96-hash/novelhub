@@ -14,6 +14,7 @@ import {
 import { useAuth } from "../contexts/AuthContext";
 import { supabase, isSupabaseConfigured } from "../lib/supabase";
 import { fetchGenresCached } from "../lib/cachedQueries";
+import { fetchNovelsByIdsCached } from "../lib/cachedNovelQueries";
 import { enrichNovelsWithLatestChapter } from "../lib/enrichNovelsLatestChapter";
 import NovelCard from "../components/NovelCard";
 import { coverImageProps } from "../lib/coverImageProps";
@@ -111,17 +112,18 @@ export default function Membership() {
     let cancelled = false;
     (async () => {
       setLoadingNovels(true);
-      const { data, error } = await supabase
-        .from("novels")
-        .select(PROFILE_NOVEL_SELECT)
-        .in("id", mergedIds);
-      if (cancelled) return;
-      if (error) {
+      let data = [];
+      try {
+        data = await fetchNovelsByIdsCached(supabase, mergedIds, PROFILE_NOVEL_SELECT);
+      } catch (error) {
         console.error("[Membership] novels", error);
+      }
+      if (cancelled) return;
+      if (data.length === 0) {
         setFavoriteNovels([]);
         setFollowNovels([]);
       } else {
-        const rows = await enrichNovelsWithLatestChapter(supabase, data || []);
+        const rows = await enrichNovelsWithLatestChapter(supabase, data);
         setFavoriteNovels(orderNovelsByIds(rows, favoriteIds));
         setFollowNovels(orderNovelsByIds(rows, followIds));
       }

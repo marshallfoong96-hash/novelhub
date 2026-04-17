@@ -32,20 +32,43 @@ export default function AdSlot({
     return () => io.disconnect();
   }, []);
 
+  /** AdSense throws TagError when push runs while container width is still 0 (flex/hidden/layout). */
   useEffect(() => {
     if (!inView || !active || pushedRef.current) return;
     const ins = insRef.current;
-    if (!ins) return;
-    pushedRef.current = true;
-    const run = () => {
+    const root = containerRef.current;
+    if (!ins || !root) return;
+
+    const tryPush = () => {
+      if (pushedRef.current) return true;
+      if (root.offsetWidth < 2) return false;
       try {
         (window.adsbygoogle = window.adsbygoogle || []).push({});
+        pushedRef.current = true;
+        return true;
       } catch (e) {
         console.warn("[ads]", e);
-        pushedRef.current = false;
+        return false;
       }
     };
-    setTimeout(run, 0);
+
+    if (tryPush()) return undefined;
+
+    const ro = new ResizeObserver(() => {
+      if (tryPush()) ro.disconnect();
+    });
+    ro.observe(root);
+
+    const id1 = requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        if (tryPush()) ro.disconnect();
+      });
+    });
+
+    return () => {
+      ro.disconnect();
+      cancelAnimationFrame(id1);
+    };
   }, [inView, active]);
 
   return (
@@ -63,8 +86,8 @@ export default function AdSlot({
         {active ? (
           <ins
             ref={insRef}
-            className="adsbygoogle"
-            style={{ display: "block" }}
+            className="adsbygoogle w-full max-w-full"
+            style={{ display: "block", width: "100%", minHeight: "90px" }}
             data-ad-client={ADSENSE_CLIENT}
             data-ad-slot={slotId}
             data-ad-format="auto"

@@ -1,1 +1,0 @@
-async function i(e,s,a="*"){const t=Number(s);if(!e||Number.isNaN(t))return[];const n=[];let r=0;for(;;){const{data:f,error:o}=await e.from("chapters").select(a).eq("novel_id",t).order("chapter_number",{ascending:!0}).range(r,r+1e3-1);if(o)throw o;const c=f||[];if(n.push(...c),c.length<1e3)break;r+=1e3}return n}export{i as f};

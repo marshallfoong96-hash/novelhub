@@ -2,8 +2,13 @@
  * In-memory TTL cache for async data (Vite/React SPA).
  * Next.js `fetch(..., { next: { revalidate: 300 } })` only exists on the server;
  * this gives a similar 5-minute freshness window per tab session and cuts repeat Supabase reads.
+ *
+ * Concurrent calls with the same `key` share one in-flight `factory()` (single-flight),
+ * so e.g. Header + Home both calling `fetchGenresCached` on first paint only hit the network once.
  */
 const store = new Map();
+/** @type {Map<string, Promise<unknown>>} */
+const inflight = new Map();
 
 /**
  * @template T
@@ -21,11 +26,23 @@ export async function fetchWithTtl(key, ttlMs, factory, options = {}) {
   if (hit && now - hit.at < ttlMs) {
     return hit.data;
   }
-  const data = await factory();
-  if (shouldCache(data)) {
-    store.set(key, { at: now, data });
+
+  let pending = inflight.get(key);
+  if (!pending) {
+    pending = (async () => {
+      try {
+        const data = await factory();
+        if (shouldCache(data)) {
+          store.set(key, { at: Date.now(), data });
+        }
+        return data;
+      } finally {
+        inflight.delete(key);
+      }
+    })();
+    inflight.set(key, pending);
   }
-  return data;
+  return pending;
 }
 
 /** Clear one key or entire cache (e.g. after admin edits). */

@@ -31,7 +31,7 @@ import NovelCard from '../components/NovelCard';
 import ReaderErrorState from '../components/ReaderErrorState';
 import { coverImageProps } from '../lib/coverImageProps';
 import DonateModal from '../components/DonateModal';
-import { fetchAllChaptersForNovel } from '../lib/fetchAllChapters';
+import { fetchChapterTocForNovel } from '../lib/fetchAllChapters';
 import { enrichNovelsWithLatestChapter } from '../lib/enrichNovelsLatestChapter';
 
 function genreBrowsePath(g) {
@@ -40,10 +40,6 @@ function genreBrowsePath(g) {
   }
   return `/the-loai/${g.id}`;
 }
-
-/** Mục lục chỉ cần metadata — không select `content` (tránh tải hàng MB trên di động). */
-const NOVEL_DETAIL_CHAPTER_SELECT =
-  'id, novel_id, chapter_number, title, created_at';
 
 function NovelDetail() {
   const { slug } = useParams(); // This is now the novel ID
@@ -285,11 +281,7 @@ function NovelDetail() {
         try {
           const [ngRes, chaptersData] = await Promise.all([
             supabase.from('novel_genres').select('genre_id').eq('novel_id', novelId),
-            fetchAllChaptersForNovel(
-              supabase,
-              novelId,
-              NOVEL_DETAIL_CHAPTER_SELECT
-            ).catch((chaptersError) => {
+            fetchChapterTocForNovel(supabase, novelId).catch((chaptersError) => {
               console.error('[v0] Error fetching chapters:', chaptersError);
               return [];
             }),

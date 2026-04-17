@@ -1,9 +1,9 @@
-import { useState, useEffect, useLayoutEffect, useRef, Fragment } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef, Fragment, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { supabase, isSupabaseConfigured } from "../lib/supabase";
 import { clearTtlCache } from "../lib/ttlCache";
 import { HOME_DASHBOARD_CACHE_KEY } from "../lib/cacheKeys";
-import { fetchAllChaptersForNovel } from "../lib/fetchAllChapters";
+import { fetchChapterTocForNovel } from "../lib/fetchAllChapters";
 
 import {
   Home, BookOpen, Settings, MessageSquare,
@@ -24,7 +24,6 @@ import {
   setCachedTocRows,
   READER_CHAPTER_SELECT,
   READER_NOVEL_SELECT,
-  READER_TOC_METADATA_SELECT,
 } from "../lib/readerTocSessionCache";
 
 /**
@@ -82,9 +81,26 @@ export default function ChapterRead() {
   /** Bỏ qua kết quả novel/mục lục nếu đã chuyển chương (fetch nền). */
   const novelTocFetchGenRef = useRef(0);
   const shopeeAssetsWarmRef = useRef(false);
+  /** Tránh stale state khi vừa đổi URL — cùng truyện + đã có mục lục thì không gọi lại fetchAllChapters. */
+  const readerNovelIdRef = useRef(null);
+  const readerTocLengthRef = useRef(0);
+
+  useEffect(() => {
+    readerNovelIdRef.current = novel?.id != null ? Number(novel.id) : null;
+  }, [novel?.id]);
+
+  useEffect(() => {
+    readerTocLengthRef.current = Array.isArray(allChapters) ? allChapters.length : 0;
+  }, [allChapters]);
+
   const formatDate = (date) => {
     return new Date(date).toLocaleString();
   };
+
+  const routeChapterIdNum = useMemo(() => {
+    const n = parseInt(id, 10);
+    return Number.isNaN(n) ? null : n;
+  }, [id]);
 
   useEffect(() => {
     fetchChapter();
@@ -137,7 +153,11 @@ export default function ChapterRead() {
     }
     viewBumpDedupRef.current = { key: dedupKey, at: now };
 
-    (async () => {
+    /** Tránh RPC view_count tranh tài nguyên với fetch chương — chờ paint xong. */
+    let cancelled = false;
+    const start = window.setTimeout(() => {
+      if (cancelled) return;
+      void (async () => {
       const { data: rpcData, error: rpcError } = await supabase.rpc('increment_novel_view_count', {
         p_novel_id: novelId
       });
@@ -187,7 +207,12 @@ export default function ChapterRead() {
       } catch {
         /* ignore */
       }
-    })();
+      })();
+    }, 48);
+    return () => {
+      cancelled = true;
+      clearTimeout(start);
+    };
   }, [loading, id, chapter?.id, chapter?.novel_id]);
 
   useEffect(() => {
@@ -361,11 +386,7 @@ export default function ChapterRead() {
         setAllChapters(sessionRows);
       }
       try {
-        const chaptersData = await fetchAllChaptersForNovel(
-          supabase,
-          nid,
-          READER_TOC_METADATA_SELECT
-        );
+        const chaptersData = await fetchChapterTocForNovel(supabase, nid);
         if (g !== novelTocFetchGenRef.current) return;
         const list = chaptersData || [];
         setAllChapters(list);
@@ -382,10 +403,10 @@ export default function ChapterRead() {
     if (cached) {
       const nid = cached.novel_id;
       const tocReady =
-        novel?.id != null &&
+        readerNovelIdRef.current != null &&
         nid != null &&
-        Number(novel.id) === Number(nid) &&
-        allChapters.length > 0;
+        Number(readerNovelIdRef.current) === Number(nid) &&
+        readerTocLengthRef.current > 0;
       if (tocReady) {
         setChapter(cached);
         setLoading(false);
@@ -415,9 +436,6 @@ export default function ChapterRead() {
 
     try {
       setLoading(true);
-      if (chapter != null && Number(chapter.id) !== numId) {
-        setChapter(null);
-      }
 
       const { data: chapterData, error: chapterError } = await supabase
         .from('chapters')
@@ -440,10 +458,10 @@ export default function ChapterRead() {
 
       const novelId = chapterData.novel_id;
       const sameBookTocReady =
-        novel?.id != null &&
+        readerNovelIdRef.current != null &&
         novelId != null &&
-        Number(novel.id) === Number(novelId) &&
-        allChapters.length > 0;
+        Number(readerNovelIdRef.current) === Number(novelId) &&
+        readerTocLengthRef.current > 0;
 
       if (sameBookTocReady) {
         setChapter(chapterData);
@@ -539,6 +557,14 @@ export default function ChapterRead() {
       </div>
     );
   }
+
+  const isStaleChapterView =
+    Boolean(
+      loading &&
+        chapter &&
+        routeChapterIdNum != null &&
+        Number(chapter.id) !== routeChapterIdNum
+    );
 
   if (!chapter) {
     return (
@@ -797,6 +823,19 @@ export default function ChapterRead() {
         <AdSlot placement="chapterTop" className="mb-4" minHeightClass="min-h-[90px] sm:min-h-[100px]" />
 
         {/* Chapter Content — chặn copy/paste trên nội dung (không chặn toàn site; không phải DRM tuyệt đối). */}
+        <div className="relative">
+          {isStaleChapterView && (
+            <div
+              className="absolute inset-0 z-10 flex items-start justify-center pt-16 sm:pt-20 rounded-lg bg-background/55 backdrop-blur-[1px] pointer-events-none"
+              aria-busy="true"
+              aria-live="polite"
+            >
+              <div className="flex items-center gap-2 rounded-full border border-border bg-card/95 px-4 py-2 shadow-md text-sm text-foreground">
+                <div className="h-4 w-4 border-2 border-accent border-t-transparent rounded-full animate-spin" />
+                Đang tải chương…
+              </div>
+            </div>
+          )}
         <div
           className={`border rounded-lg p-5 sm:p-6 md:p-8 transition-colors select-none [-webkit-touch-callout:none] ${themeClasses[readingTheme] || themeClasses.light}`}
           onCopy={(e) => e.preventDefault()}
@@ -833,6 +872,7 @@ export default function ChapterRead() {
               ));
             })()}
           </article>
+        </div>
         </div>
 
         <AdSlot placement="chapterBottom" className="mb-4" minHeightClass="min-h-[90px] sm:min-h-[100px]" />
