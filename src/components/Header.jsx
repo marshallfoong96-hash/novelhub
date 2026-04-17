@@ -516,7 +516,7 @@ function Header() {
               </Link>
             </div>
 
-            {/* Center: cast art + MI TRUYỆN (public/branding-cast.png) — whole strip = home */}
+            {/* Center: cast art + MI TRUYỆN (public/branding-cast.webp) — whole strip = home */}
             <div className="flex min-w-0 flex-1 items-center px-1 sm:px-2">
               <Link
                 to="/"
@@ -526,7 +526,7 @@ function Header() {
                 aria-label="Mi Truyện — về trang chủ"
               >
                 <img
-                  src="/branding-cast.png"
+                  src="/branding-cast.webp"
                   alt=""
                   className="h-full w-full object-cover object-[center_20%] transition duration-500 group-hover:scale-[1.03] sm:object-[center_22%]"
                   loading="eager"

@@ -30,6 +30,12 @@ function getGenreMeta(genre) {
   };
 }
 
+/** DB may still store legacy `/default-cover.jpg`; treat as placeholder like `.webp`. */
+function isGenreDefaultCover(url) {
+  const u = String(url || "").trim();
+  return u === "" || u === "/default-cover.webp" || u === "/default-cover.jpg";
+}
+
 function chunkArray(items, size) {
   const out = [];
   for (let i = 0; i < items.length; i += size) out.push(items.slice(i, i + size));
@@ -448,13 +454,13 @@ function BrowseNovels({ mode = "all" }) {
                 "radial-gradient(ellipse 100% 80% at 12% 18%, hsl(var(--accent) / 0.38), transparent 52%), radial-gradient(ellipse 90% 60% at 88% 78%, hsl(268 62% 48% / 0.32), transparent 55%), radial-gradient(ellipse 70% 50% at 50% 110%, hsl(var(--accent) / 0.15), transparent 50%)"
             }}
           />
-          {!(activeGenre?.image && activeGenre.image !== "/default-cover.jpg") && (
+          {!(activeGenre?.image && !isGenreDefaultCover(activeGenre.image)) && (
             <div
               className={`absolute inset-0 bg-gradient-to-br opacity-[0.42] mix-blend-soft-light ${getGenreTheme(activeGenre?.slug || slug)}`}
               aria-hidden
             />
           )}
-          {activeGenre?.image && activeGenre.image !== "/default-cover.jpg" ? (
+          {activeGenre?.image && !isGenreDefaultCover(activeGenre.image) ? (
             <>
               <img
                 src={activeGenre.image}

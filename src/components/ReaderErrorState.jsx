@@ -9,7 +9,7 @@ export default function ReaderErrorState({
   compact = false,
 }) {
   const imageSize = compact ? 'h-20 w-20' : 'h-28 w-28';
-  const [imgSrc, setImgSrc] = useState('/crying-onigiri.png');
+  const [imgSrc, setImgSrc] = useState('/crying-onigiri.webp');
 
   return (
     <div

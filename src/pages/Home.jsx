@@ -52,11 +52,11 @@ function HomeHeroBackdrop() {
       aria-hidden
     >
       <div className="absolute inset-0 bg-gradient-to-b from-accent/[0.07] via-background/92 to-background dark:from-accent/[0.11]" />
-      {/* Optional full cast art: place frontend/public/branding-cast.png */}
+      {/* Optional full cast art: place frontend/public/branding-cast.webp (or .png/.jpg for prebuild) */}
       <div
         className="absolute inset-x-0 top-0 h-full max-h-[680px] opacity-[0.1] dark:opacity-[0.12]"
         style={{
-          backgroundImage: "url(/branding-cast.png)",
+          backgroundImage: "url(/branding-cast.webp)",
           backgroundRepeat: "no-repeat",
           backgroundPosition: "50% 18%",
           backgroundSize: "min(1100px, 145%)",

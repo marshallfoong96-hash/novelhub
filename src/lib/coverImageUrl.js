@@ -50,7 +50,7 @@ function externalCoverViaWeserv(trimmed, merged) {
  */
 export function coverImageUrl(raw, opts = {}) {
   const merged = { ...DEFAULT_LIST, ...opts };
-  if (raw == null || String(raw).trim() === "") return "/default-cover.jpg";
+  if (raw == null || String(raw).trim() === "") return "/default-cover.webp";
   const trimmed = String(raw).trim();
   if (isLocalAsset(trimmed)) return trimmed;
 

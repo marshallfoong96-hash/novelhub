@@ -1,8 +1,8 @@
 import { useEffect } from 'react';
 import { X } from 'lucide-react';
 
-/** Ảnh quét QR Mi Truyện — đặt file tại `public/donate-mi-truyen-qr.png` (thay thế ảnh cũ). */
-export const DONATE_CARD_IMAGE = '/donate-mi-truyen-qr.png';
+/** Ảnh quét QR Mi Truyện — đặt nguồn .png/.jpg trong `public/` rồi chạy `npm run prebuild` → `donate-mi-truyen-qr.webp`. */
+export const DONATE_CARD_IMAGE = '/donate-mi-truyen-qr.webp';
 
 const DONATE_ALT =
   'Mi Truyện — quét mã QR chuyển khoản TECHCOMBANK. Thẻ có chữ Cảm ơn và logo Mi Truyện.';
