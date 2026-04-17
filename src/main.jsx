@@ -20,6 +20,17 @@ import { isChunkOrModuleLoadError, tryHardReloadOnceForStaleChunks } from './lib
   }
 })();
 
+/** Default: weserv proxy for external covers — dns-prefetch unless VITE_COVER_IMAGE_PROXY=off */
+(function preconnectCoverProxy() {
+  if (typeof document === "undefined") return;
+  const v = String(import.meta.env.VITE_COVER_IMAGE_PROXY || "").trim().toLowerCase();
+  if (v === "off" || v === "false" || v === "0" || v === "none" || v === "disabled") return;
+  const link = document.createElement("link");
+  link.rel = "dns-prefetch";
+  link.href = "https://images.weserv.nl";
+  document.head.appendChild(link);
+})();
+
 /** Vite: prefetch / dynamic import can fail with stale chunk after deploy (same as lazyWithRetry). */
 window.addEventListener('vite:preloadError', (event) => {
   const err = event?.payload;
