@@ -8,7 +8,7 @@ import { fetchChapterTocForNovel } from "../lib/fetchAllChapters";
 import {
   Home, BookOpen, Settings, MessageSquare,
   Minus, Plus, ChevronLeft, ChevronRight,
-  List, Send, ArrowRight, User, X
+  List, Send, ArrowRight, User, X, Check
 } from "lucide-react";
 import AdSlot from "../components/AdSlot";
 import ShopeeChapterGateModal from "../components/ShopeeChapterGateModal";
@@ -25,6 +25,7 @@ import {
   READER_CHAPTER_SELECT,
   READER_NOVEL_SELECT,
 } from "../lib/readerTocSessionCache";
+import { readLastReadChapterIdForNovel } from "../lib/memberStorage";
 
 /**
  * Non-empty lines as paragraphs; insert attribution after index floor((n-1)/2) (~50%).
@@ -69,6 +70,8 @@ export default function ChapterRead() {
   /** DOM-only progress bar — avoids setState on every scroll (major battery saver on mobile). */
   const readingProgressBarRef = useRef(null);
   const [showTocDrawer, setShowTocDrawer] = useState(false);
+  /** Mục lục: chương đọc gần nhất (theo `mi_reading_history`). */
+  const [lastReadChapterIdForNovel, setLastReadChapterIdForNovel] = useState(null);
   const [showShopeeGate, setShowShopeeGate] = useState(false);
   const isAuthenticated = true;
   const READER_PREFS_KEY = "mi_reader_prefs";
@@ -285,6 +288,14 @@ export default function ChapterRead() {
   }, [showTocDrawer, chapter?.id]);
 
   useEffect(() => {
+    if (novel?.id == null) {
+      setLastReadChapterIdForNovel(null);
+      return;
+    }
+    setLastReadChapterIdForNovel(readLastReadChapterIdForNovel(novel.id));
+  }, [novel?.id]);
+
+  useEffect(() => {
     if (!chapter || !novel) return;
     const currentEntry = {
       novelId: novel.id,
@@ -304,6 +315,7 @@ export default function ChapterRead() {
       );
       const next = [currentEntry, ...withoutCurrent].slice(0, 100);
       localStorage.setItem("mi_reading_history", JSON.stringify(next));
+      setLastReadChapterIdForNovel(String(currentEntry.chapterId));
     } catch (error) {
       console.error("[v0] Could not save reading history", error);
     }
@@ -1029,20 +1041,33 @@ export default function ChapterRead() {
                 <ul className="space-y-0.5">
                   {allChapters.map((ch) => {
                     const isCurrent = chapter && ch.id === chapter.id;
+                    const isLastRead =
+                      lastReadChapterIdForNovel != null &&
+                      String(ch.id) === String(lastReadChapterIdForNovel);
                     return (
                       <li key={ch.id} id={`toc-row-${ch.id}`}>
                         <Link
                           to={`/chapter/${ch.id}`}
                           onClick={() => setShowTocDrawer(false)}
+                          title={isLastRead ? "Chương đọc gần nhất" : undefined}
                           className={`block rounded-lg px-3 py-2.5 text-sm border transition-colors ${
                             isCurrent
                               ? "bg-accent/15 text-accent border-accent/40 font-medium"
                               : "border-transparent text-foreground hover:bg-secondary"
                           }`}
                         >
-                          <span className="line-clamp-2">
-                            Chương {ch.chapter_number}
-                            {ch.title ? `: ${ch.title}` : ""}
+                          <span className="flex items-start gap-2 min-w-0">
+                            {isLastRead ? (
+                              <Check
+                                className="w-4 h-4 shrink-0 mt-0.5 text-red-600"
+                                strokeWidth={2.5}
+                                aria-hidden
+                              />
+                            ) : null}
+                            <span className="line-clamp-2 min-w-0 flex-1">
+                              Chương {ch.chapter_number}
+                              {ch.title ? `: ${ch.title}` : ""}
+                            </span>
                           </span>
                         </Link>
                       </li>

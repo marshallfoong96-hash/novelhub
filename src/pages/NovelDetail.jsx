@@ -9,6 +9,7 @@ import {
   CheckCircle,
   Send,
   ChevronRight,
+  Check,
   Heart,
   Bookmark,
   Tag,
@@ -34,6 +35,7 @@ import { detailCoverUrl } from '../lib/coverImageUrl';
 import DonateModal from '../components/DonateModal';
 import { fetchChapterTocForNovel } from '../lib/fetchAllChapters';
 import { enrichNovelsWithLatestChapter } from '../lib/enrichNovelsLatestChapter';
+import { readLastReadChapterIdForNovel } from '../lib/memberStorage';
 
 function genreBrowsePath(g) {
   if (g.slug != null && String(g.slug).trim() !== '') {
@@ -98,15 +100,21 @@ function NovelDetail() {
       setContinueChapterId(null);
       return;
     }
-    try {
-      const raw = localStorage.getItem('mi_reading_history');
-      const history = raw ? JSON.parse(raw) : [];
-      const rows = Array.isArray(history) ? history : [];
-      const match = rows.find((item) => String(item.novelId) === String(novel.id));
-      setContinueChapterId(match?.chapterId || null);
-    } catch {
-      setContinueChapterId(null);
-    }
+    const refreshContinue = () => {
+      setContinueChapterId(readLastReadChapterIdForNovel(novel.id));
+    };
+    refreshContinue();
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') refreshContinue();
+    };
+    window.addEventListener('focus', refreshContinue);
+    window.addEventListener('pageshow', refreshContinue);
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      window.removeEventListener('focus', refreshContinue);
+      window.removeEventListener('pageshow', refreshContinue);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
   }, [novel?.id]);
 
   useEffect(() => {
@@ -729,14 +737,26 @@ function NovelDetail() {
               {activeTab === 'chapters' ? (
                 chapters.length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                    {chapters.map((chapter) => (
+                    {chapters.map((chapter) => {
+                      const isLastRead =
+                        continueChapterId != null &&
+                        String(chapter.id) === String(continueChapterId);
+                      return (
                       <Link
                         key={chapter.id}
                         to={`/chapter/${chapter.id}`}
+                        title={isLastRead ? 'Chương đọc gần nhất' : undefined}
                         className="group flex items-center justify-between p-3 hover:bg-secondary/50 rounded-lg border border-border hover:border-accent/30 transition-all"
                       >
-                        <div className="flex-1 min-w-0">
-                          <span className="text-sm font-medium text-foreground group-hover:text-accent transition-colors line-clamp-1">
+                        <div className="flex-1 min-w-0 flex items-start gap-2">
+                          {isLastRead ? (
+                            <Check
+                              className="w-4 h-4 shrink-0 mt-0.5 text-red-600"
+                              strokeWidth={2.5}
+                              aria-hidden
+                            />
+                          ) : null}
+                          <span className="text-sm font-medium text-foreground group-hover:text-accent transition-colors line-clamp-1 min-w-0 flex-1">
                             Chương {chapter.chapter_number}: {chapter.title}
                           </span>
                         </div>
@@ -745,7 +765,8 @@ function NovelDetail() {
                           <ChevronRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
                         </div>
                       </Link>
-                    ))}
+                    );
+                    })}
                   </div>
                 ) : (
                   <div className="text-center py-8">

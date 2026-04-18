@@ -56,6 +56,15 @@ export function readReadingHistory() {
   }
 }
 
+/** `chapterId` (string) of the most recently opened chapter for this novel — same order as `mi_reading_history` (newest-first). */
+export function readLastReadChapterIdForNovel(novelId) {
+  if (novelId == null) return null;
+  const nid = String(novelId);
+  const hit = readReadingHistory().find((item) => String(item?.novelId) === nid);
+  if (hit?.chapterId == null) return null;
+  return String(hit.chapterId);
+}
+
 export function removeHistoryEntryByChapterId(chapterId) {
   const id = String(chapterId);
   const items = readReadingHistory().filter((e) => String(e.chapterId) !== id);
