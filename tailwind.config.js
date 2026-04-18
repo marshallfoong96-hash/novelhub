@@ -49,7 +49,7 @@ export default {
       },
       fontFamily: {
         sans: ['Be Vietnam Pro', 'system-ui', 'sans-serif'],
-        serif: ['Noto Serif JP', 'Georgia', 'serif'],
+        serif: ['Georgia', 'ui-serif', 'serif'],
       },
       animation: {
         "fade-in": "fade-in 0.5s ease-out",

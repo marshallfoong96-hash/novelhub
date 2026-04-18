@@ -1,6 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
+import './fonts/beVietnamPro.js';
 import './index.css';
 import { isChunkOrModuleLoadError, tryHardReloadOnceForStaleChunks } from './lib/chunkRecovery';
 
@@ -44,3 +45,14 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     <App />
   </React.StrictMode>
 );
+
+/** Cache hashed /assets + public images — repeat visits skip network for those URLs. Bump CACHE in sw.js after major asset changes. */
+if (import.meta.env.PROD && typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+  window.addEventListener(
+    'load',
+    () => {
+      navigator.serviceWorker.register('/sw.js').catch(() => {});
+    },
+    { once: true }
+  );
+}

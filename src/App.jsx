@@ -7,8 +7,8 @@ import Header from './components/Header';
 import { RouteErrorBoundary } from './components/RouteErrorBoundary';
 import { BookOpen, Users, PenTool, Mail } from 'lucide-react';
 import BrandLogo from './components/BrandLogo';
+import Home from './pages/Home';
 
-const Home = lazyWithRetry(() => import('./pages/Home'));
 const Login = lazyWithRetry(() => import('./pages/Login'));
 const Register = lazyWithRetry(() => import('./pages/Register'));
 const RegisterSuccess = lazyWithRetry(() => import('./pages/RegisterSuccess'));
@@ -77,13 +77,29 @@ function RoutedMain() {
 
 function App() {
   useEffect(() => {
+    /** After `load`: avoid competing with covers / fonts during critical path; improves Network “Finish” vs idle-at-3.5s. */
     const run = () => loadAdsenseScript();
-    if (typeof window.requestIdleCallback === 'function') {
-      const id = window.requestIdleCallback(run, { timeout: 4500 });
-      return () => window.cancelIdleCallback(id);
+    let ricId = null;
+    let timerId = null;
+    const start = () => {
+      if (typeof window.requestIdleCallback === 'function') {
+        ricId = window.requestIdleCallback(run, { timeout: 12_000 });
+      } else {
+        timerId = window.setTimeout(run, 1200);
+      }
+    };
+    if (document.readyState === 'complete') {
+      start();
+    } else {
+      window.addEventListener('load', start, { once: true });
     }
-    const t = window.setTimeout(run, 3500);
-    return () => window.clearTimeout(t);
+    return () => {
+      window.removeEventListener('load', start);
+      if (ricId != null && typeof window.cancelIdleCallback === 'function') {
+        window.cancelIdleCallback(ricId);
+      }
+      if (timerId != null) window.clearTimeout(timerId);
+    };
   }, []);
 
   return (

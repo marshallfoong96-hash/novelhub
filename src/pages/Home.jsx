@@ -2,7 +2,8 @@ import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { supabase, isSupabaseConfigured } from "../lib/supabase";
 import { fetchWithTtl, clearTtlCache } from "../lib/ttlCache";
 import { HOME_DASHBOARD_CACHE_KEY } from "../lib/cacheKeys";
-import { fetchGenresCached, DEFAULT_DATA_TTL_MS } from "../lib/cachedQueries";
+import { DEFAULT_DATA_TTL_MS } from "../lib/cachedQueries";
+import { fetchHomeDashboardBundle } from "../lib/fetchHomeDashboardBundle";
 import { Link, useLocation } from 'react-router-dom';
 import { 
   Flame, 
@@ -29,13 +30,6 @@ import { branding } from '../lib/branding';
 import { coverImageProps } from '../lib/coverImageProps';
 import { listCoverUrl } from '../lib/coverImageUrl';
 import { formatNumber, formatDate, novelChapterSubtitle, novelLikeCount } from '../utils/helpers';
-
-/**
- * Trang chủ chỉ cần các cột hiển thị / sort — tránh `select *` khi bảng `novels` có thêm cột lớn hoặc JSON.
- * Nếu Supabase báo lỗi cột, mở Table Editor đối chiếu tên cột rồi sửa chuỗi này.
- */
-const HOME_NOVEL_LIST_SELECT =
-  "id,title,cover_url,view_count,status,created_at,description,likes,follow_count";
 
 function getGenreMeta(genre) {
   return {
@@ -174,90 +168,7 @@ function Home() {
         fetchWithTtl(
           HOME_DASHBOARD_CACHE_KEY,
           DEFAULT_DATA_TTL_MS,
-          async () => {
-            const genresData = await fetchGenresCached(DEFAULT_DATA_TTL_MS);
-
-            /** Giới hạn hai truy vấn song song — không tải toàn bộ bảng novels (trước đây rất chậm khi dữ liệu lớn). */
-            const HOME_NOVEL_RECENT = 120;
-            const HOME_NOVEL_HOT = 120;
-
-            const [recentRes, hotRes] = await Promise.all([
-              supabase
-                .from("novels")
-                .select(HOME_NOVEL_LIST_SELECT)
-                .order("created_at", { ascending: false })
-                .limit(HOME_NOVEL_RECENT),
-              supabase
-                .from("novels")
-                .select(HOME_NOVEL_LIST_SELECT)
-                .order("view_count", { ascending: false })
-                .limit(HOME_NOVEL_HOT),
-            ]);
-
-            if (recentRes.error) {
-              console.error(recentRes.error);
-              throw recentRes.error;
-            }
-            if (hotRes.error) {
-              console.error(hotRes.error);
-              throw hotRes.error;
-            }
-
-            const merged = new Map();
-            for (const n of recentRes.data || []) merged.set(n.id, n);
-            for (const n of hotRes.data || []) merged.set(n.id, n);
-            const novels = [...merged.values()];
-
-            const novelIds = novels.map((novel) => novel.id);
-            const firstChapterMap = {};
-            const latestChapterMap = {};
-
-            if (novelIds.length > 0) {
-              const { data: statRows, error: statError } = await supabase.rpc(
-                "novel_chapter_stats",
-                { p_novel_ids: novelIds }
-              );
-
-              if (!statError && Array.isArray(statRows)) {
-                statRows.forEach((row) => {
-                  const nid = row.novel_id;
-                  if (row.first_chapter_id != null) firstChapterMap[nid] = row.first_chapter_id;
-                  if (row.latest_chapter_number != null) {
-                    const cn = Number(row.latest_chapter_number);
-                    if (!Number.isNaN(cn)) latestChapterMap[nid] = cn;
-                  }
-                });
-              } else {
-                console.warn(
-                  "[Home] novel_chapter_stats RPC — chạy `supabase/novel_chapter_stats.sql` để tải nhanh. Fallback:",
-                  statError?.message || statError
-                );
-                const chapterResult = await supabase
-                  .from("chapters")
-                  .select("id,novel_id,chapter_number")
-                  .in("novel_id", novelIds)
-                  .order("chapter_number", { ascending: true });
-                const chapterRows = chapterResult.data || [];
-                chapterRows.forEach((chapter) => {
-                  const nid = chapter.novel_id;
-                  if (!firstChapterMap[nid]) firstChapterMap[nid] = chapter.id;
-                  const cn = Number(chapter.chapter_number);
-                  if (nid != null && !Number.isNaN(cn)) {
-                    const prev = latestChapterMap[nid];
-                    if (prev == null || cn > prev) latestChapterMap[nid] = cn;
-                  }
-                });
-              }
-            }
-
-            const novelsWithFirstChapter = novels.map((novel) => ({
-              ...novel,
-              first_chapter_id: firstChapterMap[novel.id] || null,
-              latest_chapter_number: latestChapterMap[novel.id] ?? null,
-            }));
-
-            return { novelsWithFirstChapter, genresData };
-          }
+          async () => fetchHomeDashboardBundle()
         ),
         new Promise((_, reject) => {
           setTimeout(() => reject(new Error("__FETCH_TIMEOUT__")), FETCH_HOME_TIMEOUT_MS);
