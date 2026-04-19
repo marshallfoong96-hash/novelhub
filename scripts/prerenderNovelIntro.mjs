@@ -74,6 +74,12 @@ function externalWeserv(trimmed, merged) {
   return `${WESERV}/?${params.toString()}`;
 }
 
+function normalizeCdnBase(raw) {
+  let s = String(raw ?? "").trim();
+  if (s.startsWith("//")) s = `https:${s}`;
+  return s.replace(/\/$/, "");
+}
+
 function isPassThroughCdn(trimmed) {
   try {
     const u = new URL(trimmed);
@@ -82,9 +88,11 @@ function isPassThroughCdn(trimmed) {
       .map((s) => s.trim().toLowerCase())
       .filter(Boolean);
     if (hosts.length && hosts.includes(u.hostname.toLowerCase())) return true;
-    const base = String(process.env.VITE_CDN_COVER_BASE || process.env.CDN_COVER_BASE || "")
-      .trim()
-      .replace(/\/$/, "");
+    const base = normalizeCdnBase(
+      process.env.VITE_CDN_COVER_BASE ||
+        process.env.VITE_PUBLIC_ASSETS_BASE ||
+        process.env.CDN_COVER_BASE
+    );
     if (base) {
       const t = trimmed.replace(/\/$/, "");
       if (t === base || t.startsWith(`${base}/`)) return true;

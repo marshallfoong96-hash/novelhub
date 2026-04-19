@@ -11,13 +11,17 @@
 請把下面整段貼進 **`.env.local`**（與 **Cloudflare Pages → Environment variables** 中需同步的項對齊）：
 
 ```env
-# 前端：封面直連 CDN，不經 weserv（二選一即可，建議 HOSTS）
+# 前端：封面直連 CDN，不經 weserv（擇一即可）
 VITE_CDN_COVER_HOSTS=pub-ce7c60cfbf86416ea5021d2e69486cd1.r2.dev
+# 或完整網址前綴（與 VITE_PUBLIC_ASSETS_BASE 擇一，勿用 // 開頭，請用 https://）
 # VITE_CDN_COVER_BASE=https://pub-ce7c60cfbf86416ea5021d2e69486cd1.r2.dev
+# VITE_PUBLIC_ASSETS_BASE=https://pub-ce7c60cfbf86416ea5021d2e69486cd1.r2.dev
 
 # 若要 Genre 頁「Upload CDN」按鈕
 # VITE_CDN_UPLOAD_ENABLED=true
 ```
+
+**Vercel 注意：** 若填 `VITE_PUBLIC_ASSETS_BASE`，值請用 **`https://pub-....r2.dev`**（完整含 `https://`）。若誤填成 `//pub-....r2.dev`，程式會自動當成 `https://` 處理，但建議直接改正。
 
 **Pages Function**（Dashboard，非 `VITE_`）：
 
@@ -56,6 +60,28 @@ SUPABASE_ANON_KEY=<與 VITE_SUPABASE_ANON_KEY 相同>
 
 重新部署一次 Pages。
 
+### B2. Vercel 部署（不用 Cloudflare Pages Function 時）
+
+若前端在 **Vercel**，請用專案內 **`api/upload-cover.js`**（與 Cloudflare 同一路徑 **`POST /api/upload-cover`**、同一套驗證與 body 格式），不需再建 ChatGPT 那種 **`/api/upload` + JSON base64**——你現有前端已經是 **raw WebP + Bearer + `X-Upload-Path`**。
+
+在 **Vercel → Settings → Environment Variables**（Production / Preview）新增：
+
+| 變數 | 說明 |
+|------|------|
+| `R2_ACCOUNT_ID` | Cloudflare 帳號 ID（Dashboard 右側或 R2 URL 裡可見） |
+| `R2_ACCESS_KEY_ID` | R2 API Token（S3 相容） |
+| `R2_SECRET_ACCESS_KEY` | 同上 |
+| `R2_BUCKET_NAME` | 你的 bucket 名稱（例如 `mitruyen-covers`） |
+| `PUBLIC_ASSETS_BASE` | 公開根網址，例如 `https://pub-xxxxx.r2.dev`（**不要**只寫在 `VITE_*` 而漏掉這個，Serverless 建議明確設） |
+| `SUPABASE_URL` | 與 `VITE_SUPABASE_URL` 相同 |
+| `SUPABASE_ANON_KEY` | 與 `VITE_SUPABASE_ANON_KEY` 相同（用來驗證 `Authorization: Bearer`） |
+
+前端仍要：`VITE_CDN_UPLOAD_ENABLED=true`，以及 `VITE_CDN_COVER_HOSTS` / `VITE_PUBLIC_ASSETS_BASE` 等（顯示用）。
+
+**為什麼不照 ChatGPT 最簡版？** 那版缺少 **登入驗證**（任何人可上傳）、路徑與 body 格式也和本專案不一致；改用已實作的 **`api/upload-cover.js`** 即可與 `uploadCoverCdn.js` 無縫接軌。
+
+本地 `npm run dev` 仍不會跑 Vercel Functions；要測上傳可 **`vercel dev`**（需安裝 Vercel CLI）或部署後在線上測。
+
 ### C. 前端 Vite 環境變數（建置 / 本地 `.env.local`）
 
 讓 **listCoverUrl** 知道「這個網址已是 CDN 上的 WebP」，不要再用代理縮圖：
@@ -78,7 +104,9 @@ VITE_CDN_UPLOAD_ENABLED=true
 
 ## 上傳流程（已寫在程式裡）
 
-- **Pages Function**：`functions/api/upload-cover.js` → 路由 **`POST /api/upload-cover`**
+- **上傳 API**：**`POST /api/upload-cover`**  
+  - Cloudflare：**`functions/api/upload-cover.js`**（R2 binding `COVERS`）  
+  - Vercel：**`api/upload-cover.js`**（S3 API 寫入 R2）
 - 驗證 **Supabase Session**（`Authorization: Bearer <access_token>`）
 - 內容為 **WebP bytes**（前端 `imageFileToWebpBlob` 先轉好）
 - 寫入 R2 後回傳 `{ url }`，再寫入 `genres.image` 等欄位
@@ -87,18 +115,18 @@ VITE_CDN_UPLOAD_ENABLED=true
 
 ## 把「舊的 Supabase Storage 封面」搬到 R2（選用）
 
-在 **`frontend`** 目錄、本機執行（**不要**把 `MIGRATE_SUPABASE_SERVICE_ROLE` 提交到 Git）：
+在 **`frontend`** 目錄、本機執行（**不要**把 `MIGRATE_SUPABASE_SERVICE_ROLE` 提交到 Git）。
+
+`.env.local` 可與 Vercel **同名**：`R2_ACCOUNT_ID`、`R2_ACCESS_KEY_ID`、`R2_SECRET_ACCESS_KEY`、`R2_BUCKET_NAME`，以及公開根網址（`VITE_PUBLIC_ASSETS_BASE` 或 `PUBLIC_ASSETS_BASE` 或 `MIGRATE_R2_PUBLIC_BASE`）。腳本只會遷移 **`novels.cover_url`** 裡的 Supabase Storage **公開** URL。
 
 ```bash
-# 先填 .env.local：MIGRATE_* 與 MIGRATE_SUPABASE_SERVICE_ROLE
 npm run migrate:covers-r2
 ```
 
-可先乾跑：
+可先乾跑（PowerShell）：
 
-```bash
-set MIGRATE_DRY_RUN=1
-npm run migrate:covers-r2
+```powershell
+$env:MIGRATE_DRY_RUN="1"; npm run migrate:covers-r2
 ```
 
 搬完後在 DB 裡的 `cover_url` 會變成 `MIGRATE_R2_PUBLIC_BASE/...`。請務必設定 **`VITE_CDN_COVER_HOSTS`**（或 `VITE_CDN_COVER_BASE`），否則舊邏輯仍可能走 weserv。

@@ -17,6 +17,13 @@ function isLocalAsset(url) {
   return typeof url === "string" && (url.startsWith("/") || url.startsWith("./"));
 }
 
+/** Normalize env like `//host/path` or `https://host` for prefix match. */
+function normalizeCdnBaseEnv(raw) {
+  let s = String(raw ?? "").trim();
+  if (s.startsWith("//")) s = `https:${s}`;
+  return s.replace(/\/$/, "");
+}
+
 /** R2 / custom CDN — already WebP; skip weserv & Supabase render. */
 function isPassThroughCdnUrl(trimmed) {
   try {
@@ -27,7 +34,9 @@ function isPassThroughCdnUrl(trimmed) {
       .map((s) => s.trim().toLowerCase())
       .filter(Boolean);
     if (hosts.length && hosts.includes(u.hostname.toLowerCase())) return true;
-    const base = String(import.meta.env.VITE_CDN_COVER_BASE || "").trim().replace(/\/$/, "");
+    const base = normalizeCdnBaseEnv(
+      import.meta.env.VITE_CDN_COVER_BASE || import.meta.env.VITE_PUBLIC_ASSETS_BASE
+    );
     if (base) {
       const t = trimmed.replace(/\/$/, "");
       if (t === base || t.startsWith(`${base}/`)) return true;

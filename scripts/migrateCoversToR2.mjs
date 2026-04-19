@@ -2,16 +2,13 @@
  * One-off: copy novel covers from Supabase Storage public URLs into Cloudflare R2 (S3 API),
  * then update `novels.cover_url` to the new public CDN URL.
  *
- * Requires in .env.local (do not commit secrets):
- *   MIGRATE_R2_ACCOUNT_ID=
- *   MIGRATE_R2_ACCESS_KEY_ID=
- *   MIGRATE_R2_SECRET_ACCESS_KEY=
- *   MIGRATE_R2_BUCKET=
- *   MIGRATE_R2_PUBLIC_BASE=https://your-bucket.r2.dev   (or custom domain, no trailing slash)
- *   VITE_SUPABASE_URL=
- *   MIGRATE_SUPABASE_SERVICE_ROLE=eyJ...   (recommended — needs UPDATE on novels; never ship to client)
+ * Requires in .env.local (do not commit secrets). `MIGRATE_*` overrides; else same names as Vercel:
+ *   R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET_NAME
+ *   MIGRATE_R2_PUBLIC_BASE or PUBLIC_ASSETS_BASE or VITE_PUBLIC_ASSETS_BASE (https://pub-....r2.dev)
+ *   VITE_SUPABASE_URL (or SUPABASE_URL)
+ *   MIGRATE_SUPABASE_SERVICE_ROLE (recommended) or VITE_SUPABASE_ANON_KEY / SUPABASE_ANON_KEY
  *
- * Dry run: MIGRATE_DRY_RUN=1 node scripts/migrateCoversToR2.mjs
+ * Dry run: MIGRATE_DRY_RUN=1 npm run migrate:covers-r2
  */
 import fs from "fs";
 import path from "path";
@@ -50,11 +47,16 @@ loadEnvFiles();
 const DRY = String(process.env.MIGRATE_DRY_RUN || "").trim() === "1";
 
 function r2Client() {
-  const accountId = process.env.MIGRATE_R2_ACCOUNT_ID;
-  const accessKeyId = process.env.MIGRATE_R2_ACCESS_KEY_ID;
-  const secretAccessKey = process.env.MIGRATE_R2_SECRET_ACCESS_KEY;
+  const accountId =
+    process.env.MIGRATE_R2_ACCOUNT_ID || process.env.R2_ACCOUNT_ID;
+  const accessKeyId =
+    process.env.MIGRATE_R2_ACCESS_KEY_ID || process.env.R2_ACCESS_KEY_ID;
+  const secretAccessKey =
+    process.env.MIGRATE_R2_SECRET_ACCESS_KEY || process.env.R2_SECRET_ACCESS_KEY;
   if (!accountId || !accessKeyId || !secretAccessKey) {
-    throw new Error("Set MIGRATE_R2_ACCOUNT_ID, MIGRATE_R2_ACCESS_KEY_ID, MIGRATE_R2_SECRET_ACCESS_KEY");
+    throw new Error(
+      "Set R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY (or MIGRATE_R2_* equivalents)"
+    );
   }
   return new S3Client({
     region: "auto",
@@ -63,15 +65,28 @@ function r2Client() {
   });
 }
 
+function normalizePublicBase(raw) {
+  let s = String(raw ?? "").trim();
+  if (s.startsWith("//")) s = `https:${s}`;
+  return s.replace(/\/$/, "");
+}
+
 async function main() {
-  const bucket = process.env.MIGRATE_R2_BUCKET;
-  const publicBase = String(process.env.MIGRATE_R2_PUBLIC_BASE || "").replace(/\/$/, "");
+  const bucket =
+    process.env.MIGRATE_R2_BUCKET || process.env.R2_BUCKET_NAME;
+  const publicBase = normalizePublicBase(
+    process.env.MIGRATE_R2_PUBLIC_BASE ||
+      process.env.PUBLIC_ASSETS_BASE ||
+      process.env.VITE_PUBLIC_ASSETS_BASE
+  );
   const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
   const serviceKey = process.env.MIGRATE_SUPABASE_SERVICE_ROLE || process.env.SUPABASE_SERVICE_ROLE_KEY;
   const anonKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
 
   if (!bucket || !publicBase) {
-    throw new Error("Set MIGRATE_R2_BUCKET and MIGRATE_R2_PUBLIC_BASE");
+    throw new Error(
+      "Set R2_BUCKET_NAME and public base (MIGRATE_R2_PUBLIC_BASE or PUBLIC_ASSETS_BASE or VITE_PUBLIC_ASSETS_BASE)"
+    );
   }
   if (!supabaseUrl) throw new Error("Set VITE_SUPABASE_URL");
   const key = serviceKey || anonKey;
