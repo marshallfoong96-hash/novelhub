@@ -33,7 +33,7 @@ import BrandLogo from './BrandLogo';
 import { novelChapterSubtitle } from '../utils/helpers';
 import { enrichNovelsWithLatestChapter } from '../lib/enrichNovelsLatestChapter';
 import { coverImageProps } from '../lib/coverImageProps';
-import { thumbCoverUrl } from '../lib/coverImageUrl';
+import { thumbCoverUrl, avatarImageUrl } from '../lib/coverImageUrl';
 import {
   LS_BOOKMARKS,
   LS_FAVORITES,
@@ -785,7 +785,7 @@ function Header() {
                   >
                     <div className="w-7 h-7 rounded-full bg-accent/20 flex items-center justify-center overflow-hidden">
                       {user?.avatar ? (
-                        <img src={user.avatar} alt="" className="w-full h-full object-cover" />
+                        <img src={avatarImageUrl(user.avatar)} alt="" className="w-full h-full object-cover" />
                       ) : (
                         <User className="w-4 h-4 text-accent" />
                       )}
@@ -821,7 +821,7 @@ function Header() {
                       <div className="w-6 h-6 rounded-full bg-accent/20 flex items-center justify-center overflow-hidden">
                         {user?.avatar ? (
                           <img 
-                            src={user.avatar} 
+                            src={avatarImageUrl(user.avatar)} 
                             alt={user?.username}
                             className="w-full h-full object-cover"
                           />
@@ -1260,7 +1260,7 @@ function Header() {
                   >
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-accent/20">
                       {user?.avatar ? (
-                        <img src={user.avatar} alt="" className="h-full w-full object-cover" />
+                        <img src={avatarImageUrl(user.avatar)} alt="" className="h-full w-full object-cover" />
                       ) : (
                         <User className="h-5 w-5 text-accent" />
                       )}

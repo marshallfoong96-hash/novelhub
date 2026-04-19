@@ -1,0 +1,3 @@
+# Cloudflare Pages / Netlify: SPA fallback.
+# Static files (e.g. /truyen/123/index.html) are served when they exist; this catches client-only routes.
+/*    /index.html   200

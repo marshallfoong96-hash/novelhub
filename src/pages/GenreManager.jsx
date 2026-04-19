@@ -7,6 +7,10 @@ import { HOME_DASHBOARD_CACHE_KEY, GENRES_CACHE_KEY } from "../lib/cacheKeys";
 import { novelChapterSubtitle } from "../utils/helpers";
 import { enrichNovelsWithLatestChapter } from "../lib/enrichNovelsLatestChapter";
 import { listCoverUrl } from "../lib/coverImageUrl";
+import { uploadGenreCoverFile } from "../lib/uploadCoverCdn";
+
+const cdnUploadOn =
+  String(import.meta.env.VITE_CDN_UPLOAD_ENABLED || "").toLowerCase() === "true";
 
 const coverPool = [
   "https://images.unsplash.com/photo-1509248961158-e54f6934749c?auto=format&fit=crop&w=900&q=80",
@@ -254,6 +258,30 @@ function GenreManager() {
     setSavingGenreId(null);
   };
 
+  const handleCdnGenreCoverFile = async (genreId, event) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file || !cdnUploadOn) return;
+    setSavingGenreId(genreId);
+    setError("");
+    try {
+      const { url } = await uploadGenreCoverFile(file, "covers/genres", genreId);
+      const { error: updateError } = await supabase.from("genres").update({ image: url }).eq("id", genreId);
+      if (updateError) {
+        setError(updateError.message || "Failed to save CDN URL.");
+        setSavingGenreId(null);
+        return;
+      }
+      setGenres((prev) => prev.map((g) => (g.id === genreId ? { ...g, image: url } : g)));
+      setNotice("Da tai len CDN (WebP).");
+      setTimeout(() => setNotice(""), 2400);
+    } catch (err) {
+      setError(err?.message || "CDN upload failed.");
+    } finally {
+      setSavingGenreId(null);
+    }
+  };
+
   return (
     <div className="space-y-5">
       <div className="flex items-center gap-2">
@@ -359,6 +387,11 @@ function GenreManager() {
           <h2 className="text-sm font-semibold text-foreground">Preview & random cover cho the loai</h2>
           <span className="text-xs text-muted-foreground">Nhan nut Shuffle de doi anh nen</span>
         </div>
+        {cdnUploadOn && (
+          <p className="text-[11px] text-muted-foreground mb-2">
+            CDN upload: tai WebP len R2 (can dang nhap). Dat VITE_CDN_COVER_HOSTS / VITE_CDN_COVER_BASE de hien thi khong qua proxy.
+          </p>
+        )}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
           {genres.map((genre) => (
             <div key={`genre-preview-${genre.id}`} className="border border-border rounded-lg overflow-hidden bg-card">
@@ -380,6 +413,20 @@ function GenreManager() {
                   <Shuffle className="w-3 h-3" />
                   {savingGenreId === genre.id ? "Saving..." : "Random"}
                 </button>
+                {cdnUploadOn && (
+                  <label className="mt-1 block w-full">
+                    <span className="w-full inline-flex items-center justify-center gap-1 text-[10px] px-2 py-1 rounded bg-accent/15 text-accent border border-accent/30 cursor-pointer hover:bg-accent/25">
+                      Upload CDN
+                    </span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="sr-only"
+                      disabled={savingGenreId === genre.id}
+                      onChange={(e) => handleCdnGenreCoverFile(genre.id, e)}
+                    />
+                  </label>
+                )}
               </div>
             </div>
           ))}

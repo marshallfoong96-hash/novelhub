@@ -26,6 +26,7 @@ import {
   READER_NOVEL_SELECT,
 } from "../lib/readerTocSessionCache";
 import { readLastReadChapterIdForNovel } from "../lib/memberStorage";
+import { avatarImageUrl } from "../lib/coverImageUrl";
 
 /**
  * Non-empty lines as paragraphs; insert attribution after index floor((n-1)/2) (~50%).
@@ -980,7 +981,7 @@ export default function ChapterRead() {
                     <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center flex-shrink-0 overflow-hidden">
                       {comment.user?.avatar ? (
                         <img
-                          src={comment.user.avatar}
+                          src={avatarImageUrl(comment.user.avatar)}
                           alt={comment.user?.username}
                           className="w-full h-full object-cover"
                         />

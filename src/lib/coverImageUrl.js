@@ -9,11 +9,43 @@
 const DEFAULT_LIST = { width: 360, height: 504, quality: 80, resize: "cover" };
 const DEFAULT_DETAIL = { width: 640, height: 900, quality: 82, resize: "cover" };
 const DEFAULT_THUMB = { width: 144, height: 200, quality: 78, resize: "cover" };
+const DEFAULT_AVATAR = { width: 128, height: 128, quality: 82, resize: "cover" };
 
 const WESERV_ORIGIN = "https://images.weserv.nl";
 
 function isLocalAsset(url) {
   return typeof url === "string" && (url.startsWith("/") || url.startsWith("./"));
+}
+
+/** R2 / custom CDN — already WebP; skip weserv & Supabase render. */
+function isPassThroughCdnUrl(trimmed) {
+  try {
+    const u = new URL(trimmed);
+    if (u.protocol !== "http:" && u.protocol !== "https:") return false;
+    const hosts = String(import.meta.env.VITE_CDN_COVER_HOSTS || "")
+      .split(",")
+      .map((s) => s.trim().toLowerCase())
+      .filter(Boolean);
+    if (hosts.length && hosts.includes(u.hostname.toLowerCase())) return true;
+    const base = String(import.meta.env.VITE_CDN_COVER_BASE || "").trim().replace(/\/$/, "");
+    if (base) {
+      const t = trimmed.replace(/\/$/, "");
+      if (t === base || t.startsWith(`${base}/`)) return true;
+    }
+    return false;
+  } catch {
+    return false;
+  }
+}
+
+/** Prefer shipped WebP in `public/` when legacy JPG/PNG paths are still stored in DB. */
+export function normalizeLocalPublicImagePath(url) {
+  if (url == null || typeof url !== "string") return url;
+  const t = url.trim();
+  if (t === "/default-cover.jpg" || t === "/default-cover.jpeg" || t === "/default-cover.png") {
+    return "/default-cover.webp";
+  }
+  return t;
 }
 
 /** Default: use weserv for non-Storage URLs. `VITE_COVER_IMAGE_PROXY=off` disables. */
@@ -51,12 +83,13 @@ function externalCoverViaWeserv(trimmed, merged) {
 export function coverImageUrl(raw, opts = {}) {
   const merged = { ...DEFAULT_LIST, ...opts };
   if (raw == null || String(raw).trim() === "") return "/default-cover.webp";
-  const trimmed = String(raw).trim();
+  const trimmed = normalizeLocalPublicImagePath(String(raw).trim());
   if (isLocalAsset(trimmed)) return trimmed;
 
   try {
     const u = new URL(trimmed);
     if (u.protocol !== "http:" && u.protocol !== "https:") return trimmed;
+    if (isPassThroughCdnUrl(trimmed)) return trimmed;
     if (u.hostname === "images.weserv.nl" || u.hostname.endsWith(".weserv.nl")) return trimmed;
 
     if (u.hostname.endsWith(".supabase.co")) {
@@ -75,6 +108,7 @@ export function coverImageUrl(raw, opts = {}) {
       }
       q.set("quality", String(Math.min(100, Math.max(20, merged.quality))));
       q.set("resize", merged.resize || "cover");
+      q.set("format", "webp");
       return `${base}?${q.toString()}`;
     }
 
@@ -101,4 +135,9 @@ export function detailCoverUrl(raw) {
 /** Header search / small rows. */
 export function thumbCoverUrl(raw) {
   return coverImageUrl(raw, DEFAULT_THUMB);
+}
+
+/** Avatars & small profile images — WebP via same pipeline as covers. */
+export function avatarImageUrl(raw) {
+  return coverImageUrl(raw, DEFAULT_AVATAR);
 }

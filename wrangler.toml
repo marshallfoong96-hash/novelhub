@@ -1,0 +1,20 @@
+# Cloudflare Pages — bindings are often set in Dashboard instead of this file.
+# Root directory for Pages project: novel-platform/frontend  →  Build output: dist
+#
+# 1) Create R2 bucket (e.g. mitruyen-covers)
+# 2) Pages project → Settings → Functions → R2 bindings → variable name: COVERS → pick bucket
+# 3) Pages → Settings → Environment variables:
+#    - PUBLIC_ASSETS_BASE = https://<your-public-r2-host>/   (custom domain or r2.dev public URL, no trailing slash issues — app strips)
+#    - SUPABASE_URL = https://xxx.supabase.co
+#    - SUPABASE_ANON_KEY = eyJ... (same as VITE_SUPABASE_ANON_KEY)
+#
+# Optional: wrangler pages project create / wrangler pages deploy dist
+
+name = "mitruyen-frontend"
+compatibility_date = "2024-11-01"
+pages_build_output_dir = "dist"
+
+# Uncomment after bucket exists — or bind via Dashboard only:
+# [[r2_buckets]]
+# binding = "COVERS"
+# bucket_name = "mitruyen-covers"

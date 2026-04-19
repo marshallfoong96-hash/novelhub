@@ -1,0 +1,338 @@
+/**
+ * Post-build: writes static HTML shells for selected novel intro routes
+ * `dist/truyen/<id>/index.html` — same JS/CSS as SPA, with SEO meta + noscript body.
+ *
+ * Configure (see .env.example):
+ * - PRERENDER_NOVEL_IDS=12,34,56  (takes precedence)
+ * - or PRERENDER_NOVEL_LIMIT=30   (top by view_count; needs Supabase env)
+ * - SITE_ORIGIN / VITE_SITE_URL — canonical & og:url (default https://mitruyen.me)
+ *
+ * Run automatically after `vite build` unless PRERENDER_SKIP=1.
+ */
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+import { createClient } from "@supabase/supabase-js";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const ROOT = path.join(__dirname, "..");
+
+function loadEnvFiles() {
+  for (const name of [".env.local", ".env"]) {
+    const p = path.join(ROOT, name);
+    if (!fs.existsSync(p)) continue;
+    const text = fs.readFileSync(p, "utf8");
+    for (const line of text.split("\n")) {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith("#")) continue;
+      const eq = trimmed.indexOf("=");
+      if (eq <= 0) continue;
+      const key = trimmed.slice(0, eq).trim();
+      let val = trimmed.slice(eq + 1).trim();
+      if (
+        (val.startsWith('"') && val.endsWith('"')) ||
+        (val.startsWith("'") && val.endsWith("'"))
+      ) {
+        val = val.slice(1, -1);
+      }
+      if (process.env[key] === undefined) process.env[key] = val;
+    }
+  }
+}
+
+loadEnvFiles();
+
+const DEFAULT_ORIGIN = "https://mitruyen.me";
+const DETAIL = { width: 640, height: 900, quality: 82, resize: "cover" };
+const WESERV = "https://images.weserv.nl";
+
+function useWeservProxy() {
+  const v = String(process.env.VITE_COVER_IMAGE_PROXY || "").trim().toLowerCase();
+  return !(v === "off" || v === "false" || v === "0" || v === "none" || v === "disabled");
+}
+
+function normalizeLocalPath(url) {
+  if (url == null || typeof url !== "string") return url;
+  const t = url.trim();
+  if (t === "/default-cover.jpg" || t === "/default-cover.jpeg" || t === "/default-cover.png") {
+    return "/default-cover.webp";
+  }
+  return t;
+}
+
+function externalWeserv(trimmed, merged) {
+  const w = Math.min(2500, Math.max(1, merged.width));
+  const h = merged.height != null ? Math.min(2500, Math.max(1, merged.height)) : null;
+  const q = Math.min(100, Math.max(20, merged.quality));
+  const params = new URLSearchParams();
+  params.set("url", trimmed);
+  params.set("w", String(w));
+  if (h != null) params.set("h", String(h));
+  params.set("fit", merged.resize === "contain" ? "contain" : "cover");
+  params.set("output", "webp");
+  params.set("q", String(q));
+  return `${WESERV}/?${params.toString()}`;
+}
+
+function isPassThroughCdn(trimmed) {
+  try {
+    const u = new URL(trimmed);
+    const hosts = String(process.env.VITE_CDN_COVER_HOSTS || process.env.CDN_COVER_HOSTS || "")
+      .split(",")
+      .map((s) => s.trim().toLowerCase())
+      .filter(Boolean);
+    if (hosts.length && hosts.includes(u.hostname.toLowerCase())) return true;
+    const base = String(process.env.VITE_CDN_COVER_BASE || process.env.CDN_COVER_BASE || "")
+      .trim()
+      .replace(/\/$/, "");
+    if (base) {
+      const t = trimmed.replace(/\/$/, "");
+      if (t === base || t.startsWith(`${base}/`)) return true;
+    }
+    return false;
+  } catch {
+    return false;
+  }
+}
+
+/** Match `detailCoverUrl` / coverImageUrl for OG — absolute URLs only where needed. */
+function detailCoverAbsolute(raw, origin) {
+  const merged = { ...DETAIL };
+  if (raw == null || String(raw).trim() === "") {
+    return `${origin.replace(/\/$/, "")}/default-cover.webp`;
+  }
+  let trimmed = normalizeLocalPath(String(raw).trim());
+  if (trimmed.startsWith("/") || trimmed.startsWith("./")) {
+    return `${origin.replace(/\/$/, "")}${trimmed.startsWith("/") ? trimmed : "/" + trimmed.slice(2)}`;
+  }
+  try {
+    const u = new URL(trimmed);
+    if (u.protocol !== "http:" && u.protocol !== "https:") return trimmed;
+    if (isPassThroughCdn(trimmed)) return trimmed;
+    if (u.hostname === "images.weserv.nl" || u.hostname.endsWith(".weserv.nl")) return trimmed;
+
+    if (u.hostname.endsWith(".supabase.co")) {
+      const m = u.pathname.match(/^\/storage\/v1\/object\/public\/(.+)$/);
+      if (!m) {
+        return useWeservProxy() ? externalWeserv(trimmed, merged) : trimmed;
+      }
+      const pathAfterPublic = m[1];
+      const base = `${u.protocol}//${u.host}/storage/v1/render/image/public/${pathAfterPublic}`;
+      const q = new URLSearchParams();
+      q.set("width", String(Math.min(2500, Math.max(1, merged.width))));
+      if (merged.height != null) {
+        q.set("height", String(Math.min(2500, Math.max(1, merged.height))));
+      }
+      q.set("quality", String(Math.min(100, Math.max(20, merged.quality))));
+      q.set("resize", merged.resize || "cover");
+      q.set("format", "webp");
+      return `${base}?${q.toString()}`;
+    }
+    return useWeservProxy() ? externalWeserv(trimmed, merged) : trimmed;
+  } catch {
+    return trimmed;
+  }
+}
+
+function escapeHtmlAttr(s) {
+  return String(s ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+function plainTextFromDescription(htmlOrText, maxLen) {
+  const t = String(htmlOrText ?? "")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (t.length <= maxLen) return t;
+  return t.slice(0, maxLen - 1).trimEnd() + "…";
+}
+
+function buildHeadInjection({ title, description, canonical, ogImage, novelId }) {
+  const desc = escapeHtmlAttr(description);
+  const ttl = escapeHtmlAttr(title);
+  const canon = escapeHtmlAttr(canonical);
+  const ogI = escapeHtmlAttr(ogImage);
+  const jsonLd = JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "Book",
+    name: title,
+    url: canonical,
+    image: ogImage,
+    description: plainTextFromDescription(description, 500),
+  });
+
+  return `
+    <meta name="description" content="${desc}" />
+    <link rel="canonical" href="${canon}" />
+    <meta property="og:type" content="book" />
+    <meta property="og:site_name" content="Mi Truyen" />
+    <meta property="og:title" content="${ttl}" />
+    <meta property="og:description" content="${desc}" />
+    <meta property="og:url" content="${canon}" />
+    <meta property="og:image" content="${ogI}" />
+    <meta property="og:image:secure_url" content="${ogI}" />
+    <meta property="og:locale" content="vi_VN" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="${ttl}" />
+    <meta name="twitter:description" content="${desc}" />
+    <meta name="twitter:image" content="${ogI}" />
+    <meta name="prerender-novel-id" content="${String(novelId)}" />
+    <script type="application/ld+json">${jsonLd.replace(/</g, "\\u003c")}</script>
+  `.trim();
+}
+
+function buildNoscript({ title, authorLabel, description }) {
+  const p = plainTextFromDescription(description, 600);
+  return `
+<noscript>
+  <div style="max-width:42rem;margin:1.5rem auto;padding:1rem;font-family:system-ui,sans-serif;line-height:1.5;color:#111">
+    <h1 style="font-size:1.25rem;margin-bottom:0.5rem">${escapeHtmlAttr(title)}</h1>
+    <p style="font-size:0.875rem;color:#555;margin-bottom:1rem">${escapeHtmlAttr(authorLabel)}</p>
+    <p style="white-space:pre-wrap;font-size:0.9rem">${escapeHtmlAttr(p)}</p>
+    <p style="margin-top:1rem;font-size:0.8rem;color:#888">Mi Truyện — cần bật JavaScript để xem đầy đủ.</p>
+  </div>
+</noscript>`.trim();
+}
+
+async function resolveNovelIds(supabase) {
+  const rawIds = String(process.env.PRERENDER_NOVEL_IDS || "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .map((s) => parseInt(s, 10))
+    .filter((n) => Number.isFinite(n) && n > 0);
+
+  if (rawIds.length > 0) return [...new Set(rawIds)];
+
+  const limit = Math.min(500, Math.max(0, parseInt(process.env.PRERENDER_NOVEL_LIMIT || "0", 10) || 0));
+  if (limit <= 0 || !supabase) return [];
+
+  const { data, error } = await supabase
+    .from("novels")
+    .select("id")
+    .order("view_count", { ascending: false, nullsFirst: false })
+    .limit(limit);
+
+  if (error) {
+    console.warn("[prerenderNovelIntro] fetch ids:", error.message);
+    return [];
+  }
+  return (data || []).map((r) => r.id).filter((id) => id != null);
+}
+
+function normalizeAuthorLabel(author) {
+  if (author == null || String(author).trim() === "") return "Tác giả";
+  return String(author).trim();
+}
+
+async function main() {
+  if (String(process.env.PRERENDER_SKIP || "").trim() === "1") {
+    console.log("[prerenderNovelIntro] skip (PRERENDER_SKIP=1)");
+    return;
+  }
+
+  const indexPath = path.join(ROOT, "dist", "index.html");
+  if (!fs.existsSync(indexPath)) {
+    console.warn("[prerenderNovelIntro] dist/index.html missing — run vite build first.");
+    process.exit(0);
+  }
+
+  let template = fs.readFileSync(indexPath, "utf8");
+  /** Avoid duplicate meta: strip homepage SEO block; prerender injects per-novel tags. */
+  template = template
+    .replace(/<meta name="description"[^>]*>/gi, "")
+    .replace(/<link rel="canonical"[^>]*>/gi, "")
+    .replace(/<meta property="og:url"[^>]*>/gi, "")
+    .replace(/<meta property="og:title"[^>]*>/gi, "")
+    .replace(/<meta property="og:description"[^>]*>/gi, "")
+    .replace(/<meta property="og:type"[^>]*>/gi, "")
+    .replace(/<meta property="og:image[^>]*>/gi, "")
+    .replace(/<meta property="og:locale"[^>]*>/gi, "")
+    .replace(/<meta name="twitter:[^>]*>/gi, "");
+
+  const url = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
+  const key = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
+  const supabase = url && key ? createClient(url, key) : null;
+
+  const ids = await resolveNovelIds(supabase);
+  if (ids.length === 0) {
+    console.log(
+      "[prerenderNovelIntro] no IDs — set PRERENDER_NOVEL_IDS or PRERENDER_NOVEL_LIMIT (>0) + Supabase env."
+    );
+    return;
+  }
+  if (!supabase) {
+    console.warn(
+      "[prerenderNovelIntro] missing VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY — cannot fetch novel rows."
+    );
+    return;
+  }
+
+  const origin = (
+    process.env.SITE_ORIGIN ||
+    process.env.VITE_SITE_URL ||
+    DEFAULT_ORIGIN
+  )
+    .replace(/\/$/, "");
+
+  let written = 0;
+  for (const novelId of ids) {
+    const { data: novel, error } = await supabase.from("novels").select("*").eq("id", novelId).maybeSingle();
+    if (error || !novel) {
+      console.warn(`[prerenderNovelIntro] skip id=${novelId}:`, error?.message || "not found");
+      continue;
+    }
+
+    const titleBase = novel.title ? String(novel.title).trim() : `Truyện #${novelId}`;
+    const pageTitle = `${titleBase} | Mi Truyen`;
+    const authorLabel = normalizeAuthorLabel(novel.author);
+    const descPlain = plainTextFromDescription(novel.description, 220) || `${titleBase} — ${authorLabel}. Đọc online tại Mi Truyện.`;
+    const canonical = `${origin}/truyen/${novelId}`;
+    const ogImage = detailCoverAbsolute(novel.cover_url, origin);
+
+    const headBlock = buildHeadInjection({
+      title: pageTitle,
+      description: descPlain,
+      canonical,
+      ogImage,
+      novelId,
+    });
+
+    const noscript = buildNoscript({
+      title: titleBase,
+      authorLabel,
+      description: novel.description || descPlain,
+    });
+
+    let html = template;
+    html = html.replace(/<title>[^<]*<\/title>/, `<title>${escapeHtmlAttr(pageTitle)}</title>`);
+    if (!html.includes("</head>")) {
+      console.warn("[prerenderNovelIntro] malformed index.html (no </head>)");
+      continue;
+    }
+    html = html.replace("</head>", `${headBlock}\n</head>`);
+    if (html.includes('<div id="root"></div>')) {
+      html = html.replace('<div id="root"></div>', `<div id="root"></div>\n    ${noscript}\n`);
+    } else {
+      html = html.replace("<body", `<body`);
+      html = html.replace("</body>", `${noscript}\n</body>`);
+    }
+
+    const dir = path.join(ROOT, "dist", "truyen", String(novelId));
+    fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(path.join(dir, "index.html"), html, "utf8");
+    written += 1;
+    console.log("[prerenderNovelIntro] wrote", `/truyen/${novelId}/index.html`);
+  }
+
+  console.log(`[prerenderNovelIntro] done — ${written}/${ids.length} file(s).`);
+}
+
+main().catch((e) => {
+  console.error("[prerenderNovelIntro]", e);
+  process.exit(1);
+});

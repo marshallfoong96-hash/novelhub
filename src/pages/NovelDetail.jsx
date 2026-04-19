@@ -31,7 +31,7 @@ import AdSlot from '../components/AdSlot';
 import NovelCard from '../components/NovelCard';
 import ReaderErrorState from '../components/ReaderErrorState';
 import { coverImageProps } from '../lib/coverImageProps';
-import { detailCoverUrl } from '../lib/coverImageUrl';
+import { detailCoverUrl, avatarImageUrl } from '../lib/coverImageUrl';
 import DonateModal from '../components/DonateModal';
 import { fetchChapterTocForNovel } from '../lib/fetchAllChapters';
 import { enrichNovelsWithLatestChapter } from '../lib/enrichNovelsLatestChapter';
@@ -823,7 +823,7 @@ function NovelDetail() {
                           <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center flex-shrink-0 overflow-hidden">
                             {comment.user?.avatar ? (
                               <img
-                                src={comment.user.avatar}
+                                src={avatarImageUrl(comment.user.avatar)}
                                 alt={comment.user?.username}
                                 className="w-full h-full object-contain"
                               />
