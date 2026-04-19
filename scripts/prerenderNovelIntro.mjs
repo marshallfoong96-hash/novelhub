@@ -1,10 +1,13 @@
 /**
- * Post-build: writes static HTML shells for selected novel intro routes
- * `dist/truyen/<id>/index.html` — same JS/CSS as SPA, with SEO meta + noscript body.
+ * Post-build: static HTML for SPA routes (same JS/CSS bundle):
+ * - `dist/truyen/<id>/index.html` — novel intro (/truyen/:id)
+ * - `dist/chapter/<id>/index.html` — chapter reader (/chapter/:id) when PRERENDER_CHAPTERS=1
  *
  * Configure (see .env.example):
  * - PRERENDER_NOVEL_IDS=12,34,56  (takes precedence)
  * - or PRERENDER_NOVEL_LIMIT=30   (top by view_count; needs Supabase env)
+ * - PRERENDER_CHAPTERS=1           (optional: also emit chapter pages for those novels)
+ * - PRERENDER_MAX_CHAPTER_FILES=25000  (safety cap)
  * - SITE_ORIGIN / VITE_SITE_URL — canonical & og:url (default https://mitruyen.me)
  *
  * Run automatically after `vite build` unless PRERENDER_SKIP=1.
@@ -13,6 +16,7 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { createClient } from "@supabase/supabase-js";
+import { fetchAllChaptersForNovel } from "../src/lib/fetchAllChapters.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(__dirname, "..");
@@ -83,6 +87,7 @@ function normalizeCdnBase(raw) {
 function isPassThroughCdn(trimmed) {
   try {
     const u = new URL(trimmed);
+    if (u.hostname.endsWith(".r2.dev")) return true;
     const hosts = String(process.env.VITE_CDN_COVER_HOSTS || process.env.CDN_COVER_HOSTS || "")
       .split(",")
       .map((s) => s.trim().toLowerCase())
@@ -206,6 +211,85 @@ function buildNoscript({ title, authorLabel, description }) {
 </noscript>`.trim();
 }
 
+function buildChapterHeadInjection({
+  title,
+  description,
+  canonical,
+  ogImage,
+  chapterId,
+  novelTitle,
+  novelCanonical,
+  chapterSchemaName,
+}) {
+  const desc = escapeHtmlAttr(description);
+  const ttl = escapeHtmlAttr(title);
+  const canon = escapeHtmlAttr(canonical);
+  const ogI = escapeHtmlAttr(ogImage);
+  const chName = chapterSchemaName || plainTextFromDescription(title, 160);
+  const jsonLd = JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "Chapter",
+    name: chName,
+    url: canonical,
+    isPartOf: {
+      "@type": "Book",
+      name: novelTitle,
+      url: novelCanonical,
+    },
+  });
+
+  return `
+    <meta name="description" content="${desc}" />
+    <link rel="canonical" href="${canon}" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="Mi Truyen" />
+    <meta property="og:title" content="${ttl}" />
+    <meta property="og:description" content="${desc}" />
+    <meta property="og:url" content="${canon}" />
+    <meta property="og:image" content="${ogI}" />
+    <meta property="og:image:secure_url" content="${ogI}" />
+    <meta property="og:locale" content="vi_VN" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="${ttl}" />
+    <meta name="twitter:description" content="${desc}" />
+    <meta name="twitter:image" content="${ogI}" />
+    <meta name="prerender-chapter-id" content="${String(chapterId)}" />
+    <script type="application/ld+json">${jsonLd.replace(/</g, "\\u003c")}</script>
+  `.trim();
+}
+
+function buildChapterNoscript({ novelTitle, novelPath, chapterNumber, chapterTitle, excerpt }) {
+  const ex = plainTextFromDescription(excerpt, 1200);
+  return `
+<noscript>
+  <div style="max-width:42rem;margin:1.5rem auto;padding:1rem;font-family:system-ui,sans-serif;line-height:1.5;color:#111">
+    <p style="font-size:0.875rem;margin-bottom:0.75rem"><a href="${escapeHtmlAttr(novelPath)}">${escapeHtmlAttr(novelTitle)}</a></p>
+    <h1 style="font-size:1.125rem;margin-bottom:0.75rem">Chương ${escapeHtmlAttr(String(chapterNumber))}: ${escapeHtmlAttr(chapterTitle)}</h1>
+    <p style="white-space:pre-wrap;font-size:0.9rem">${escapeHtmlAttr(ex)}</p>
+    <p style="margin-top:1rem;font-size:0.8rem;color:#888">Mi Truyện — cần bật JavaScript để xem đầy đủ.</p>
+  </div>
+</noscript>`.trim();
+}
+
+/** Inject title, head meta, noscript into Vite-built index shell. */
+function buildStaticHtml(template, pageTitle, headBlock, noscript) {
+  let html = template;
+  html = html.replace(/<title>[^<]*<\/title>/, `<title>${escapeHtmlAttr(pageTitle)}</title>`);
+  if (!html.includes("</head>")) return null;
+  html = html.replace("</head>", `${headBlock}\n</head>`);
+  if (html.includes('<div id="root"></div>')) {
+    html = html.replace('<div id="root"></div>', `<div id="root"></div>\n    ${noscript}\n`);
+  } else {
+    html = html.replace("</body>", `${noscript}\n</body>`);
+  }
+  return html;
+}
+
+function prerenderChaptersEnabled() {
+  const v = String(process.env.PRERENDER_CHAPTERS || "").trim().toLowerCase();
+  return v === "1" || v === "true" || v === "yes";
+}
+
 async function resolveNovelIds(supabase) {
   const rawIds = String(process.env.PRERENDER_NOVEL_IDS || "")
     .split(",")
@@ -287,18 +371,27 @@ async function main() {
   )
     .replace(/\/$/, "");
 
+  const { data: novelRows, error: novelFetchErr } = await supabase.from("novels").select("*").in("id", ids);
+  if (novelFetchErr) {
+    console.warn("[prerenderNovelIntro] batch fetch novels:", novelFetchErr.message);
+    return;
+  }
+  const novelById = new Map((novelRows || []).map((r) => [r.id, r]));
+
   let written = 0;
   for (const novelId of ids) {
-    const { data: novel, error } = await supabase.from("novels").select("*").eq("id", novelId).maybeSingle();
-    if (error || !novel) {
-      console.warn(`[prerenderNovelIntro] skip id=${novelId}:`, error?.message || "not found");
+    const novel = novelById.get(novelId);
+    if (!novel) {
+      console.warn(`[prerenderNovelIntro] skip id=${novelId}: not found`);
       continue;
     }
 
     const titleBase = novel.title ? String(novel.title).trim() : `Truyện #${novelId}`;
     const pageTitle = `${titleBase} | Mi Truyen`;
     const authorLabel = normalizeAuthorLabel(novel.author);
-    const descPlain = plainTextFromDescription(novel.description, 220) || `${titleBase} — ${authorLabel}. Đọc online tại Mi Truyện.`;
+    const descPlain =
+      plainTextFromDescription(novel.description, 220) ||
+      `${titleBase} — ${authorLabel}. Đọc online tại Mi Truyện.`;
     const canonical = `${origin}/truyen/${novelId}`;
     const ogImage = detailCoverAbsolute(novel.cover_url, origin);
 
@@ -316,18 +409,10 @@ async function main() {
       description: novel.description || descPlain,
     });
 
-    let html = template;
-    html = html.replace(/<title>[^<]*<\/title>/, `<title>${escapeHtmlAttr(pageTitle)}</title>`);
-    if (!html.includes("</head>")) {
+    const html = buildStaticHtml(template, pageTitle, headBlock, noscript);
+    if (!html) {
       console.warn("[prerenderNovelIntro] malformed index.html (no </head>)");
       continue;
-    }
-    html = html.replace("</head>", `${headBlock}\n</head>`);
-    if (html.includes('<div id="root"></div>')) {
-      html = html.replace('<div id="root"></div>', `<div id="root"></div>\n    ${noscript}\n`);
-    } else {
-      html = html.replace("<body", `<body`);
-      html = html.replace("</body>", `${noscript}\n</body>`);
     }
 
     const dir = path.join(ROOT, "dist", "truyen", String(novelId));
@@ -337,7 +422,84 @@ async function main() {
     console.log("[prerenderNovelIntro] wrote", `/truyen/${novelId}/index.html`);
   }
 
-  console.log(`[prerenderNovelIntro] done — ${written}/${ids.length} file(s).`);
+  let chaptersWritten = 0;
+  const doChapters = prerenderChaptersEnabled();
+  const maxChapterFiles = Math.min(
+    100000,
+    Math.max(0, parseInt(process.env.PRERENDER_MAX_CHAPTER_FILES || "25000", 10) || 25000)
+  );
+
+  if (doChapters && maxChapterFiles > 0) {
+    for (const novelId of ids) {
+      if (chaptersWritten >= maxChapterFiles) break;
+      const novel = novelById.get(novelId);
+      if (!novel) continue;
+
+      const titleBase = novel.title ? String(novel.title).trim() : `Truyện #${novelId}`;
+      const novelCanonical = `${origin}/truyen/${novelId}`;
+      const ogImage = detailCoverAbsolute(novel.cover_url, origin);
+
+      let chapters;
+      try {
+        chapters = await fetchAllChaptersForNovel(
+          supabase,
+          novelId,
+          "id, novel_id, chapter_number, title, content"
+        );
+      } catch (e) {
+        console.warn(`[prerenderNovelIntro] chapters novel ${novelId}:`, e?.message || e);
+        continue;
+      }
+
+      for (const ch of chapters || []) {
+        if (chaptersWritten >= maxChapterFiles) break;
+        const cid = ch.id;
+        if (cid == null) continue;
+
+        const chNum = ch.chapter_number != null ? String(ch.chapter_number) : "?";
+        const chTitle = ch.title ? String(ch.title).trim() : `Chương ${chNum}`;
+        const headline = `Chương ${chNum}: ${chTitle}`;
+        const pageTitleCh = `${headline} — ${titleBase} | Mi Truyen`;
+        const excerptSource = ch.content != null ? String(ch.content) : novel.description || "";
+        const descPlain = plainTextFromDescription(excerptSource, 240) || `${headline} — ${titleBase}.`;
+        const canonicalCh = `${origin}/chapter/${cid}`;
+
+        const headBlockCh = buildChapterHeadInjection({
+          title: pageTitleCh,
+          description: descPlain,
+          canonical: canonicalCh,
+          ogImage,
+          chapterId: cid,
+          novelTitle: titleBase,
+          novelCanonical,
+          chapterSchemaName: headline,
+        });
+
+        const noscriptCh = buildChapterNoscript({
+          novelTitle: titleBase,
+          novelPath: novelCanonical,
+          chapterNumber: chNum,
+          chapterTitle: chTitle,
+          excerpt: excerptSource || descPlain,
+        });
+
+        const htmlCh = buildStaticHtml(template, pageTitleCh, headBlockCh, noscriptCh);
+        if (!htmlCh) continue;
+
+        const chDir = path.join(ROOT, "dist", "chapter", String(cid));
+        fs.mkdirSync(chDir, { recursive: true });
+        fs.writeFileSync(path.join(chDir, "index.html"), htmlCh, "utf8");
+        chaptersWritten += 1;
+        console.log("[prerenderNovelIntro] wrote", `/chapter/${cid}/index.html`);
+      }
+    }
+  } else if (doChapters) {
+    console.log("[prerenderNovelIntro] PRERENDER_CHAPTERS set but PRERENDER_MAX_CHAPTER_FILES=0 — skip chapters.");
+  }
+
+  console.log(
+    `[prerenderNovelIntro] done — intro ${written}/${ids.length}, chapter ${chaptersWritten}${doChapters ? "" : " (set PRERENDER_CHAPTERS=1 to enable)"}.`
+  );
 }
 
 main().catch((e) => {

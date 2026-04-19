@@ -8,9 +8,10 @@ import { fetchChapterTocForNovel } from "../lib/fetchAllChapters";
 import {
   Home, BookOpen, Settings, MessageSquare,
   Minus, Plus, ChevronLeft, ChevronRight,
-  List, Send, ArrowRight, User, X, Check
+  List, Send, ArrowRight, User, X
 } from "lucide-react";
 import AdSlot from "../components/AdSlot";
+import LastReadChapterBadge from "../components/LastReadChapterBadge";
 import ShopeeChapterGateModal from "../components/ShopeeChapterGateModal";
 import {
   lastChapterStorageKey,
@@ -833,7 +834,12 @@ export default function ChapterRead() {
           </div>
         </div>
 
-        <AdSlot placement="chapterTop" className="mb-4" minHeightClass="min-h-[90px] sm:min-h-[100px]" />
+        <AdSlot
+          placement="chapterTop"
+          compact
+          className="mb-4"
+          minHeightClass="min-h-[64px] sm:min-h-[72px]"
+        />
 
         {/* Chapter Content — chặn copy/paste trên nội dung (không chặn toàn site; không phải DRM tuyệt đối). */}
         <div className="relative">
@@ -1058,13 +1064,7 @@ export default function ChapterRead() {
                           }`}
                         >
                           <span className="flex items-start gap-2 min-w-0">
-                            {isLastRead ? (
-                              <Check
-                                className="w-4 h-4 shrink-0 mt-0.5 text-red-600"
-                                strokeWidth={2.5}
-                                aria-hidden
-                              />
-                            ) : null}
+                            {isLastRead ? <LastReadChapterBadge /> : null}
                             <span className="line-clamp-2 min-w-0 flex-1">
                               Chương {ch.chapter_number}
                               {ch.title ? `: ${ch.title}` : ""}

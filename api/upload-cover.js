@@ -6,7 +6,7 @@
  *
  * Env: R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET_NAME,
  * PUBLIC_ASSETS_BASE (or R2_PUBLIC_BASE / VITE_PUBLIC_ASSETS_BASE),
- * SUPABASE_URL, SUPABASE_ANON_KEY
+ * SUPABASE_URL + SUPABASE_ANON_KEY (or VITE_SUPABASE_URL + VITE_SUPABASE_ANON_KEY)
  */
 
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
@@ -38,8 +38,12 @@ async function validateSupabaseUser(req) {
   if (!auth || !auth.startsWith("Bearer ")) {
     return { ok: false, status: 401, error: "Missing session" };
   }
-  const url = String(process.env.SUPABASE_URL || "").replace(/\/$/, "");
-  const anon = String(process.env.SUPABASE_ANON_KEY || "").trim();
+  const url = String(
+    process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || ""
+  ).replace(/\/$/, "");
+  const anon = String(
+    process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || ""
+  ).trim();
   if (!url || !anon) {
     return { ok: false, status: 500, error: "Server missing Supabase config" };
   }

@@ -9,7 +9,6 @@ import {
   CheckCircle,
   Send,
   ChevronRight,
-  Check,
   Heart,
   Bookmark,
   Tag,
@@ -36,6 +35,7 @@ import DonateModal from '../components/DonateModal';
 import { fetchChapterTocForNovel } from '../lib/fetchAllChapters';
 import { enrichNovelsWithLatestChapter } from '../lib/enrichNovelsLatestChapter';
 import { readLastReadChapterIdForNovel } from '../lib/memberStorage';
+import LastReadChapterBadge from '../components/LastReadChapterBadge';
 
 function genreBrowsePath(g) {
   if (g.slug != null && String(g.slug).trim() !== '') {
@@ -749,13 +749,7 @@ function NovelDetail() {
                         className="group flex items-center justify-between p-3 hover:bg-secondary/50 rounded-lg border border-border hover:border-accent/30 transition-all"
                       >
                         <div className="flex-1 min-w-0 flex items-start gap-2">
-                          {isLastRead ? (
-                            <Check
-                              className="w-4 h-4 shrink-0 mt-0.5 text-red-600"
-                              strokeWidth={2.5}
-                              aria-hidden
-                            />
-                          ) : null}
+                          {isLastRead ? <LastReadChapterBadge /> : null}
                           <span className="text-sm font-medium text-foreground group-hover:text-accent transition-colors line-clamp-1 min-w-0 flex-1">
                             Chương {chapter.chapter_number}: {chapter.title}
                           </span>

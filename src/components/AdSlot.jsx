@@ -4,12 +4,14 @@ import { ADSENSE_CLIENT, isAdsConfigured, resolveAdSlot } from "../lib/adsConfig
 /**
  * Responsive display unit; lazy-loads when near viewport. Fixed min-height reduces CLS.
  * @param {'home'|'detail'|'chapterTop'|'chapterBottom'} placement
+ * @param {boolean} [compact] — narrower max width + shorter slot (e.g. chapter top)
  */
 export default function AdSlot({
   placement = "home",
   className = "",
   minHeightClass = "min-h-[100px]",
-  label = "Quảng cáo"
+  label = "Quảng cáo",
+  compact = false,
 }) {
   const containerRef = useRef(null);
   const insRef = useRef(null);
@@ -71,10 +73,13 @@ export default function AdSlot({
     };
   }, [inView, active]);
 
+  const maxW = compact ? "max-w-md" : "max-w-4xl";
+  const insMinH = compact ? "60px" : "90px";
+
   return (
     <aside
       ref={containerRef}
-      className={`ad-slot w-full max-w-4xl mx-auto ${className}`}
+      className={`ad-slot w-full ${maxW} mx-auto ${className}`}
       aria-label={label}
     >
       <p className="text-center text-[10px] text-muted-foreground uppercase tracking-widest mb-1.5">
@@ -87,7 +92,7 @@ export default function AdSlot({
           <ins
             ref={insRef}
             className="adsbygoogle w-full max-w-full"
-            style={{ display: "block", width: "100%", minHeight: "90px" }}
+            style={{ display: "block", width: "100%", minHeight: insMinH }}
             data-ad-client={ADSENSE_CLIENT}
             data-ad-slot={slotId}
             data-ad-format="auto"

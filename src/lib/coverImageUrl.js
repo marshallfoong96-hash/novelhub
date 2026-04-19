@@ -29,6 +29,8 @@ function isPassThroughCdnUrl(trimmed) {
   try {
     const u = new URL(trimmed);
     if (u.protocol !== "http:" && u.protocol !== "https:") return false;
+    // Cloudflare R2 default public hostname — always use direct URL (weserv often breaks these if VITE_* missing at build)
+    if (u.hostname.endsWith(".r2.dev")) return true;
     const hosts = String(import.meta.env.VITE_CDN_COVER_HOSTS || "")
       .split(",")
       .map((s) => s.trim().toLowerCase())

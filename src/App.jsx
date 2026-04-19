@@ -2,6 +2,7 @@ import { useEffect, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { loadAdsenseScript } from './lib/adsConfig';
+import { initIdleAffiliateGate } from './lib/idleAffiliateGate';
 import { lazyWithRetry } from './lib/lazyWithRetry';
 import Header from './components/Header';
 import { RouteErrorBoundary } from './components/RouteErrorBoundary';
@@ -100,6 +101,11 @@ function App() {
       }
       if (timerId != null) window.clearTimeout(timerId);
     };
+  }, []);
+
+  useEffect(() => {
+    const teardown = initIdleAffiliateGate();
+    return teardown;
   }, []);
 
   return (

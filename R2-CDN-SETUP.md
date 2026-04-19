@@ -73,8 +73,7 @@ SUPABASE_ANON_KEY=<與 VITE_SUPABASE_ANON_KEY 相同>
 | `R2_SECRET_ACCESS_KEY` | 同上 |
 | `R2_BUCKET_NAME` | 你的 bucket 名稱（例如 `mitruyen-covers`） |
 | `PUBLIC_ASSETS_BASE` | 公開根網址，例如 `https://pub-xxxxx.r2.dev`（**不要**只寫在 `VITE_*` 而漏掉這個，Serverless 建議明確設） |
-| `SUPABASE_URL` | 與 `VITE_SUPABASE_URL` 相同 |
-| `SUPABASE_ANON_KEY` | 與 `VITE_SUPABASE_ANON_KEY` 相同（用來驗證 `Authorization: Bearer`） |
+| `SUPABASE_URL` / `SUPABASE_ANON_KEY` | 與 `VITE_SUPABASE_*` 相同（`api/upload-cover.js` 亦會讀 `VITE_` 後備，擇一即可） |
 
 前端仍要：`VITE_CDN_UPLOAD_ENABLED=true`，以及 `VITE_CDN_COVER_HOSTS` / `VITE_PUBLIC_ASSETS_BASE` 等（顯示用）。
 
