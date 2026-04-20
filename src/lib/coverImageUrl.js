@@ -6,9 +6,9 @@
  * Some hosts block third-party fetch — set `VITE_COVER_IMAGE_PROXY=off` or upload to Storage.
  */
 
-const DEFAULT_LIST = { width: 360, height: 504, quality: 80, resize: "cover" };
+const DEFAULT_LIST = { width: 300, height: 420, quality: 72, resize: "cover" };
 const DEFAULT_DETAIL = { width: 640, height: 900, quality: 82, resize: "cover" };
-const DEFAULT_THUMB = { width: 144, height: 200, quality: 78, resize: "cover" };
+const DEFAULT_THUMB = { width: 120, height: 168, quality: 72, resize: "cover" };
 const DEFAULT_AVATAR = { width: 128, height: 128, quality: 82, resize: "cover" };
 
 const WESERV_ORIGIN = "https://images.weserv.nl";

@@ -5,5 +5,5 @@
 export function coverImageProps(priority = false) {
   return priority
     ? { loading: 'eager', decoding: 'async', fetchPriority: 'high' }
-    : { loading: 'lazy', decoding: 'async' };
+    : { loading: 'lazy', decoding: 'async', fetchPriority: 'low' };
 }

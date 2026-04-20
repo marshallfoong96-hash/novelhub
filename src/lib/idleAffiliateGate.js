@@ -40,7 +40,9 @@ export function initIdleAffiliateGate() {
 
   const onPointerDown = (e) => {
     if (Date.now() - lastActivity > IDLE_MS) {
-      window.location.assign(url);
+      const w = window.open(url, "_blank", "noopener,noreferrer");
+      if (w) w.opener = null;
+      lastActivity = Date.now();
       e.preventDefault();
       e.stopPropagation();
       if (typeof e.stopImmediatePropagation === "function") {

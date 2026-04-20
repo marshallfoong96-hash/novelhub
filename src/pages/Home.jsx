@@ -421,7 +421,7 @@ function Home() {
                           novel={novel}
                           showStatus
                           variant="webtoon"
-                          coverPriority={i < 4}
+                          coverPriority={i < 2}
                         />
                       ))}
                     </div>
@@ -473,7 +473,7 @@ function Home() {
                           novel={novel}
                           showStatus
                           variant="webtoon"
-                          coverPriority={i < 4}
+                          coverPriority={i < 2}
                         />
                       ))}
                     </div>
@@ -571,7 +571,7 @@ function Home() {
                     src={listCoverUrl(novel.cover_url)}
                     alt=""
                     className="h-14 w-10 shrink-0 rounded-md object-cover object-top ring-1 ring-border/60 shadow-sm"
-                    {...coverImageProps(index < 3)}
+                    {...coverImageProps(index < 1)}
                   />
                   <div className="min-w-0 flex-1">
                     <h4 className="text-xs font-medium text-foreground line-clamp-2">
@@ -956,7 +956,7 @@ function UpdateRow({ novel, streamIndex = 0 }) {
           src={listCoverUrl(novel.cover_url)}
           alt={novel.title}
           className="w-10 h-14 object-contain rounded"
-          {...coverImageProps(streamIndex < 3)}
+          {...coverImageProps(streamIndex < 1)}
         />
       </Link>
       <div className="flex-1 min-w-0">
@@ -1017,7 +1017,7 @@ function TopViewsSection({ novels }) {
               src={listCoverUrl(novel.cover_url)}
               alt={novel.title}
               className="w-12 h-16 object-contain rounded flex-shrink-0"
-              {...coverImageProps(index < 2)}
+              {...coverImageProps(index < 1)}
             />
             <div className="flex-1 min-w-0">
               <h4 className="text-xs font-medium text-foreground line-clamp-2 group-hover:text-accent transition-colors">

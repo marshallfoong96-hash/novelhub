@@ -32,6 +32,31 @@ import { isChunkOrModuleLoadError, tryHardReloadOnceForStaleChunks } from './lib
   document.head.appendChild(link);
 })();
 
+/** Warm cover CDN/R2 origin so first visible covers appear sooner on cold start. */
+(function preconnectCoverCdn() {
+  if (typeof document === "undefined") return;
+  const raw =
+    import.meta.env.VITE_PUBLIC_ASSETS_BASE ||
+    import.meta.env.VITE_CDN_COVER_BASE ||
+    "";
+  if (!raw) return;
+  try {
+    const origin = new URL(raw).origin;
+    const preconnect = document.createElement("link");
+    preconnect.rel = "preconnect";
+    preconnect.href = origin;
+    preconnect.crossOrigin = "anonymous";
+    document.head.appendChild(preconnect);
+
+    const dnsPrefetch = document.createElement("link");
+    dnsPrefetch.rel = "dns-prefetch";
+    dnsPrefetch.href = origin;
+    document.head.appendChild(dnsPrefetch);
+  } catch {
+    /* ignore invalid env */
+  }
+})();
+
 /** Vite: prefetch / dynamic import can fail with stale chunk after deploy (same as lazyWithRetry). */
 window.addEventListener('vite:preloadError', (event) => {
   const err = event?.payload;

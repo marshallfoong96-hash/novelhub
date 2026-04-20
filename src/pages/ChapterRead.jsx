@@ -838,7 +838,7 @@ export default function ChapterRead() {
           placement="chapterTop"
           compact
           className="mb-4"
-          minHeightClass="min-h-[64px] sm:min-h-[72px]"
+          minHeightClass="min-h-[52px] sm:min-h-[60px]"
         />
 
         {/* Chapter Content — chặn copy/paste trên nội dung (không chặn toàn site; không phải DRM tuyệt đối). */}
@@ -894,7 +894,7 @@ export default function ChapterRead() {
         </div>
         </div>
 
-        <AdSlot placement="chapterBottom" className="mb-4" minHeightClass="min-h-[90px] sm:min-h-[100px]" />
+        <AdSlot placement="chapterBottom" className="mb-4" minHeightClass="min-h-[52px] sm:min-h-[60px]" />
 
         {/* Navigation Bottom */}
         <div className="flex items-center justify-between gap-3 mb-4">

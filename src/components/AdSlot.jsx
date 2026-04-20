@@ -20,6 +20,7 @@ export default function AdSlot({
 
   const slotId = resolveAdSlot(placement);
   const active = isAdsConfigured(placement);
+  const isChapterPlacement = placement === "chapterTop" || placement === "chapterBottom";
 
   useEffect(() => {
     const root = containerRef.current;
@@ -73,8 +74,13 @@ export default function AdSlot({
     };
   }, [inView, active]);
 
-  const maxW = compact ? "max-w-md" : "max-w-4xl";
-  const insMinH = compact ? "60px" : "90px";
+  const maxW = compact ? "max-w-md" : isChapterPlacement ? "max-w-md" : "max-w-4xl";
+  const insMinH = compact ? "50px" : isChapterPlacement ? "54px" : "90px";
+  const adFormat = isChapterPlacement ? "horizontal" : "auto";
+  const fullWidthResponsive = isChapterPlacement ? "false" : "true";
+  const shellClass = isChapterPlacement
+    ? `${minHeightClass} max-h-[92px] sm:max-h-[104px]`
+    : minHeightClass;
 
   return (
     <aside
@@ -86,7 +92,7 @@ export default function AdSlot({
         {label}
       </p>
       <div
-        className={`${minHeightClass} flex flex-col items-center justify-center rounded-xl border border-dashed border-border/80 bg-muted/20 overflow-hidden`}
+        className={`${shellClass} flex flex-col items-center justify-center rounded-xl border border-dashed border-border/80 bg-muted/20 overflow-hidden`}
       >
         {active ? (
           <ins
@@ -95,8 +101,8 @@ export default function AdSlot({
             style={{ display: "block", width: "100%", minHeight: insMinH }}
             data-ad-client={ADSENSE_CLIENT}
             data-ad-slot={slotId}
-            data-ad-format="auto"
-            data-full-width-responsive="true"
+            data-ad-format={adFormat}
+            data-full-width-responsive={fullWidthResponsive}
           />
         ) : (
           <span className="text-xs text-muted-foreground/80 px-4 text-center">
