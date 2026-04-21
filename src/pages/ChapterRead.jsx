@@ -613,7 +613,7 @@ export default function ChapterRead() {
         aria-hidden
       />
 
-      <div className="max-w-4xl mx-auto pb-24">
+      <div className="max-w-4xl mx-auto min-w-0 w-full pb-24">
         {/* Chapter Header */}
         <div className="bg-card border border-border rounded-lg p-3 mb-4">
           <div className="flex items-center justify-between gap-3">
@@ -856,15 +856,20 @@ export default function ChapterRead() {
             </div>
           )}
         <div
-          className={`border rounded-lg p-5 sm:p-6 md:p-8 transition-colors select-none [-webkit-touch-callout:none] ${themeClasses[readingTheme] || themeClasses.light}`}
+          className={`min-w-0 overflow-x-hidden border rounded-lg p-5 sm:p-6 md:p-8 transition-colors select-none [-webkit-touch-callout:none] ${themeClasses[readingTheme] || themeClasses.light}`}
           onCopy={(e) => e.preventDefault()}
           onCut={(e) => e.preventDefault()}
           onContextMenu={(e) => e.preventDefault()}
           onDragStart={(e) => e.preventDefault()}
         >
           <article
-            className="max-w-none select-none"
-            style={{ fontSize: `${fontSize}px`, lineHeight: lineHeight, maxWidth: `${contentWidth}px`, margin: "0 auto" }}
+            className="w-full max-w-full select-none break-words [overflow-wrap:anywhere] [word-break:break-word]"
+            style={{
+              fontSize: `${fontSize}px`,
+              lineHeight,
+              maxWidth: `min(${contentWidth}px, 100%)`,
+              margin: "0 auto",
+            }}
           >
             {(() => {
               const { paragraphs, insertAfter } = splitChapterParagraphs(chapter.content);
@@ -872,9 +877,9 @@ export default function ChapterRead() {
               const siteUrl = `https://${branding.domain}`;
               return paragraphs.map((paragraph, index) => (
                 <Fragment key={index}>
-                  <p className="mb-5 text-justify">{paragraph}</p>
+                  <p className="mb-5 text-justify hyphens-auto">{paragraph}</p>
                   {index === insertAfter && (
-                    <p className="mb-5 border-y border-border/70 py-3 text-center text-[0.85em] leading-relaxed text-muted-foreground">
+                    <p className="mb-5 break-words border-y border-border/70 py-3 text-center text-[0.85em] leading-relaxed text-muted-foreground [overflow-wrap:anywhere]">
                       —— Nguồn: 《{bookTitle}》 tại{" "}
                       <a
                         href={siteUrl}

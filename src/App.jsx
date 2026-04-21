@@ -113,7 +113,7 @@ function App() {
       <Router>
         <div className="min-h-screen bg-background flex flex-col">
           <Header />
-          <main className="flex-1 w-full max-w-7xl mx-auto px-4 py-6">
+          <main className="flex-1 min-w-0 w-full max-w-7xl mx-auto px-4 py-6">
             <RoutedMain />
           </main>
           <Footer />
