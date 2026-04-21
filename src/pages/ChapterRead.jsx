@@ -863,7 +863,7 @@ export default function ChapterRead() {
           onDragStart={(e) => e.preventDefault()}
         >
           <article
-            className="w-full max-w-full select-none break-words [overflow-wrap:anywhere] [word-break:break-word]"
+            className="w-full max-w-full select-none break-words [word-break:normal]"
             style={{
               fontSize: `${fontSize}px`,
               lineHeight,
@@ -877,9 +877,9 @@ export default function ChapterRead() {
               const siteUrl = `https://${branding.domain}`;
               return paragraphs.map((paragraph, index) => (
                 <Fragment key={index}>
-                  <p className="mb-5 text-justify hyphens-auto">{paragraph}</p>
+                  <p className="mb-5 text-justify [hyphens:none]">{paragraph}</p>
                   {index === insertAfter && (
-                    <p className="mb-5 break-words border-y border-border/70 py-3 text-center text-[0.85em] leading-relaxed text-muted-foreground [overflow-wrap:anywhere]">
+                    <p className="mb-5 break-words border-y border-border/70 py-3 text-center text-[0.85em] leading-relaxed text-muted-foreground [word-break:normal]">
                       —— Nguồn: 《{bookTitle}》 tại{" "}
                       <a
                         href={siteUrl}
