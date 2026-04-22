@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useLayoutEffect } from 'react';
+import { useState, useEffect, useRef, useLayoutEffect, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import {
   Eye,
@@ -16,6 +16,7 @@ import {
   Sparkles,
   AlertCircle,
   Bell,
+  ArrowUpDown,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
@@ -53,6 +54,7 @@ function NovelDetail() {
   const [newComment, setNewComment] = useState('');
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('chapters');
+  const [chapterOrder, setChapterOrder] = useState('asc');
   const [continueChapterId, setContinueChapterId] = useState(null);
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [isFavorited, setIsFavorited] = useState(false);
@@ -151,6 +153,12 @@ function NovelDetail() {
   const showDescToggle =
     !!descriptionText &&
     (showDescExpanded || descNeedsToggle || descriptionText.length > 120);
+
+  const displayedChapters = useMemo(() => {
+    const list = Array.isArray(chapters) ? [...chapters] : [];
+    if (chapterOrder === 'desc') list.reverse();
+    return list;
+  }, [chapters, chapterOrder]);
 
   const showNotice = (text) => {
     setActionNotice(text);
@@ -736,8 +744,22 @@ function NovelDetail() {
             <div className="p-4">
               {activeTab === 'chapters' ? (
                 chapters.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                    {chapters.map((chapter) => {
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-end">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setChapterOrder((prev) => (prev === 'asc' ? 'desc' : 'asc'))
+                        }
+                        className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-foreground hover:bg-secondary transition-colors"
+                        title={chapterOrder === 'asc' ? '切換為逆序' : '切換為順序'}
+                      >
+                        <ArrowUpDown className="w-3.5 h-3.5" />
+                        {chapterOrder === 'asc' ? '順序' : '逆序'}
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    {displayedChapters.map((chapter) => {
                       const isLastRead =
                         continueChapterId != null &&
                         String(chapter.id) === String(continueChapterId);
@@ -761,6 +783,7 @@ function NovelDetail() {
                       </Link>
                     );
                     })}
+                    </div>
                   </div>
                 ) : (
                   <div className="text-center py-8">
