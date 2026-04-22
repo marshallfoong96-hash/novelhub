@@ -193,15 +193,15 @@ export const AuthProvider = ({ children }) => {
     }
 
     /**
-     * signUp thành công nhưng không có session + đăng nhập ngay không được
-     * → thường là Supabase bật “Confirm email”: user phải bấm link trong mail trước.
+     * Yêu cầu hệ thống: đăng ký xong phải dùng ngay, không qua email verification.
+     * Nếu tới đây nghĩa là project đang bật "Confirm email" ở Supabase.
      */
     if (data.user) {
       return {
-        success: true,
-        needsEmailConfirmation: true,
+        success: false,
+        requiresEmailConfirmation: true,
         message:
-          'Đã tạo tài khoản. Vui lòng kiểm tra email và bấm link xác nhận, sau đó đăng nhập tại đây.',
+          'Hệ thống đang bật xác nhận email. Để đăng ký dùng ngay, hãy tắt "Confirm email" trong Supabase Auth settings.',
       };
     }
 

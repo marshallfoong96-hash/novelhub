@@ -36,14 +36,7 @@ function Register() {
       const result = await register(username, email, password);
 
       if (result.success) {
-        if (result.needsEmailConfirmation) {
-          navigate('/register/success', {
-            replace: true,
-            state: { email: email.trim() },
-          });
-        } else {
-          navigate('/');
-        }
+        navigate('/');
       } else {
         setError(result.message);
       }
