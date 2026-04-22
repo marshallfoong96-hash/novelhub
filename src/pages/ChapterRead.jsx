@@ -8,7 +8,7 @@ import { fetchChapterTocForNovel } from "../lib/fetchAllChapters";
 import {
   Home, BookOpen, Settings, MessageSquare,
   Minus, Plus, ChevronLeft, ChevronRight,
-  List, Send, ArrowRight, User, X
+  List, Send, ArrowRight, User, X, ArrowUpDown
 } from "lucide-react";
 import AdSlot from "../components/AdSlot";
 import LastReadChapterBadge from "../components/LastReadChapterBadge";
@@ -72,6 +72,7 @@ export default function ChapterRead() {
   /** DOM-only progress bar — avoids setState on every scroll (major battery saver on mobile). */
   const readingProgressBarRef = useRef(null);
   const [showTocDrawer, setShowTocDrawer] = useState(false);
+  const [tocOrder, setTocOrder] = useState('asc');
   /** Mục lục: chương đọc gần nhất (theo `mi_reading_history`). */
   const [lastReadChapterIdForNovel, setLastReadChapterIdForNovel] = useState(null);
   const [showShopeeGate, setShowShopeeGate] = useState(false);
@@ -106,6 +107,12 @@ export default function ChapterRead() {
     const n = parseInt(id, 10);
     return Number.isNaN(n) ? null : n;
   }, [id]);
+
+  const displayedTocChapters = useMemo(() => {
+    const list = Array.isArray(allChapters) ? [...allChapters] : [];
+    if (tocOrder === 'desc') list.reverse();
+    return list;
+  }, [allChapters, tocOrder]);
 
   useEffect(() => {
     fetchChapter();
@@ -1050,8 +1057,24 @@ export default function ChapterRead() {
               {allChapters.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-6">Chưa có danh sách chương.</p>
               ) : (
+                <>
+                <div className="mb-2 px-2 flex items-center justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setTocOrder((prev) => (prev === 'asc' ? 'desc' : 'asc'))}
+                    className="inline-flex items-center gap-2 rounded-lg border border-border px-2.5 py-1.5 text-xs font-medium text-foreground hover:bg-secondary transition-colors"
+                    title={
+                      tocOrder === 'asc'
+                        ? 'Chuyển sang thứ tự mới nhất trước'
+                        : 'Chuyển sang thứ tự cũ nhất trước'
+                    }
+                  >
+                    <ArrowUpDown className="w-3.5 h-3.5" />
+                    {tocOrder === 'asc' ? 'Cũ nhất trước' : 'Mới nhất trước'}
+                  </button>
+                </div>
                 <ul className="space-y-0.5">
-                  {allChapters.map((ch) => {
+                  {displayedTocChapters.map((ch) => {
                     const isCurrent = chapter && ch.id === chapter.id;
                     const isLastRead =
                       lastReadChapterIdForNovel != null &&
@@ -1080,6 +1103,7 @@ export default function ChapterRead() {
                     );
                   })}
                 </ul>
+                </>
               )}
             </div>
           </div>

@@ -752,10 +752,14 @@ function NovelDetail() {
                           setChapterOrder((prev) => (prev === 'asc' ? 'desc' : 'asc'))
                         }
                         className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-foreground hover:bg-secondary transition-colors"
-                        title={chapterOrder === 'asc' ? '切換為逆序' : '切換為順序'}
+                        title={
+                          chapterOrder === 'asc'
+                            ? 'Chuyển sang thứ tự mới nhất trước'
+                            : 'Chuyển sang thứ tự cũ nhất trước'
+                        }
                       >
                         <ArrowUpDown className="w-3.5 h-3.5" />
-                        {chapterOrder === 'asc' ? '順序' : '逆序'}
+                        {chapterOrder === 'asc' ? 'Cũ nhất trước' : 'Mới nhất trước'}
                       </button>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
