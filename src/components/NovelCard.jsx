@@ -3,9 +3,22 @@ import { Eye, CheckCircle } from 'lucide-react';
 import { coverImageProps } from '../lib/coverImageProps';
 import { listCoverUrl } from '../lib/coverImageUrl';
 import { formatNumber, novelChapterSubtitle } from '../utils/helpers';
+import BrandLogo from './BrandLogo';
 
 function NovelCard({ novel, showStatus = false, variant = 'default', coverPriority = false }) {
   const imgExtra = coverImageProps(coverPriority);
+  const coverWatermark = (
+    <div className="pointer-events-none absolute right-1.5 top-1.5 z-[1] overflow-hidden rounded-md bg-background/55 p-0.5 backdrop-blur-[1px] ring-1 ring-border/60">
+      <BrandLogo
+        variant="mark"
+        alt=""
+        className="h-4 w-4 rounded-sm bg-transparent sm:h-5 sm:w-5"
+        imgClassName="object-cover opacity-80"
+        loading="lazy"
+      />
+    </div>
+  );
+
   /** Lưới 3 cột mobile — bìa đầy ô, chữ nhỏ (tham chiếu LINE Webtoon). */
   if (variant === 'webtoon') {
     return (
@@ -17,6 +30,7 @@ function NovelCard({ novel, showStatus = false, variant = 'default', coverPriori
             className="h-full w-full object-cover object-top transition-transform duration-300 group-hover:scale-[1.03]"
             {...imgExtra}
           />
+          {coverWatermark}
           {showStatus && (
             <div className="absolute left-1 top-1 flex flex-col gap-0.5">
               {novel.status === 'completed' && (
@@ -61,6 +75,7 @@ function NovelCard({ novel, showStatus = false, variant = 'default', coverPriori
             className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
             {...imgExtra}
           />
+          {coverWatermark}
           <div className="absolute inset-0 bg-gradient-to-t from-foreground/80 via-foreground/20 to-transparent" />
           
           {/* Status Badge */}
@@ -109,6 +124,7 @@ function NovelCard({ novel, showStatus = false, variant = 'default', coverPriori
             className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
             {...imgExtra}
           />
+          {coverWatermark}
           
           {/* Overlay */}
           <div className="absolute inset-0 bg-gradient-to-t from-foreground/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
@@ -160,6 +176,7 @@ function NovelCard({ novel, showStatus = false, variant = 'default', coverPriori
           className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
           {...imgExtra}
         />
+        {coverWatermark}
         
         {/* Overlay with stats */}
         <div className="absolute inset-0 bg-gradient-to-t from-foreground/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
