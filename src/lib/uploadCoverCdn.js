@@ -31,7 +31,11 @@ export async function uploadCoverToR2Cdn(file, objectKey) {
     throw new Error("Invalid upload path (use covers/.../name.webp)");
   }
 
-  const blob = await imageFileToWebpBlob(file, { quality: 0.88, maxEdge: 2048 });
+  const blob = await imageFileToWebpBlob(file, {
+    quality: 0.88,
+    maxEdge: 2048,
+    applyWatermark: true,
+  });
   const { data: sessionData } = await supabase.auth.getSession();
   const token = sessionData?.session?.access_token;
   if (!token) {
