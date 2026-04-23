@@ -1,6 +1,7 @@
 import { useEffect, Suspense } from 'react';
-import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Link, useLocation, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
+import { useAuth } from './contexts/AuthContext';
 import { loadAdsenseScript } from './lib/adsConfig';
 import { initIdleAffiliateGate } from './lib/idleAffiliateGate';
 import { lazyWithRetry } from './lib/lazyWithRetry';
@@ -41,6 +42,17 @@ function RoutePageFallback() {
   );
 }
 
+function RequireAuth({ children }) {
+  const { isAuthenticated, loading } = useAuth();
+  const location = useLocation();
+
+  if (loading) return <RoutePageFallback />;
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace state={{ from: location }} />;
+  }
+  return children;
+}
+
 function RoutedMain() {
   const location = useLocation();
   return (
@@ -60,8 +72,22 @@ function RoutedMain() {
           <Route path="/so-chuong/:range" element={<BrowseNovels mode="chapterRange" />} />
           <Route path="/lich-su" element={<ReadingHistory />} />
           <Route path="/danh-dau" element={<BookmarkedNovels />} />
-          <Route path="/profile" element={<Membership />} />
-          <Route path="/thanh-vien" element={<Membership />} />
+          <Route
+            path="/profile"
+            element={
+              <RequireAuth>
+                <Membership />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/thanh-vien"
+            element={
+              <RequireAuth>
+                <Membership />
+              </RequireAuth>
+            }
+          />
           <Route path="/quan-ly-the-loai" element={<GenreManager />} />
           <Route path="/the-loai" element={<BrowseNovels mode="all" />} />
           <Route path="/the-loai/:slug" element={<BrowseNovels mode="category" />} />

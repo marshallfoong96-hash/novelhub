@@ -33,7 +33,7 @@ import BrandLogo from './BrandLogo';
 import { novelChapterSubtitle } from '../utils/helpers';
 import { enrichNovelsWithLatestChapter } from '../lib/enrichNovelsLatestChapter';
 import { coverImageProps } from '../lib/coverImageProps';
-import { thumbCoverUrl, avatarImageUrl } from '../lib/coverImageUrl';
+import { thumbCoverUrl } from '../lib/coverImageUrl';
 import {
   LS_BOOKMARKS,
   LS_FAVORITES,
@@ -783,12 +783,8 @@ function Header() {
                     className="p-1.5 rounded-lg hover:bg-secondary transition-colors"
                     aria-label="Hồ sơ"
                   >
-                    <div className="w-7 h-7 rounded-full bg-accent/20 flex items-center justify-center overflow-hidden">
-                      {user?.avatar ? (
-                        <img src={avatarImageUrl(user.avatar)} alt="" className="w-full h-full object-cover" />
-                      ) : (
-                        <User className="w-4 h-4 text-accent" />
-                      )}
+                    <div className="w-7 h-7 rounded-full bg-accent/20 flex items-center justify-center overflow-hidden ring-1 ring-border/70">
+                      <BrandLogo variant="mark" alt="" className="h-full w-full bg-transparent" imgClassName="object-cover" />
                     </div>
                   </button>
                 ) : (
@@ -818,16 +814,8 @@ function Header() {
                       onClick={() => setMemberMenuOpen((v) => !v)}
                       className="flex items-center gap-2 px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:bg-secondary rounded-lg transition-colors"
                     >
-                      <div className="w-6 h-6 rounded-full bg-accent/20 flex items-center justify-center overflow-hidden">
-                        {user?.avatar ? (
-                          <img 
-                            src={avatarImageUrl(user.avatar)} 
-                            alt={user?.username}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <User className="w-3.5 h-3.5 text-accent" />
-                        )}
+                      <div className="w-6 h-6 rounded-full bg-accent/20 flex items-center justify-center overflow-hidden ring-1 ring-border/70">
+                        <BrandLogo variant="mark" alt="" className="h-full w-full bg-transparent" imgClassName="object-cover" />
                       </div>
                       <span className="font-medium max-w-[80px] truncate">{user?.username}</span>
                       <ChevronDown className={`h-3.5 w-3.5 transition-transform ${memberMenuOpen ? 'rotate-180' : ''}`} />
@@ -1258,12 +1246,8 @@ function Header() {
                     onClick={() => setIsMenuOpen(false)}
                     className="flex items-center gap-3 rounded-xl bg-secondary px-3 py-3"
                   >
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-accent/20">
-                      {user?.avatar ? (
-                        <img src={avatarImageUrl(user.avatar)} alt="" className="h-full w-full object-cover" />
-                      ) : (
-                        <User className="h-5 w-5 text-accent" />
-                      )}
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-accent/20 ring-1 ring-border/70">
+                      <BrandLogo variant="mark" alt="" className="h-full w-full bg-transparent" imgClassName="object-cover" />
                     </div>
                     <div className="min-w-0">
                       <span className="block truncate font-medium text-foreground">{user?.username}</span>
