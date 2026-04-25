@@ -43,11 +43,20 @@ export default function AdSlot({
     const root = containerRef.current;
     if (!root) return;
 
+    /** Step 2 in `index.html` already loads the main tag — avoid duplicate `<script>` (and satisfy verification). */
+    const headTagPresent =
+      typeof document !== "undefined" &&
+      document.querySelector("script[data-mi-propeller-head-tag]");
+
     const inject = () => {
       if (scriptPushedRef.current) return true;
       if (root.offsetWidth < 2) return false;
       const host = root.querySelector(".mi-propeller-tag-host");
       if (!host || host.querySelector("script[data-mi-propeller-placement]")) {
+        scriptPushedRef.current = true;
+        return true;
+      }
+      if (headTagPresent) {
         scriptPushedRef.current = true;
         return true;
       }

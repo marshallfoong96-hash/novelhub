@@ -1,7 +1,10 @@
 /**
  * Propeller Ads (tag.min.js + data-zone) — no Google AdSense.
  *
- * Override with VITE_PROPELLER_* in .env. Disable slots: VITE_PROPELLER_TAG_ENABLED=false
+ * Site verification reads static `index.html`: the main tag must live there (Step 2).
+ * AdSlot only adds extra scripts if that head tag is absent (e.g. dev without index edit).
+ *
+ * Override with VITE_PROPELLER_* in .env. Disable: VITE_PROPELLER_TAG_ENABLED=false
  */
 
 const DEFAULT_SCRIPT = "https://quge5.com/88/tag.min.js";
