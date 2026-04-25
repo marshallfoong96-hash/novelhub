@@ -143,6 +143,7 @@ export async function fetchHomeRankingWindows() {
 
   const { data, error } = await supabase.rpc("novel_rankings_windows", {
     p_limit: 50,
+    p_tz: "Asia/Ho_Chi_Minh",
   });
 
   if (!error && data && typeof data === "object") {
