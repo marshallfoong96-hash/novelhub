@@ -1,18 +1,15 @@
 /**
- * Propeller Ads (tag.min.js + data-zone) — no Google AdSense.
- *
- * Site verification reads static `index.html`: the main tag must live there (Step 2).
- * AdSlot only adds extra scripts if that head tag is absent (e.g. dev without index edit).
- *
- * Override with VITE_PROPELLER_* in .env. Disable: VITE_PROPELLER_TAG_ENABLED=false
+ * Propeller setup:
+ * - Push Notifications tag stays in index.html <head> for installation verification.
+ * - In-Page Push tag is injected in AdSlot (lazy) using provider's inline snippet style.
  */
 
-const DEFAULT_SCRIPT = "https://quge5.com/88/tag.min.js";
-const DEFAULT_ZONE = "233290";
+const DEFAULT_INPAGE_SCRIPT_SRC = "https://nap5k.com/tag.min.js";
+const DEFAULT_INPAGE_ZONE = "10922520";
 
 /** @type {string} */
-export const PROPELLER_TAG_SCRIPT_SRC =
-  import.meta.env.VITE_PROPELLER_TAG_SCRIPT?.trim() || DEFAULT_SCRIPT;
+export const PROPELLER_INPAGE_SCRIPT_SRC =
+  import.meta.env.VITE_PROPELLER_INPAGE_SCRIPT?.trim() || DEFAULT_INPAGE_SCRIPT_SRC;
 
 const ZONE_KEYS = {
   home: "VITE_PROPELLER_ZONE_HOME",
@@ -21,20 +18,20 @@ const ZONE_KEYS = {
   chapterBottom: "VITE_PROPELLER_ZONE_CHAPTER_BOTTOM",
 };
 
-/** Zone id for `data-zone` on the tag script (per placement or global fallback). */
-export function resolvePropellerZone(placement) {
+export function resolvePropellerInpageZone(placement) {
   const envName = ZONE_KEYS[placement];
   const specific = envName ? import.meta.env[envName]?.trim() : "";
   const fallback =
+    import.meta.env.VITE_PROPELLER_INPAGE_ZONE?.trim() ||
     import.meta.env.VITE_PROPELLER_TAG_ZONE?.trim() ||
     import.meta.env.VITE_QU_TAG_ZONE?.trim() ||
     "";
-  return specific || fallback || DEFAULT_ZONE;
+  return specific || fallback || DEFAULT_INPAGE_ZONE;
 }
 
 export function isPropellerTagEnabled() {
   if (import.meta.env.VITE_PROPELLER_TAG_ENABLED === "false") return false;
   if (import.meta.env.VITE_QU_TAG_ENABLED === "false") return false;
-  const z = resolvePropellerZone("home");
-  return Boolean(PROPELLER_TAG_SCRIPT_SRC && z);
+  const zone = resolvePropellerInpageZone("home");
+  return Boolean(PROPELLER_INPAGE_SCRIPT_SRC && zone);
 }

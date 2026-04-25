@@ -1,27 +1,27 @@
 import { useEffect, useRef, useState } from "react";
 import {
   isPropellerTagEnabled,
-  PROPELLER_TAG_SCRIPT_SRC,
-  resolvePropellerZone,
+  PROPELLER_INPAGE_SCRIPT_SRC,
+  resolvePropellerInpageZone,
 } from "../lib/adsConfig";
 
 /**
- * Propeller (tag.min.js) — lazy-injects when near viewport. Fixed min-height reduces CLS.
+ * Propeller In-Page Push � lazy injects provider snippet style near viewport.
  * @param {'home'|'detail'|'chapterTop'|'chapterBottom'} placement
- * @param {boolean} [compact] — narrower max width + shorter slot (e.g. chapter top)
+ * @param {boolean} [compact] � narrower max width + shorter slot (e.g. chapter top)
  */
 export default function AdSlot({
   placement = "home",
   className = "",
   minHeightClass = "min-h-[100px]",
-  label = "Quảng cáo",
+  label = "Qu?ng c�o",
   compact = false,
 }) {
   const containerRef = useRef(null);
   const scriptPushedRef = useRef(false);
   const [inView, setInView] = useState(false);
 
-  const zone = resolvePropellerZone(placement);
+  const zone = resolvePropellerInpageZone(placement);
   const active = isPropellerTagEnabled();
   const isChapterPlacement = placement === "chapterTop" || placement === "chapterBottom";
 
@@ -43,11 +43,6 @@ export default function AdSlot({
     const root = containerRef.current;
     if (!root) return;
 
-    /** Step 2 in `index.html` already loads the main tag — avoid duplicate `<script>` (and satisfy verification). */
-    const headTagPresent =
-      typeof document !== "undefined" &&
-      document.querySelector("script[data-mi-propeller-head-tag]");
-
     const inject = () => {
       if (scriptPushedRef.current) return true;
       if (root.offsetWidth < 2) return false;
@@ -56,17 +51,15 @@ export default function AdSlot({
         scriptPushedRef.current = true;
         return true;
       }
-      if (headTagPresent) {
-        scriptPushedRef.current = true;
-        return true;
-      }
+
+      // Equivalent to:
+      // <script>(function(s){s.dataset.zone='10922520',s.src='https://nap5k.com/tag.min.js'})(...appendChild(document.createElement('script')))</script>
       const s = document.createElement("script");
-      s.src = PROPELLER_TAG_SCRIPT_SRC;
-      s.async = true;
-      s.setAttribute("data-cfasync", "false");
-      s.setAttribute("data-zone", zone);
+      s.src = PROPELLER_INPAGE_SCRIPT_SRC;
+      s.dataset.zone = String(zone);
       s.setAttribute("data-mi-propeller-placement", placement);
       host.appendChild(s);
+
       scriptPushedRef.current = true;
       return true;
     };
@@ -89,7 +82,7 @@ export default function AdSlot({
   }, [inView, active, placement, zone]);
 
   const maxW = compact ? "max-w-md" : isChapterPlacement ? "max-w-md" : "max-w-4xl";
-  const insMinH = compact ? "50px" : isChapterPlacement ? "54px" : "90px";
+  const minH = compact ? "50px" : isChapterPlacement ? "54px" : "90px";
   const shellClass = isChapterPlacement
     ? `${minHeightClass} max-h-[92px] sm:max-h-[104px]`
     : minHeightClass;
@@ -109,11 +102,11 @@ export default function AdSlot({
         {active ? (
           <div
             className="mi-propeller-tag-host w-full max-w-full flex flex-col items-center justify-center px-1"
-            style={{ minHeight: insMinH }}
+            style={{ minHeight: minH }}
           />
         ) : (
           <span className="text-xs text-muted-foreground/80 px-4 text-center">
-            Bật Propeller: đặt VITE_PROPELLER_TAG_ZONE (hoặc zone theo từng vị trí trong .env.example).
+            B?t Propeller: d?t VITE_PROPELLER_INPAGE_ZONE ho?c zone theo t?ng v? tr� trong .env.
           </span>
         )}
       </div>
