@@ -131,3 +131,31 @@ export async function fetchHomeDashboardBundle() {
 
   return { novelsWithFirstChapter, genresData };
 }
+
+/**
+ * Independent ranking windows by read volume.
+ * Preferred: RPC `novel_rankings_windows` over event table; fallback keeps current behavior.
+ */
+export async function fetchHomeRankingWindows() {
+  if (!isSupabaseConfigured || !supabase) {
+    throw new Error("Supabase not configured");
+  }
+
+  const { data, error } = await supabase.rpc("novel_rankings_windows", {
+    p_limit: 50,
+  });
+
+  if (!error && data && typeof data === "object") {
+    const day = Array.isArray(data.day) ? data.day : [];
+    const week = Array.isArray(data.week) ? data.week : [];
+    const month = Array.isArray(data.month) ? data.month : [];
+    return { day, week, month };
+  }
+
+  // Fallback: keep showing total view_count ranking if RPC is not installed yet.
+  const { novelsWithFirstChapter } = await fetchHomeDashboardLegacy();
+  const byViews = [...novelsWithFirstChapter].sort(
+    (a, b) => (Number(b.view_count) || 0) - (Number(a.view_count) || 0)
+  );
+  return { day: byViews, week: byViews, month: byViews };
+}

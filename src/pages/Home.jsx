@@ -3,7 +3,7 @@ import { supabase, isSupabaseConfigured } from "../lib/supabase";
 import { fetchWithTtl, clearTtlCache } from "../lib/ttlCache";
 import { HOME_DASHBOARD_CACHE_KEY } from "../lib/cacheKeys";
 import { DEFAULT_DATA_TTL_MS } from "../lib/cachedQueries";
-import { fetchHomeDashboardBundle } from "../lib/fetchHomeDashboardBundle";
+import { fetchHomeDashboardBundle, fetchHomeRankingWindows } from "../lib/fetchHomeDashboardBundle";
 import { Link, useLocation } from 'react-router-dom';
 import { 
   Flame, 
@@ -164,12 +164,15 @@ function Home() {
         return;
       }
 
-      const bundle = await Promise.race([
-        fetchWithTtl(
-          HOME_DASHBOARD_CACHE_KEY,
-          DEFAULT_DATA_TTL_MS,
-          async () => fetchHomeDashboardBundle()
-        ),
+      const bundlePromise = fetchWithTtl(
+        HOME_DASHBOARD_CACHE_KEY,
+        DEFAULT_DATA_TTL_MS,
+        async () => fetchHomeDashboardBundle()
+      );
+      const rankingsPromise = fetchHomeRankingWindows();
+
+      const [bundle, rankingWindows] = await Promise.race([
+        Promise.all([bundlePromise, rankingsPromise]),
         new Promise((_, reject) => {
           setTimeout(() => reject(new Error("__FETCH_TIMEOUT__")), FETCH_HOME_TIMEOUT_MS);
         }),
@@ -190,9 +193,9 @@ function Home() {
       );
 
       setRankings({
-        day: novelsWithFirstChapter,
-        week: novelsWithFirstChapter,
-        month: novelsWithFirstChapter
+        day: Array.isArray(rankingWindows?.day) ? rankingWindows.day : byViews,
+        week: Array.isArray(rankingWindows?.week) ? rankingWindows.week : byViews,
+        month: Array.isArray(rankingWindows?.month) ? rankingWindows.month : byViews,
       });
 
       setFeaturedNovels(novelsWithFirstChapter.slice(0, 5));
@@ -578,7 +581,7 @@ function Home() {
                       {novel.title}
                     </h4>
                     <p className="text-[10px] text-muted-foreground">
-                      {novel.view_count || 0} lượt xem
+                      {novel.rank_views ?? novel.view_count ?? 0} lượt xem
                     </p>
                   </div>
                 </Link>
