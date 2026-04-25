@@ -6,6 +6,13 @@ import Pagination from "../components/Pagination";
 import ReaderErrorState from "../components/ReaderErrorState";
 import { supabase, isSupabaseConfigured } from "../lib/supabase";
 import { fetchGenresCached } from "../lib/cachedQueries";
+import {
+  fetchCategorySortedIdsCached,
+  fetchBrowseNovelCountCached,
+  fetchBrowseNovelSliceCached,
+  fetchChapterRangeNovelsAndStatsCached,
+} from "../lib/cachedBrowseQueries";
+import { fetchNovelsByIdsCached } from "../lib/cachedNovelQueries";
 import { enrichNovelsWithLatestChapter } from "../lib/enrichNovelsLatestChapter";
 import { listCoverUrl } from "../lib/coverImageUrl";
 
@@ -34,38 +41,6 @@ function getGenreMeta(genre) {
 function isGenreDefaultCover(url) {
   const u = String(url || "").trim();
   return u === "" || u === "/default-cover.webp" || u === "/default-cover.jpg";
-}
-
-function chunkArray(items, size) {
-  const out = [];
-  for (let i = 0; i < items.length; i += size) out.push(items.slice(i, i + size));
-  return out;
-}
-
-const NOVEL_STATS_CHUNK = 200;
-
-/**
- * Max chapter number per novel — same RPC as Home (`supabase/novel_chapter_stats.sql`).
- * Avoids loading every row from `chapters` (was catastrophic at scale).
- */
-async function fetchLatestChapterNumberMap(supabase, novelIds) {
-  const counts = {};
-  const ids = [...new Set((novelIds || []).filter((id) => id != null))];
-  for (let i = 0; i < ids.length; i += NOVEL_STATS_CHUNK) {
-    const slice = ids.slice(i, i + NOVEL_STATS_CHUNK);
-    const { data: statRows, error } = await supabase.rpc("novel_chapter_stats", {
-      p_novel_ids: slice,
-    });
-    if (error) throw error;
-    (statRows || []).forEach((row) => {
-      const nid = row.novel_id;
-      const cn = row.latest_chapter_number;
-      if (nid == null || cn == null) return;
-      const n = Number(cn);
-      if (!Number.isNaN(n)) counts[nid] = n;
-    });
-  }
-  return counts;
 }
 
 function getGenreTheme(slug) {
@@ -120,27 +95,6 @@ function BrowseNovels({ mode = "all" }) {
     return genres.find((genre) => normalize(genre.slug) === normalize(slug)) || null;
   }, [genres, slug]);
 
-  const buildQuery = useCallback((from, to) => {
-    let query = supabase
-      .from("novels")
-      .select("*")
-      .range(from, to);
-
-    if (mode === "hot") {
-      query = query.order("view_count", { ascending: false });
-    } else {
-      query = query.order("created_at", { ascending: false });
-    }
-
-    if (mode === "completed") {
-      query = query.eq("status", "completed");
-    }
-    if (mode === "ongoing") {
-      query = query.eq("status", "ongoing");
-    }
-    return query;
-  }, [mode]);
-
   const matchChapterRange = useCallback((count) => {
     if (range === "duoi-100") return count < 100;
     if (range === "100-500") return count >= 100 && count <= 500;
@@ -162,16 +116,14 @@ function BrowseNovels({ mode = "all" }) {
         setLoading(false);
         return;
       }
-      const { data, error: fetchError } = await supabase
-        .from("novels")
-        .select("*")
-        .in("id", sliceIds);
-      if (fetchError) {
-        setError(fetchError.message || "Failed to load novels.");
+      let rows = [];
+      try {
+        rows = await fetchNovelsByIdsCached(supabase, sliceIds, "*");
+      } catch (fetchError) {
+        setError(fetchError?.message || "Failed to load novels.");
         setLoading(false);
         return;
       }
-      const rows = data || [];
       const ordered = sliceIds.map((id) => rows.find((n) => n.id === id)).filter(Boolean);
       const enriched = await enrichNovelsWithLatestChapter(supabase, ordered);
       setNovels((prev) => (replace ? enriched : [...prev, ...enriched]));
@@ -210,19 +162,19 @@ function BrowseNovels({ mode = "all" }) {
     const from = pageIndex * PAGE_SIZE;
     const to = from + PAGE_SIZE - 1;
 
-    const { data, error: fetchError } = await buildQuery(from, to);
-    if (fetchError) {
-      setError(fetchError.message || "Failed to load novels.");
+    let newRows = [];
+    try {
+      newRows = await fetchBrowseNovelSliceCached(supabase, mode, from, to);
+    } catch (fetchError) {
+      setError(fetchError?.message || "Failed to load novels.");
       setLoading(false);
       return;
     }
-
-    const newRows = data || [];
     const enriched = await enrichNovelsWithLatestChapter(supabase, newRows);
     setNovels((prev) => (replace ? enriched : [...prev, ...enriched]));
     setPage(pageIndex);
     setLoading(false);
-  }, [buildQuery, mode, slug, activeGenre, chapterRangePool, categorySortedIds, genres.length, chapterCounts]);
+  }, [mode, slug, activeGenre, chapterRangePool, categorySortedIds, genres.length, chapterCounts]);
 
   useEffect(() => {
     if (mode !== "category") {
@@ -242,44 +194,17 @@ function BrowseNovels({ mode = "all" }) {
       setLoading(true);
       setError("");
       setNovels([]);
-      const merged = new Set();
-      const { data: junctionRows, error: junctionError } = await supabase
-        .from("novel_genres")
-        .select("novel_id")
-        .eq("genre_id", activeGenre.id);
-      if (!junctionError && junctionRows) {
-        junctionRows.forEach((row) => merged.add(row.novel_id));
-      }
-      const { data: directRows } = await supabase.from("novels").select("id").eq("genre_id", activeGenre.id);
-      (directRows || []).forEach((row) => merged.add(row.id));
-      const ids = [...merged];
-      if (ids.length === 0) {
+      let sortedIds = [];
+      try {
+        sortedIds = await fetchCategorySortedIdsCached(supabase, activeGenre.id);
+      } catch (metaError) {
         if (!cancelled) {
+          setError(metaError?.message || "Failed to load category novels.");
           setCategorySortedIds([]);
-          setNovels([]);
           setLoading(false);
         }
         return;
       }
-      const chunks = chunkArray(ids, 120);
-      const minimal = [];
-      for (const part of chunks) {
-        const { data: metaRows, error: metaError } = await supabase
-          .from("novels")
-          .select("id,created_at,view_count")
-          .in("id", part);
-        if (metaError) {
-          if (!cancelled) {
-            setError(metaError.message || "Failed to load category novels.");
-            setCategorySortedIds([]);
-            setLoading(false);
-          }
-          return;
-        }
-        minimal.push(...(metaRows || []));
-      }
-      minimal.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-      const sortedIds = minimal.map((m) => m.id);
       if (cancelled) return;
       setCategorySortedIds(sortedIds);
     })();
@@ -314,31 +239,14 @@ function BrowseNovels({ mode = "all" }) {
       if (!isSupabaseConfigured || !supabase) return;
       setLoading(true);
       setError("");
-      const { data: allNovels, error: novelsError } = await supabase
-        .from("novels")
-        .select("*")
-        .order("created_at", { ascending: false });
-      if (novelsError) {
-        setError(novelsError.message || "Failed to load novels.");
-        setLoading(false);
-        return;
-      }
-
-      const list = allNovels || [];
-      const novelIds = list.map((n) => n.id).filter((id) => id != null);
-
+      let list = [];
       let counts = {};
       try {
-        counts = await fetchLatestChapterNumberMap(supabase, novelIds);
-      } catch (e) {
-        console.error("[BrowseNovels chapterRange] novel_chapter_stats:", e);
-        setError(
-          e?.message ||
-            "Không tải được thống kê chương. Chạy SQL `novel_chapter_stats` trong Supabase (xem supabase/novel_chapter_stats.sql)."
-        );
-        setChapterCounts({});
-        setChapterRangePool([]);
-        setNovels([]);
+        const bundle = await fetchChapterRangeNovelsAndStatsCached(supabase);
+        list = bundle.list || [];
+        counts = bundle.counts || {};
+      } catch (novelsError) {
+        setError(novelsError?.message || "Failed to load novels.");
         setLoading(false);
         return;
       }
@@ -364,13 +272,14 @@ function BrowseNovels({ mode = "all" }) {
     }
     let cancelled = false;
     (async () => {
-      let q = supabase.from("novels").select("*", { count: "exact", head: true });
-      if (mode === "completed") q = q.eq("status", "completed");
-      if (mode === "ongoing") q = q.eq("status", "ongoing");
-      const { count, error } = await q;
+      let count = 0;
+      try {
+        count = await fetchBrowseNovelCountCached(supabase, mode);
+      } catch {
+        count = 0;
+      }
       if (cancelled) return;
-      if (error) setTotalCount(0);
-      else setTotalCount(count ?? 0);
+      setTotalCount(count);
     })();
     return () => {
       cancelled = true;

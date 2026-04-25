@@ -1,4 +1,6 @@
-import { fetchWithTtl } from "./ttlCache";
+import { fetchWithTtl, clearTtlCache, clearTtlCachePrefix } from "./ttlCache";
+import { fetchChapterTocForNovel } from "./fetchAllChapters";
+import { MITRUYEN_DATA_CACHE_PREFIX } from "./cacheDataPrefix";
 
 /** Short — search & title match. */
 const TTL_SEARCH_MS = 60 * 1000;
@@ -82,6 +84,98 @@ export async function fetchHotNovelCardsCached(supabase, limit = 6) {
       if (error) throw error;
       return data ?? [];
     },
+    { shouldCache: (d) => Array.isArray(d) }
+  );
+}
+
+// --- Novel detail / reader (`MITRUYEN_DATA_CACHE_PREFIX` — clear with `clearTtlCachePrefix` or `clearNovelTtlForId`) ---
+
+const P = MITRUYEN_DATA_CACHE_PREFIX;
+const TTL_NOVEL_DETAIL_MS = 3 * 60 * 1000;
+
+/** After view_count RPC or admin edits — drop row + TOC + genre junction for one book. */
+export function clearNovelTtlForId(novelId) {
+  const n = Number(novelId);
+  if (Number.isNaN(n)) return;
+  clearTtlCache(`${P}novel:row:detail:v1:${n}`);
+  clearTtlCache(`${P}novel:ng:v1:${n}`);
+  clearTtlCache(`${P}novel:toc:v1:${n}`);
+  clearTtlCachePrefix(`${P}novel:row:reader:v1:${n}:`);
+}
+
+export async function fetchNovelRowDetailByIdCached(supabase, novelId) {
+  const id = Number(novelId);
+  if (!supabase || Number.isNaN(id)) return null;
+  return fetchWithTtl(
+    `${P}novel:row:detail:v1:${id}`,
+    TTL_NOVEL_DETAIL_MS,
+    async () => {
+      const { data, error } = await supabase.from("novels").select("*").eq("id", id).single();
+      if (error) throw error;
+      return data;
+    },
+    { shouldCache: (d) => d != null && d.id != null }
+  );
+}
+
+/** Reader chrome — small select; key includes select string. */
+export async function fetchNovelRowReaderByIdCached(supabase, novelId, select) {
+  const id = Number(novelId);
+  if (!supabase || Number.isNaN(id)) return null;
+  const sel = String(select || "id,title,cover_url");
+  return fetchWithTtl(
+    `${P}novel:row:reader:v1:${id}:${sel}`,
+    TTL_NOVEL_DETAIL_MS,
+    async () => {
+      const { data, error } = await supabase.from("novels").select(sel).eq("id", id).single();
+      if (error) throw error;
+      return data;
+    },
+    { shouldCache: (d) => d != null && d.id != null }
+  );
+}
+
+export async function fetchNovelGenresJunctionCached(supabase, novelId) {
+  const id = Number(novelId);
+  if (!supabase || Number.isNaN(id)) return [];
+  return fetchWithTtl(
+    `${P}novel:ng:v1:${id}`,
+    TTL_NOVEL_DETAIL_MS,
+    async () => {
+      const { data, error } = await supabase.from("novel_genres").select("genre_id").eq("novel_id", id);
+      if (error) throw error;
+      return data ?? [];
+    },
+    { shouldCache: (d) => Array.isArray(d) }
+  );
+}
+
+export async function fetchGenresMiniByIdsCached(supabase, genreIds) {
+  if (!supabase) return [];
+  const list = [
+    ...new Set((genreIds || []).map(Number).filter((n) => !Number.isNaN(n))),
+  ].sort((a, b) => a - b);
+  if (list.length === 0) return [];
+  const key = `${P}novel:genresMini:v1:${list.join(",")}`;
+  return fetchWithTtl(
+    key,
+    TTL_NOVEL_DETAIL_MS,
+    async () => {
+      const { data, error } = await supabase.from("genres").select("id,name,slug").in("id", list);
+      if (error) throw error;
+      return data ?? [];
+    },
+    { shouldCache: (d) => Array.isArray(d) }
+  );
+}
+
+export async function fetchChapterTocForNovelCached(supabase, novelId) {
+  const nid = Number(novelId);
+  if (!supabase || Number.isNaN(nid)) return [];
+  return fetchWithTtl(
+    `${P}novel:toc:v1:${nid}`,
+    TTL_NOVEL_DETAIL_MS,
+    () => fetchChapterTocForNovel(supabase, nid),
     { shouldCache: (d) => Array.isArray(d) }
   );
 }

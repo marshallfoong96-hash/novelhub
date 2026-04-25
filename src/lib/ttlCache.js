@@ -51,6 +51,15 @@ export function clearTtlCache(key) {
   else store.clear();
 }
 
+/** Clear every key whose string starts with `prefix` (e.g. `mitruyen:data:` after admin bulk edit). */
+export function clearTtlCachePrefix(prefix) {
+  const p = String(prefix || "");
+  if (!p) return;
+  for (const key of [...store.keys()]) {
+    if (key.startsWith(p)) store.delete(key);
+  }
+}
+
 /** Force-set cached value (e.g. after a fresh `fetchAllGenresRows` in the menu). */
 export function setTtlCache(key, data) {
   store.set(key, { at: Date.now(), data });

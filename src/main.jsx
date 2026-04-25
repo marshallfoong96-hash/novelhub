@@ -71,12 +71,12 @@ ReactDOM.createRoot(document.getElementById('root')).render(
   </React.StrictMode>
 );
 
-/** Cache hashed /assets + public images — repeat visits skip network for those URLs. Bump CACHE in sw.js after major asset changes. */
+/** Mi Truyện static cache — `/sw.js` reserved for third-party (e.g. verification / ad worker). Bump CACHE in mitruyen-static-sw.js after major asset changes. */
 if (import.meta.env.PROD && typeof window !== 'undefined' && 'serviceWorker' in navigator) {
   window.addEventListener(
     'load',
     () => {
-      navigator.serviceWorker.register('/sw.js').catch(() => {});
+      navigator.serviceWorker.register('/mitruyen-static-sw.js').catch(() => {});
     },
     { once: true }
   );

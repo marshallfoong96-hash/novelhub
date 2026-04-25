@@ -33,7 +33,14 @@ import ReaderErrorState from '../components/ReaderErrorState';
 import { coverImageProps } from '../lib/coverImageProps';
 import { detailCoverUrl, avatarImageUrl } from '../lib/coverImageUrl';
 import DonateModal from '../components/DonateModal';
-import { fetchChapterTocForNovel } from '../lib/fetchAllChapters';
+import {
+  fetchNovelRowDetailByIdCached,
+  fetchNovelGenresJunctionCached,
+  fetchGenresMiniByIdsCached,
+  fetchChapterTocForNovelCached,
+  fetchNovelsByIdsCached,
+} from '../lib/cachedNovelQueries';
+import { fetchNovelIdsForGenreMergedCached } from '../lib/cachedBrowseQueries';
 import { enrichNovelsWithLatestChapter } from '../lib/enrichNovelsLatestChapter';
 import { readLastReadChapterIdForNovel } from '../lib/memberStorage';
 import LastReadChapterBadge from '../components/LastReadChapterBadge';
@@ -273,14 +280,18 @@ function NovelDetail() {
         return;
       }
 
-      const { data: novelData, error: novelError } = await supabase
-        .from('novels')
-        .select('*')
-        .eq('id', novelId)
-        .single();
-
-      if (novelError || !novelData) {
+      let novelData;
+      try {
+        novelData = await fetchNovelRowDetailByIdCached(supabase, novelId);
+      } catch (novelError) {
         console.error('[v0] Error fetching novel:', novelError);
+        setNovel(null);
+        setNovelGenres([]);
+        setLoading(false);
+        return;
+      }
+
+      if (!novelData) {
         setNovel(null);
         setNovelGenres([]);
         setLoading(false);
@@ -296,22 +307,25 @@ function NovelDetail() {
         const stale = () => gen !== detailSecondaryGenRef.current;
 
         try {
-          const [ngRes, chaptersData] = await Promise.all([
-            supabase.from('novel_genres').select('genre_id').eq('novel_id', novelId),
-            fetchChapterTocForNovel(supabase, novelId).catch((chaptersError) => {
-              console.error('[v0] Error fetching chapters:', chaptersError);
-              return [];
-            }),
-          ]);
+          let chaptersData = [];
+          let ngRows = [];
+          try {
+            const [junctionRows, tocRows] = await Promise.all([
+              fetchNovelGenresJunctionCached(supabase, novelId),
+              fetchChapterTocForNovelCached(supabase, novelId).catch((chaptersError) => {
+                console.error('[v0] Error fetching chapters:', chaptersError);
+                return [];
+              }),
+            ]);
+            ngRows = junctionRows;
+            chaptersData = tocRows;
+          } catch (e) {
+            console.error('[v0] novel detail junction/toc:', e);
+          }
 
           if (stale()) return;
 
-          const { data: ngRows, error: ngErr } = ngRes;
           setChapters(Array.isArray(chaptersData) ? chaptersData : []);
-
-          if (ngErr) {
-            console.error('[v0] novel_genres:', ngErr);
-          }
 
           const genreIdSet = new Set();
           (ngRows || []).forEach((r) => {
@@ -325,13 +339,14 @@ function NovelDetail() {
           if (mergedGenreIds.length === 0) {
             if (!stale()) setNovelGenres([]);
           } else {
-            const { data: genreRows, error: genresLookupErr } = await supabase
-              .from('genres')
-              .select('id,name,slug')
-              .in('id', mergedGenreIds);
-            if (stale()) return;
-            if (genresLookupErr) {
+            let genreRows = [];
+            try {
+              genreRows = await fetchGenresMiniByIdsCached(supabase, mergedGenreIds);
+            } catch (genresLookupErr) {
               console.error('[v0] genres for novel:', genresLookupErr);
+            }
+            if (stale()) return;
+            if (!genreRows.length) {
               setNovelGenres([]);
             } else {
               const byId = new Map((genreRows || []).map((g) => [Number(g.id), g]));
@@ -360,31 +375,25 @@ function NovelDetail() {
             return;
           }
 
-          const merged = new Set();
-          const { data: junctionRows, error: junctionError } = await supabase
-            .from('novel_genres')
-            .select('novel_id')
-            .eq('genre_id', primaryGenreId);
-          if (!junctionError && junctionRows) {
-            junctionRows.forEach((row) => merged.add(row.novel_id));
+          let mergedIds = [];
+          try {
+            mergedIds = await fetchNovelIdsForGenreMergedCached(supabase, primaryGenreId);
+          } catch (junctionError) {
+            console.error('[v0] related novel ids:', junctionError);
           }
-          const { data: directRows } = await supabase
-            .from('novels')
-            .select('id')
-            .eq('genre_id', primaryGenreId);
-          (directRows || []).forEach((row) => merged.add(row.id));
-          merged.delete(novelId);
-          const candidateIds = [...merged];
+          const candidateIds = mergedIds.filter((nid) => nid !== novelId);
           if (stale()) return;
 
           if (candidateIds.length === 0) {
             setRelatedNovels([]);
           } else {
             const capped = candidateIds.slice(0, 48);
-            const { data: relatedRows } = await supabase
-              .from('novels')
-              .select('*')
-              .in('id', capped);
+            let relatedRows = [];
+            try {
+              relatedRows = await fetchNovelsByIdsCached(supabase, capped, '*');
+            } catch (e) {
+              console.error('[v0] related novels fetch:', e);
+            }
             if (stale()) return;
             const rows = relatedRows || [];
             rows.sort((a, b) => (b.view_count || 0) - (a.view_count || 0));

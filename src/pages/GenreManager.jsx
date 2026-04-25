@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { FolderTree, Save, Search, CheckSquare, Square, Shuffle, Database } from "lucide-react";
 import { supabase, isSupabaseConfigured } from "../lib/supabase";
-import { clearTtlCache } from "../lib/ttlCache";
+import { clearTtlCache, clearTtlCachePrefix } from "../lib/ttlCache";
 import { fetchAllGenresRows } from "../lib/cachedQueries";
 import { HOME_DASHBOARD_CACHE_KEY, GENRES_CACHE_KEY } from "../lib/cacheKeys";
+import { MITRUYEN_DATA_CACHE_PREFIX } from "../lib/cacheDataPrefix";
+import { clearNovelTtlForId } from "../lib/cachedNovelQueries";
 import { novelChapterSubtitle } from "../utils/helpers";
 import { enrichNovelsWithLatestChapter } from "../lib/enrichNovelsLatestChapter";
 import { listCoverUrl } from "../lib/coverImageUrl";
@@ -128,6 +130,8 @@ function GenreManager() {
         prev.map((novel) => (novel.id === novelId ? { ...novel, genre_id: payload.genre_id } : novel))
       );
       setSavingId(null);
+      clearTtlCachePrefix(MITRUYEN_DATA_CACHE_PREFIX);
+      clearNovelTtlForId(novelId);
       setNotice("Da cap nhat the loai thanh cong.");
       setTimeout(() => setNotice(""), 1500);
       return;
@@ -165,6 +169,8 @@ function GenreManager() {
       prev.map((novel) => (novel.id === novelId ? { ...novel, genre_id: primaryGenreId } : novel))
     );
     setSavingId(null);
+    clearTtlCachePrefix(MITRUYEN_DATA_CACHE_PREFIX);
+    clearNovelTtlForId(novelId);
     setNotice("Da cap nhat nhieu the loai thanh cong.");
     setTimeout(() => setNotice(""), 1600);
   };
@@ -226,6 +232,7 @@ function GenreManager() {
     setBatchSaving(false);
     setSelectedIds([]);
     setBatchGenreId("");
+    clearTtlCachePrefix(MITRUYEN_DATA_CACHE_PREFIX);
     setNotice(supportsMultiGenre ? "Da them the loai hang loat thanh cong." : "Da cap nhat the loai hang loat thanh cong.");
     setTimeout(() => setNotice(""), 1600);
   };
@@ -233,12 +240,13 @@ function GenreManager() {
   const handleClearHomeTtlCache = () => {
     clearTtlCache(HOME_DASHBOARD_CACHE_KEY);
     clearTtlCache(GENRES_CACHE_KEY);
+    clearTtlCachePrefix(MITRUYEN_DATA_CACHE_PREFIX);
     try {
       window.dispatchEvent(new CustomEvent("mitruyen:invalidate-home-cache"));
     } catch {
       /* ignore */
     }
-    setNotice("Đã xóa cache trang chủ + thể loại. Về trang chủ để thấy view / dữ liệu mới.");
+    setNotice("Đã xóa cache trang chủ, thể loại, browse & chi tiết truyện (TTL).");
     setTimeout(() => setNotice(""), 3200);
   };
 

@@ -3,7 +3,11 @@ import { useParams, Link } from 'react-router-dom';
 import { supabase, isSupabaseConfigured } from "../lib/supabase";
 import { clearTtlCache } from "../lib/ttlCache";
 import { HOME_DASHBOARD_CACHE_KEY } from "../lib/cacheKeys";
-import { fetchChapterTocForNovel } from "../lib/fetchAllChapters";
+import {
+  fetchNovelRowReaderByIdCached,
+  fetchChapterTocForNovelCached,
+  clearNovelTtlForId,
+} from "../lib/cachedNovelQueries";
 
 import {
   Home, BookOpen, Settings, MessageSquare,
@@ -179,6 +183,7 @@ export default function ChapterRead() {
         if (!Number.isNaN(next)) {
           setNovel((prev) => (prev ? { ...prev, view_count: next } : prev));
           clearTtlCache(HOME_DASHBOARD_CACHE_KEY);
+          clearNovelTtlForId(novelId);
           try {
             window.dispatchEvent(new CustomEvent('mitruyen:invalidate-home-cache'));
           } catch {
@@ -214,6 +219,7 @@ export default function ChapterRead() {
       }
       setNovel((prev) => (prev ? { ...prev, view_count: next } : prev));
       clearTtlCache(HOME_DASHBOARD_CACHE_KEY);
+      clearNovelTtlForId(novelId);
       try {
         window.dispatchEvent(new CustomEvent('mitruyen:invalidate-home-cache'));
       } catch {
@@ -407,7 +413,7 @@ export default function ChapterRead() {
         setAllChapters(sessionRows);
       }
       try {
-        const chaptersData = await fetchChapterTocForNovel(supabase, nid);
+        const chaptersData = await fetchChapterTocForNovelCached(supabase, nid);
         if (g !== novelTocFetchGenRef.current) return;
         const list = chaptersData || [];
         setAllChapters(list);
@@ -438,13 +444,14 @@ export default function ChapterRead() {
       if (nid != null) {
         void (async () => {
           try {
-            const { data: novelData, error: novelError } = await supabase
-              .from('novels')
-              .select(READER_NOVEL_SELECT)
-              .eq('id', nid)
-              .single();
+            let novelData = null;
+            try {
+              novelData = await fetchNovelRowReaderByIdCached(supabase, nid, READER_NOVEL_SELECT);
+            } catch (novelError) {
+              console.error('[v0] novel fetch:', novelError);
+            }
             if (gen !== novelTocFetchGenRef.current) return;
-            if (!novelError && novelData) setNovel(novelData);
+            if (novelData) setNovel(novelData);
           } catch (e) {
             console.error('[v0] novel fetch:', e);
           }
@@ -505,14 +512,15 @@ export default function ChapterRead() {
 
       void (async () => {
         try {
-          const { data: novelData, error: novelError } = await supabase
-            .from('novels')
-            .select(READER_NOVEL_SELECT)
-            .eq('id', novelId)
-            .single();
+          let novelData = null;
+          try {
+            novelData = await fetchNovelRowReaderByIdCached(supabase, novelId, READER_NOVEL_SELECT);
+          } catch (novelError) {
+            console.error('[v0] novel fetch:', novelError);
+          }
 
           if (gen !== novelTocFetchGenRef.current) return;
-          if (!novelError && novelData) {
+          if (novelData) {
             setNovel(novelData);
           }
         } catch (e) {
