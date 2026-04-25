@@ -1,51 +1,37 @@
 /**
- * Google AdSense (display) — script is in index.html; client id here must match.
- * Override with VITE_ADSENSE_CLIENT / VITE_ADSENSE_SLOT_* in .env if needed.
+ * Propeller Ads (tag.min.js + data-zone) — no Google AdSense.
+ *
+ * Override with VITE_PROPELLER_* in .env. Disable slots: VITE_PROPELLER_TAG_ENABLED=false
  */
 
-export const ADSENSE_CLIENT =
-  import.meta.env.VITE_ADSENSE_CLIENT?.trim() || "ca-pub-6602775323692698";
+const DEFAULT_SCRIPT = "https://quge5.com/88/tag.min.js";
+const DEFAULT_ZONE = "233290";
 
-/** mitruyen trial 1 — dùng khi không set VITE_ADSENSE_SLOT_* / DEFAULT */
-export const DEFAULT_AD_SLOT = "8426876857";
+/** @type {string} */
+export const PROPELLER_TAG_SCRIPT_SRC =
+  import.meta.env.VITE_PROPELLER_TAG_SCRIPT?.trim() || DEFAULT_SCRIPT;
 
-const SLOT_KEYS = {
-  home: "VITE_ADSENSE_SLOT_HOME",
-  detail: "VITE_ADSENSE_SLOT_DETAIL",
-  chapterTop: "VITE_ADSENSE_SLOT_CHAPTER_TOP",
-  chapterBottom: "VITE_ADSENSE_SLOT_CHAPTER_BOTTOM"
+const ZONE_KEYS = {
+  home: "VITE_PROPELLER_ZONE_HOME",
+  detail: "VITE_PROPELLER_ZONE_DETAIL",
+  chapterTop: "VITE_PROPELLER_ZONE_CHAPTER_TOP",
+  chapterBottom: "VITE_PROPELLER_ZONE_CHAPTER_BOTTOM",
 };
 
-export function resolveAdSlot(placement) {
-  const envName = SLOT_KEYS[placement];
+/** Zone id for `data-zone` on the tag script (per placement or global fallback). */
+export function resolvePropellerZone(placement) {
+  const envName = ZONE_KEYS[placement];
   const specific = envName ? import.meta.env[envName]?.trim() : "";
-  const fallback = import.meta.env.VITE_ADSENSE_SLOT_DEFAULT?.trim() || "";
-  return specific || fallback || DEFAULT_AD_SLOT;
+  const fallback =
+    import.meta.env.VITE_PROPELLER_TAG_ZONE?.trim() ||
+    import.meta.env.VITE_QU_TAG_ZONE?.trim() ||
+    "";
+  return specific || fallback || DEFAULT_ZONE;
 }
 
-export function isAdsConfigured(placement) {
-  return Boolean(ADSENSE_CLIENT && resolveAdSlot(placement));
-}
-
-let scriptRequested = false;
-
-/** Loads adsbygoogle.js once (call from App mount). Skips if already in index.html. */
-export function loadAdsenseScript() {
-  if (typeof document === "undefined") return;
-  if (document.querySelector('script[src*="pagead2.googlesyndication.com"]')) {
-    scriptRequested = true;
-    return;
-  }
-  if (!ADSENSE_CLIENT || scriptRequested) return;
-  if (document.querySelector("script[data-mi-adsense]")) {
-    scriptRequested = true;
-    return;
-  }
-  const s = document.createElement("script");
-  s.async = true;
-  s.src = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${encodeURIComponent(ADSENSE_CLIENT)}`;
-  s.crossOrigin = "anonymous";
-  s.setAttribute("data-mi-adsense", "1");
-  document.head.appendChild(s);
-  scriptRequested = true;
+export function isPropellerTagEnabled() {
+  if (import.meta.env.VITE_PROPELLER_TAG_ENABLED === "false") return false;
+  if (import.meta.env.VITE_QU_TAG_ENABLED === "false") return false;
+  const z = resolvePropellerZone("home");
+  return Boolean(PROPELLER_TAG_SCRIPT_SRC && z);
 }

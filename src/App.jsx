@@ -2,7 +2,6 @@ import { useEffect, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { useAuth } from './contexts/AuthContext';
-import { loadAdsenseScript } from './lib/adsConfig';
 import { initIdleAffiliateGate } from './lib/idleAffiliateGate';
 import { lazyWithRetry } from './lib/lazyWithRetry';
 import Header from './components/Header';
@@ -103,32 +102,6 @@ function RoutedMain() {
 }
 
 function App() {
-  useEffect(() => {
-    /** After `load`: avoid competing with covers / fonts during critical path; improves Network “Finish” vs idle-at-3.5s. */
-    const run = () => loadAdsenseScript();
-    let ricId = null;
-    let timerId = null;
-    const start = () => {
-      if (typeof window.requestIdleCallback === 'function') {
-        ricId = window.requestIdleCallback(run, { timeout: 12_000 });
-      } else {
-        timerId = window.setTimeout(run, 1200);
-      }
-    };
-    if (document.readyState === 'complete') {
-      start();
-    } else {
-      window.addEventListener('load', start, { once: true });
-    }
-    return () => {
-      window.removeEventListener('load', start);
-      if (ricId != null && typeof window.cancelIdleCallback === 'function') {
-        window.cancelIdleCallback(ricId);
-      }
-      if (timerId != null) window.clearTimeout(timerId);
-    };
-  }, []);
-
   useEffect(() => {
     const teardown = initIdleAffiliateGate();
     return teardown;

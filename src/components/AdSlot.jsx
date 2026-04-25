@@ -1,8 +1,12 @@
 import { useEffect, useRef, useState } from "react";
-import { ADSENSE_CLIENT, isAdsConfigured, resolveAdSlot } from "../lib/adsConfig";
+import {
+  isPropellerTagEnabled,
+  PROPELLER_TAG_SCRIPT_SRC,
+  resolvePropellerZone,
+} from "../lib/adsConfig";
 
 /**
- * Responsive display unit; lazy-loads when near viewport. Fixed min-height reduces CLS.
+ * Propeller (tag.min.js) — lazy-injects when near viewport. Fixed min-height reduces CLS.
  * @param {'home'|'detail'|'chapterTop'|'chapterBottom'} placement
  * @param {boolean} [compact] — narrower max width + shorter slot (e.g. chapter top)
  */
@@ -14,12 +18,11 @@ export default function AdSlot({
   compact = false,
 }) {
   const containerRef = useRef(null);
-  const insRef = useRef(null);
-  const pushedRef = useRef(false);
+  const scriptPushedRef = useRef(false);
   const [inView, setInView] = useState(false);
 
-  const slotId = resolveAdSlot(placement);
-  const active = isAdsConfigured(placement);
+  const zone = resolvePropellerZone(placement);
+  const active = isPropellerTagEnabled();
   const isChapterPlacement = placement === "chapterTop" || placement === "chapterBottom";
 
   useEffect(() => {
@@ -35,49 +38,49 @@ export default function AdSlot({
     return () => io.disconnect();
   }, []);
 
-  /** AdSense throws TagError when push runs while container width is still 0 (flex/hidden/layout). */
   useEffect(() => {
-    if (!inView || !active || pushedRef.current) return;
-    const ins = insRef.current;
+    if (!inView || !active || scriptPushedRef.current) return;
     const root = containerRef.current;
-    if (!ins || !root) return;
+    if (!root) return;
 
-    const tryPush = () => {
-      if (pushedRef.current) return true;
+    const inject = () => {
+      if (scriptPushedRef.current) return true;
       if (root.offsetWidth < 2) return false;
-      try {
-        (window.adsbygoogle = window.adsbygoogle || []).push({});
-        pushedRef.current = true;
+      const host = root.querySelector(".mi-propeller-tag-host");
+      if (!host || host.querySelector("script[data-mi-propeller-placement]")) {
+        scriptPushedRef.current = true;
         return true;
-      } catch (e) {
-        console.warn("[ads]", e);
-        return false;
       }
+      const s = document.createElement("script");
+      s.src = PROPELLER_TAG_SCRIPT_SRC;
+      s.async = true;
+      s.setAttribute("data-cfasync", "false");
+      s.setAttribute("data-zone", zone);
+      s.setAttribute("data-mi-propeller-placement", placement);
+      host.appendChild(s);
+      scriptPushedRef.current = true;
+      return true;
     };
 
-    if (tryPush()) return undefined;
+    if (inject()) return undefined;
 
     const ro = new ResizeObserver(() => {
-      if (tryPush()) ro.disconnect();
+      if (inject()) ro.disconnect();
     });
     ro.observe(root);
-
     const id1 = requestAnimationFrame(() => {
       requestAnimationFrame(() => {
-        if (tryPush()) ro.disconnect();
+        if (inject()) ro.disconnect();
       });
     });
-
     return () => {
       ro.disconnect();
       cancelAnimationFrame(id1);
     };
-  }, [inView, active]);
+  }, [inView, active, placement, zone]);
 
   const maxW = compact ? "max-w-md" : isChapterPlacement ? "max-w-md" : "max-w-4xl";
   const insMinH = compact ? "50px" : isChapterPlacement ? "54px" : "90px";
-  const adFormat = isChapterPlacement ? "horizontal" : "auto";
-  const fullWidthResponsive = isChapterPlacement ? "false" : "true";
   const shellClass = isChapterPlacement
     ? `${minHeightClass} max-h-[92px] sm:max-h-[104px]`
     : minHeightClass;
@@ -95,18 +98,13 @@ export default function AdSlot({
         className={`${shellClass} flex flex-col items-center justify-center rounded-xl border border-dashed border-border/80 bg-muted/20 overflow-hidden`}
       >
         {active ? (
-          <ins
-            ref={insRef}
-            className="adsbygoogle w-full max-w-full"
-            style={{ display: "block", width: "100%", minHeight: insMinH }}
-            data-ad-client={ADSENSE_CLIENT}
-            data-ad-slot={slotId}
-            data-ad-format={adFormat}
-            data-full-width-responsive={fullWidthResponsive}
+          <div
+            className="mi-propeller-tag-host w-full max-w-full flex flex-col items-center justify-center px-1"
+            style={{ minHeight: insMinH }}
           />
         ) : (
           <span className="text-xs text-muted-foreground/80 px-4 text-center">
-            Thêm VITE_ADSENSE_CLIENT và slot trong .env để hiển thị quảng cáo
+            Bật Propeller: đặt VITE_PROPELLER_TAG_ZONE (hoặc zone theo từng vị trí trong .env.example).
           </span>
         )}
       </div>
