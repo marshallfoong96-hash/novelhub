@@ -6,6 +6,20 @@ const TTL_BROWSE_MS = 3 * 60 * 1000;
 const TTL_BROWSE_COUNT_MS = 90 * 1000;
 const TTL_CHAPTER_RANGE_MS = 2 * 60 * 1000;
 
+function deriveChapterCountFromNovelRow(row) {
+  const candidates = [
+    row?.latest_chapter_number,
+    row?.chapter_count,
+    row?.chapters_count,
+    row?.total_chapters,
+  ];
+  for (const c of candidates) {
+    const n = Number(c);
+    if (!Number.isNaN(n) && n >= 0) return n;
+  }
+  return 0;
+}
+
 function chunkArray(items, size) {
   const out = [];
   for (let i = 0; i < items.length; i += size) out.push(items.slice(i, i + size));
@@ -133,7 +147,16 @@ export async function fetchChapterRangeNovelsAndStatsCached(supabase) {
       if (novelsError) throw novelsError;
       const list = allNovels || [];
       const novelIds = list.map((n) => n.id).filter((id) => id != null);
-      const counts = await latestChapterNumberMapInternal(supabase, novelIds);
+      let counts = {};
+      try {
+        counts = await latestChapterNumberMapInternal(supabase, novelIds);
+      } catch (error) {
+        // Fallback when RPC is missing: keep page usable by deriving from row fields if present.
+        console.warn("[cachedBrowseQueries] novel_chapter_stats unavailable:", error?.message || error);
+        for (const novel of list) {
+          counts[novel.id] = deriveChapterCountFromNovelRow(novel);
+        }
+      }
       return { list, counts };
     },
     { shouldCache: (x) => x != null && Array.isArray(x.list) && x.counts != null && typeof x.counts === "object" }

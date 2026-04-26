@@ -341,9 +341,9 @@ function BrowseNovels({ mode = "all" }) {
     ongoing: "Truyện đang tiến hành",
     chapterRange: `Số chương: ${
       range === "ngan-50"
-        ? "Truyện ngắn (≤ 50)"
+        ? "Truyện ngắn"
         : range === "dai-50"
-          ? "Truyện dài (> 50)"
+          ? "Truyện dài"
           : range === "duoi-100"
         ? "Dưới 100"
         : range === "100-500"
