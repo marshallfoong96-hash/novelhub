@@ -436,6 +436,8 @@ function Header() {
   ];
 
   const chapterRangeLinks = [
+    { to: '/so-chuong/ngan-50', label: 'Truyện ngắn (≤ 50 chương)' },
+    { to: '/so-chuong/dai-50', label: 'Truyện dài (> 50 chương)' },
     { to: '/so-chuong/duoi-100', label: 'Dưới 100 chương' },
     { to: '/so-chuong/100-500', label: 'Từ 100 đến 500 chương' },
     { to: '/so-chuong/500-1000', label: 'Từ 500 đến 1000 chương' },
@@ -1161,10 +1163,25 @@ function Header() {
 
               <div className="border-b border-border px-4 py-2">
                 <p className="py-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  Phân loại độ dài
+                </p>
+                <div className="flex flex-col pb-2">
+                  {chapterRangeLinks.slice(0, 2).map((item) => (
+                    <Link
+                      key={item.to}
+                      to={item.to}
+                      onClick={() => setIsMenuOpen(false)}
+                      className="rounded-lg px-2 py-2 text-sm text-foreground hover:bg-secondary/70"
+                    >
+                      {item.label}
+                    </Link>
+                  ))}
+                </div>
+                <p className="py-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                   Theo số chương
                 </p>
                 <div className="flex flex-col pb-1">
-                  {chapterRangeLinks.map((item) => (
+                  {chapterRangeLinks.slice(2).map((item) => (
                     <Link
                       key={item.to}
                       to={item.to}

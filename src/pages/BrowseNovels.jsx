@@ -96,6 +96,8 @@ function BrowseNovels({ mode = "all" }) {
   }, [genres, slug]);
 
   const matchChapterRange = useCallback((count) => {
+    if (range === "ngan-50") return count <= 50;
+    if (range === "dai-50") return count > 50;
     if (range === "duoi-100") return count < 100;
     if (range === "100-500") return count >= 100 && count <= 500;
     if (range === "500-1000") return count > 500 && count <= 1000;
@@ -338,7 +340,11 @@ function BrowseNovels({ mode = "all" }) {
     completed: "Truyện Full",
     ongoing: "Truyện đang tiến hành",
     chapterRange: `Số chương: ${
-      range === "duoi-100"
+      range === "ngan-50"
+        ? "Truyện ngắn (≤ 50)"
+        : range === "dai-50"
+          ? "Truyện dài (> 50)"
+          : range === "duoi-100"
         ? "Dưới 100"
         : range === "100-500"
           ? "100 – 500"
