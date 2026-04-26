@@ -218,13 +218,12 @@ function BrowseNovels({ mode = "all" }) {
   useEffect(() => {
     if (mode === "category" && slug && genres.length === 0) return;
     if (mode === "category") return;
+    if (mode === "chapterRange") return;
     setError("");
     setLoading(true);
     setPage(0);
     setNovels([]);
-    if (mode !== "chapterRange") {
-      fetchPage(0, true);
-    }
+    fetchPage(0, true);
   }, [mode, slug, range, genres.length, fetchPage]);
 
   useEffect(() => {
@@ -281,8 +280,8 @@ function BrowseNovels({ mode = "all" }) {
             }
             counts[n.id] = val;
           });
-          setError(
-            "Đang dùng chế độ tải nhanh (fallback). Nếu muốn lọc số chương chính xác, hãy chạy SQL `novel_chapter_stats.sql` trên Supabase."
+          console.warn(
+            "[BrowseNovels chapterRange] using quick fallback rows; chapter stats may be less accurate."
           );
         } catch (fallbackError) {
           setError(fallbackError?.message || "Failed to load novels.");
@@ -479,7 +478,12 @@ function BrowseNovels({ mode = "all" }) {
             onRetry={() => {
               setError("");
               setLoading(true);
-              fetchPage(0, true);
+              if (mode === "chapterRange") {
+                setChapterRangePool([]);
+                setChapterCounts({});
+              } else {
+                fetchPage(0, true);
+              }
             }}
           />
         </div>
