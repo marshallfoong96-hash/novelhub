@@ -244,13 +244,51 @@ function BrowseNovels({ mode = "all" }) {
       let list = [];
       let counts = {};
       try {
-        const bundle = await fetchChapterRangeNovelsAndStatsCached(supabase);
+        const bundle = await Promise.race([
+          fetchChapterRangeNovelsAndStatsCached(supabase),
+          new Promise((_, reject) =>
+            setTimeout(() => reject(new Error("CHAPTER_RANGE_TIMEOUT")), 22_000)
+          ),
+        ]);
         list = bundle.list || [];
         counts = bundle.counts || {};
       } catch (novelsError) {
-        setError(novelsError?.message || "Failed to load novels.");
-        setLoading(false);
-        return;
+        // Fallback: avoid endless skeleton if cached/rpc path stalls.
+        console.warn("[BrowseNovels chapterRange] cached bundle fallback:", novelsError);
+        try {
+          const { data: quickRows, error: quickError } = await supabase
+            .from("novels")
+            .select("*")
+            .order("created_at", { ascending: false })
+            .limit(1200);
+          if (quickError) throw quickError;
+          list = quickRows || [];
+          counts = {};
+          list.forEach((n) => {
+            const candidates = [
+              n?.latest_chapter_number,
+              n?.chapter_count,
+              n?.chapters_count,
+              n?.total_chapters,
+            ];
+            let val = 0;
+            for (const c of candidates) {
+              const x = Number(c);
+              if (!Number.isNaN(x) && x >= 0) {
+                val = x;
+                break;
+              }
+            }
+            counts[n.id] = val;
+          });
+          setError(
+            "Đang dùng chế độ tải nhanh (fallback). Nếu muốn lọc số chương chính xác, hãy chạy SQL `novel_chapter_stats.sql` trên Supabase."
+          );
+        } catch (fallbackError) {
+          setError(fallbackError?.message || "Failed to load novels.");
+          setLoading(false);
+          return;
+        }
       }
 
       setChapterCounts(counts);
