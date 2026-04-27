@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { Send, FilePenLine, History } from "lucide-react";
+import { Send, FileText, History } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { supabase, isSupabaseConfigured } from "../lib/supabase";
 
@@ -301,7 +301,7 @@ function SubmitChapter() {
 
       <section className="rounded-xl border border-border bg-card p-4 sm:p-5">
         <h2 className="text-base font-semibold text-foreground mb-4 flex items-center gap-2">
-          <FilePenLine className="w-4 h-4 text-accent" />
+          <FileText className="w-4 h-4 text-accent" />
             {editingId ? `Chỉnh sửa chương gửi #${editingId}` : "Nội dung chương"}
         </h2>
 
