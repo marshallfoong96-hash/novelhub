@@ -1195,21 +1195,6 @@ function Header() {
 
               <div className="border-b border-border px-4 py-2">
                 <p className="py-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                  Phân loại độ dài
-                </p>
-                <div className="flex flex-col pb-2">
-                  {chapterRangeLinks.slice(0, 2).map((item) => (
-                    <Link
-                      key={item.to}
-                      to={item.to}
-                      onClick={() => setIsMenuOpen(false)}
-                      className="rounded-lg px-2 py-2 text-sm text-foreground hover:bg-secondary/70"
-                    >
-                      {item.label}
-                    </Link>
-                  ))}
-                </div>
-                <p className="py-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                   Theo số chương
                 </p>
                 <div className="flex flex-col pb-1">

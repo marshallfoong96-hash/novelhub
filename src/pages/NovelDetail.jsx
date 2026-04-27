@@ -229,7 +229,7 @@ function NovelDetail() {
   const handleReportError = () => {
     if (!novel?.id) return;
     const subject = encodeURIComponent(`Báo lỗi — truyện #${novel.id}: ${novel.title}`);
-    window.location.href = `mailto:contact@mitruyen.me?subject=${subject}`;
+    window.location.href = `mailto:contact.mitruyen@gmail.com?subject=${subject}`;
     showNotice('Đang mở email báo lỗi…');
   };
 

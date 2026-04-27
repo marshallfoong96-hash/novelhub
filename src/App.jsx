@@ -242,7 +242,7 @@ function Footer() {
             </p>
             <div className="flex flex-wrap items-center gap-2">
               <a
-                href="mailto:contact@mitruyen.me"
+                href="mailto:contact.mitruyen@gmail.com"
                 className="w-8 h-8 flex items-center justify-center bg-secondary text-muted-foreground hover:text-foreground hover:bg-accent/10 rounded-lg transition-colors"
                 aria-label="Email"
               >

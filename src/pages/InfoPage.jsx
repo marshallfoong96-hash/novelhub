@@ -27,7 +27,7 @@ export function AboutPage() {
         Chúng tôi tập trung vào trải nghiệm đọc dễ chịu, tốc độ nhanh, và dễ dàng tìm truyện theo thể loại.
       </p>
       <p>
-        Nếu bạn là tác giả hoặc đơn vị quảng cáo, vui lòng liên hệ: contact@mitruyen.me.
+        Nếu bạn là tác giả hoặc đơn vị quảng cáo, vui lòng liên hệ: contact.mitruyen@gmail.com.
       </p>
     </InfoPage>
   );
@@ -64,7 +64,7 @@ export function TermsPage() {
 export function ContactPage() {
   return (
     <InfoPage title="Liên hệ" description="Cần hỗ trợ tài khoản, nội dung hoặc quảng cáo?">
-      <p>Email: contact@mitruyen.me</p>
+      <p>Email: contact.mitruyen@gmail.com</p>
       <p>Thời gian phản hồi dự kiến: 24–72 giờ làm việc.</p>
     </InfoPage>
   );
