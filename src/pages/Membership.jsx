@@ -201,13 +201,29 @@ export default function Membership() {
             khoản sau).
           </p>
         </div>
-        <Link
-          to="/danh-dau"
-          className="mt-2 inline-flex items-center gap-1 text-sm font-medium text-accent hover:underline sm:mt-0"
-        >
-          Truyện đánh dấu
-          <ChevronRight className="h-4 w-4" />
-        </Link>
+        <div className="mt-2 flex items-center gap-3 sm:mt-0">
+          <Link
+            to="/dang-truyen"
+            className="inline-flex items-center gap-1 text-sm font-medium text-accent hover:underline"
+          >
+            Đăng truyện mới
+            <ChevronRight className="h-4 w-4" />
+          </Link>
+          <Link
+            to="/danh-dau"
+            className="inline-flex items-center gap-1 text-sm font-medium text-accent hover:underline"
+          >
+            Truyện đánh dấu
+            <ChevronRight className="h-4 w-4" />
+          </Link>
+          <Link
+            to="/dang-chuong"
+            className="inline-flex items-center gap-1 text-sm font-medium text-accent hover:underline"
+          >
+            Đăng chương mới
+            <ChevronRight className="h-4 w-4" />
+          </Link>
+        </div>
       </div>
 
       {/* Stats — kiểu dashboard */}

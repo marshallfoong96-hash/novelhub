@@ -20,6 +20,10 @@ const ReadingHistory = lazyWithRetry(() => import('./pages/ReadingHistory'));
 const BookmarkedNovels = lazyWithRetry(() => import('./pages/BookmarkedNovels'));
 const Membership = lazyWithRetry(() => import('./pages/Membership'));
 const GenreManager = lazyWithRetry(() => import('./pages/GenreManager'));
+const SubmitNovel = lazyWithRetry(() => import('./pages/SubmitNovel'));
+const SubmissionModeration = lazyWithRetry(() => import('./pages/SubmissionModeration'));
+const SubmitChapter = lazyWithRetry(() => import('./pages/SubmitChapter'));
+const ChapterSubmissionModeration = lazyWithRetry(() => import('./pages/ChapterSubmissionModeration'));
 const AboutPage = lazyWithRetry(() =>
   import('./pages/InfoPage').then((m) => ({ default: m.AboutPage }))
 );
@@ -84,6 +88,38 @@ function RoutedMain() {
             element={
               <RequireAuth>
                 <Membership />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/dang-truyen"
+            element={
+              <RequireAuth>
+                <SubmitNovel />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/quan-ly-bai-gui"
+            element={
+              <RequireAuth>
+                <SubmissionModeration />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/dang-chuong"
+            element={
+              <RequireAuth>
+                <SubmitChapter />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/quan-ly-chuong-gui"
+            element={
+              <RequireAuth>
+                <ChapterSubmissionModeration />
               </RequireAuth>
             }
           />
@@ -157,9 +193,12 @@ function Footer() {
       { label: 'Thành viên', to: '/profile' },
     ],
     create: [
-      { label: 'Truyện Hot', to: '/hot' },
+      { label: 'Đăng truyện mới', to: '/dang-truyen' },
+      { label: 'Đăng chương mới', to: '/dang-chuong' },
+      { label: 'Quản lý bài gửi', to: '/quan-ly-bai-gui' },
+      { label: 'Duyệt chương gửi', to: '/quan-ly-chuong-gui' },
+      { label: 'Trung tâm thành viên', to: '/profile' },
       { label: 'Mới cập nhật', to: '/truyen-moi' },
-      { label: 'Truyện Full', to: '/truyen-full' },
     ],
     company: [
       { label: 'Giới thiệu', to: '/gioi-thieu' },

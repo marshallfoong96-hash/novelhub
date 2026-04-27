@@ -858,6 +858,38 @@ function Header() {
                     Trung tâm thành viên
                   </Link>
                   <Link
+                    to="/dang-truyen"
+                    onClick={() => setMemberMenuOpen(false)}
+                    className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-foreground hover:bg-secondary"
+                  >
+                    <BookOpen className="h-4 w-4 text-emerald-600" />
+                    Đăng truyện mới
+                  </Link>
+                  <Link
+                    to="/quan-ly-bai-gui"
+                    onClick={() => setMemberMenuOpen(false)}
+                    className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-foreground hover:bg-secondary"
+                  >
+                    <List className="h-4 w-4 text-sky-600" />
+                    Quản lý bài gửi
+                  </Link>
+                  <Link
+                    to="/dang-chuong"
+                    onClick={() => setMemberMenuOpen(false)}
+                    className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-foreground hover:bg-secondary"
+                  >
+                    <BookOpen className="h-4 w-4 text-violet-600" />
+                    Đăng chương mới
+                  </Link>
+                  <Link
+                    to="/quan-ly-chuong-gui"
+                    onClick={() => setMemberMenuOpen(false)}
+                    className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-foreground hover:bg-secondary"
+                  >
+                    <List className="h-4 w-4 text-indigo-600" />
+                    Duyệt chương gửi
+                  </Link>
+                  <Link
                     to="/profile#liked-novels"
                     onClick={() => setMemberMenuOpen(false)}
                     className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-foreground hover:bg-secondary"
@@ -1205,6 +1237,58 @@ function Header() {
               >
                 <Bookmark className="h-5 w-5 shrink-0 opacity-80" />
                 Truyện đánh dấu
+              </Link>
+
+              <Link
+                to="/dang-truyen"
+                onClick={() => setIsMenuOpen(false)}
+                className={`flex items-center gap-3 border-b border-border px-4 py-3.5 text-sm font-medium transition-colors ${
+                  location.pathname === '/dang-truyen'
+                    ? 'bg-accent/10 text-accent'
+                    : 'text-foreground hover:bg-secondary/80'
+                }`}
+              >
+                <BookOpen className="h-5 w-5 shrink-0 opacity-80" />
+                Đăng truyện mới
+              </Link>
+
+              <Link
+                to="/quan-ly-bai-gui"
+                onClick={() => setIsMenuOpen(false)}
+                className={`flex items-center gap-3 border-b border-border px-4 py-3.5 text-sm font-medium transition-colors ${
+                  location.pathname === '/quan-ly-bai-gui'
+                    ? 'bg-accent/10 text-accent'
+                    : 'text-foreground hover:bg-secondary/80'
+                }`}
+              >
+                <List className="h-5 w-5 shrink-0 opacity-80" />
+                Quản lý bài gửi
+              </Link>
+
+              <Link
+                to="/dang-chuong"
+                onClick={() => setIsMenuOpen(false)}
+                className={`flex items-center gap-3 border-b border-border px-4 py-3.5 text-sm font-medium transition-colors ${
+                  location.pathname === '/dang-chuong'
+                    ? 'bg-accent/10 text-accent'
+                    : 'text-foreground hover:bg-secondary/80'
+                }`}
+              >
+                <BookOpen className="h-5 w-5 shrink-0 opacity-80" />
+                Đăng chương mới
+              </Link>
+
+              <Link
+                to="/quan-ly-chuong-gui"
+                onClick={() => setIsMenuOpen(false)}
+                className={`flex items-center gap-3 border-b border-border px-4 py-3.5 text-sm font-medium transition-colors ${
+                  location.pathname === '/quan-ly-chuong-gui'
+                    ? 'bg-accent/10 text-accent'
+                    : 'text-foreground hover:bg-secondary/80'
+                }`}
+              >
+                <List className="h-5 w-5 shrink-0 opacity-80" />
+                Duyệt chương gửi
               </Link>
 
               <Link
