@@ -1,13 +1,67 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { Send, FilePenLine } from "lucide-react";
+import { Send, FilePenLine, History } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { supabase, isSupabaseConfigured } from "../lib/supabase";
+
+function chapterDraftStorageKey(uid) {
+  return `mi_submit_chapter_draft__uid_${uid}`;
+}
+
+function ChapterRejectionHistory({ revisions }) {
+  const [open, setOpen] = useState(false);
+  if (!revisions?.length) return null;
+  return (
+    <div className="mt-2 border-t border-border pt-2">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="inline-flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground hover:text-accent"
+      >
+        <History className="h-3.5 w-3.5 shrink-0" />
+        Lịch sử phiên bản khi bị từ chối ({revisions.length})
+      </button>
+      {open ? (
+        <ul className="mt-2 space-y-3 rounded-lg border border-border bg-secondary/20 p-3 text-xs">
+          {revisions.map((rev) => {
+            const snap = rev.snapshot || {};
+            return (
+              <li key={rev.id} className="border-b border-border/60 pb-3 last:border-0 last:pb-0">
+                <p className="font-medium text-foreground">
+                  {new Date(rev.created_at).toLocaleString("vi-VN")}
+                  {rev.previous_submission_status ? (
+                    <span className="ml-1 font-normal text-muted-foreground">
+                      (trước đó: {rev.previous_submission_status})
+                    </span>
+                  ) : null}
+                </p>
+                {rev.moderation_note ? (
+                  <p className="mt-1 text-rose-600">Lý do: {rev.moderation_note}</p>
+                ) : null}
+                <p className="mt-1 text-muted-foreground">
+                  <span className="font-medium text-foreground">Chương:</span> {snap.chapter_number} — {snap.title || "—"}
+                </p>
+                <details className="mt-1">
+                  <summary className="cursor-pointer text-accent hover:underline">Nội dung đã gửi</summary>
+                  <pre className="mt-1 max-h-48 overflow-y-auto whitespace-pre-wrap break-words rounded bg-card p-2 text-[11px] text-foreground ring-1 ring-border/60">
+                    {snap.content || "—"}
+                  </pre>
+                </details>
+              </li>
+            );
+          })}
+        </ul>
+      ) : null}
+    </div>
+  );
+}
 
 function SubmitChapter() {
   const { user } = useAuth();
   const [novels, setNovels] = useState([]);
   const [rows, setRows] = useState([]);
+  const [revisionsByChapterId, setRevisionsByChapterId] = useState({});
+  const [editingId, setEditingId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -43,18 +97,20 @@ function SubmitChapter() {
         .order("created_at", { ascending: false }),
       supabase
         .from("chapter_submissions")
-        .select("id,novel_id,chapter_number,title,submission_status,created_at,moderation_note")
+        .select("id,submission_id,novel_id,chapter_number,title,content,submission_status,created_at,moderation_note")
         .order("created_at", { ascending: false })
         .limit(50),
     ]);
 
     if (novelsRes.error) {
       setError(novelsRes.error.message || "Không tải được danh sách truyện đã phát hành.");
+      setRevisionsByChapterId({});
       setLoading(false);
       return;
     }
     if (chapterSubRes.error) {
       setError(chapterSubRes.error.message || "Không tải được danh sách chương đã gửi.");
+      setRevisionsByChapterId({});
       setLoading(false);
       return;
     }
@@ -65,13 +121,67 @@ function SubmitChapter() {
       title: r.title,
     }));
     setNovels(list);
-    setRows(chapterSubRes.data || []);
+    const chapterList = chapterSubRes.data || [];
+    setRows(chapterList);
+    const cids = chapterList.map((r) => r.id).filter(Boolean);
+    if (cids.length === 0) {
+      setRevisionsByChapterId({});
+    } else {
+      const { data: revRows, error: revErr } = await supabase
+        .from("chapter_submission_revisions")
+        .select(
+          "id,chapter_submission_id,snapshot,previous_submission_status,moderation_note,reviewed_at,created_at"
+        )
+        .in("chapter_submission_id", cids)
+        .order("created_at", { ascending: false });
+      if (revErr) {
+        console.warn("[SubmitChapter] revisions:", revErr.message);
+        setRevisionsByChapterId({});
+      } else {
+        const map = {};
+        (revRows || []).forEach((rev) => {
+          const cid = rev.chapter_submission_id;
+          if (!map[cid]) map[cid] = [];
+          map[cid].push(rev);
+        });
+        setRevisionsByChapterId(map);
+      }
+    }
     setLoading(false);
   };
 
   useEffect(() => {
     loadData();
   }, [user?.id]);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    try {
+      const raw = localStorage.getItem(chapterDraftStorageKey(user.id));
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      if (!parsed || typeof parsed !== "object") return;
+      setForm((prev) => ({
+        ...prev,
+        submission_id: parsed.submission_id || prev.submission_id,
+        novel_id: parsed.novel_id || prev.novel_id,
+        chapter_number: parsed.chapter_number || prev.chapter_number,
+        title: parsed.title || prev.title,
+        content: parsed.content || prev.content,
+      }));
+    } catch {
+      /* ignore invalid draft */
+    }
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    try {
+      localStorage.setItem(chapterDraftStorageKey(user.id), JSON.stringify(form));
+    } catch {
+      /* ignore */
+    }
+  }, [form, user?.id]);
 
   const onPickNovel = (value) => {
     const picked = novels.find((n) => String(n.novel_id) === String(value));
@@ -82,8 +192,7 @@ function SubmitChapter() {
     }));
   };
 
-  const onSubmit = async (event) => {
-    event.preventDefault();
+  const persistChapter = async (targetStatus) => {
     setError("");
     setNotice("");
     if (!form.novel_id || !form.submission_id) {
@@ -108,24 +217,72 @@ function SubmitChapter() {
       chapter_number: chNum,
       title: form.title.trim(),
       content: form.content.trim(),
-      submission_status: "pending_review",
+      submission_status: targetStatus,
     };
-
-    const { error: insertError } = await supabase.from("chapter_submissions").insert([payload]);
+    const request = editingId
+      ? supabase.from("chapter_submissions").update(payload).eq("id", editingId)
+      : supabase.from("chapter_submissions").insert([payload]);
+    const { error: upsertError } = await request;
     setSubmitting(false);
-    if (insertError) {
-      setError(insertError.message || "Gửi chương thất bại.");
+    if (upsertError) {
+      setError(upsertError.message || "Lưu chương thất bại.");
       return;
     }
 
-    setNotice("Đã gửi chương thành công. Trạng thái: pending_review.");
+    setNotice(
+      targetStatus === "draft"
+        ? "Đã lưu nháp chương thành công."
+        : editingId
+        ? "Đã cập nhật và gửi lại chương thành công."
+        : "Đã gửi chương thành công. Trạng thái: pending_review."
+    );
+    setEditingId(null);
     setForm((prev) => ({
       ...prev,
       chapter_number: "",
       title: "",
       content: "",
     }));
+    if (user?.id) {
+      try {
+        localStorage.removeItem(chapterDraftStorageKey(user.id));
+      } catch {
+        /* ignore */
+      }
+    }
     loadData();
+  };
+
+  const onSubmit = async (event) => {
+    event.preventDefault();
+    await persistChapter("pending_review");
+  };
+
+  const onSaveDraft = async () => {
+    await persistChapter("draft");
+  };
+
+  const onLoadForEdit = (row) => {
+    setEditingId(row.id);
+    setForm({
+      submission_id: String(row.submission_id || ""),
+      novel_id: String(row.novel_id || ""),
+      chapter_number: String(row.chapter_number || ""),
+      title: row.title || "",
+      content: row.content || "",
+    });
+    setNotice("Đã nạp chương vào form để chỉnh sửa.");
+    setError("");
+  };
+
+  const onCancelEdit = () => {
+    setEditingId(null);
+    setForm((prev) => ({
+      ...prev,
+      chapter_number: "",
+      title: "",
+      content: "",
+    }));
   };
 
   return (
@@ -145,7 +302,7 @@ function SubmitChapter() {
       <section className="rounded-xl border border-border bg-card p-4 sm:p-5">
         <h2 className="text-base font-semibold text-foreground mb-4 flex items-center gap-2">
           <FilePenLine className="w-4 h-4 text-accent" />
-          Nội dung chương
+            {editingId ? `Chỉnh sửa chương gửi #${editingId}` : "Nội dung chương"}
         </h2>
 
         {loading ? (
@@ -199,14 +356,33 @@ function SubmitChapter() {
             {error && <p className="text-sm text-destructive">{error}</p>}
             {notice && <p className="text-sm text-emerald-600">{notice}</p>}
 
-            <button
-              type="submit"
-              disabled={submitting}
-              className="inline-flex items-center justify-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-accent-foreground disabled:opacity-60"
-            >
-              <Send className="w-4 h-4" />
-              {submitting ? "Đang gửi..." : "Gửi duyệt chương"}
-            </button>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="submit"
+                disabled={submitting}
+                className="inline-flex items-center justify-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-accent-foreground disabled:opacity-60"
+              >
+                <Send className="w-4 h-4" />
+                {submitting ? "Đang gửi..." : editingId ? "Cập nhật & gửi duyệt" : "Gửi duyệt chương"}
+              </button>
+              <button
+                type="button"
+                disabled={submitting}
+                onClick={onSaveDraft}
+                className="inline-flex items-center justify-center rounded-lg border border-border bg-secondary px-4 py-2 text-sm font-semibold text-foreground disabled:opacity-60"
+              >
+                Lưu nháp
+              </button>
+              {editingId ? (
+                <button
+                  type="button"
+                  onClick={onCancelEdit}
+                  className="inline-flex items-center justify-center rounded-lg border border-border bg-card px-4 py-2 text-sm font-semibold text-foreground"
+                >
+                  Hủy chỉnh sửa
+                </button>
+              ) : null}
+            </div>
           </form>
         )}
       </section>
@@ -218,21 +394,35 @@ function SubmitChapter() {
         ) : (
           <div className="divide-y divide-border">
             {rows.map((r) => (
-              <div key={r.id} className="py-3 flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold text-foreground line-clamp-1">
-                    Chương {r.chapter_number}: {r.title}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Novel #{r.novel_id} · {new Date(r.created_at).toLocaleString("vi-VN")}
-                  </p>
-                  {r.moderation_note ? (
-                    <p className="text-xs text-rose-600 mt-1">Ghi chú: {r.moderation_note}</p>
-                  ) : null}
+              <div key={r.id} className="py-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-foreground line-clamp-1">
+                      Chương {r.chapter_number}: {r.title}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Novel #{r.novel_id} · {new Date(r.created_at).toLocaleString("vi-VN")}
+                    </p>
+                    {r.moderation_note ? (
+                      <p className="text-xs text-rose-600 mt-1">Ghi chú: {r.moderation_note}</p>
+                    ) : null}
+                  </div>
+                  <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+                    <span className="rounded-full bg-secondary px-2.5 py-1 text-[11px] font-medium text-foreground">
+                      {r.submission_status}
+                    </span>
+                    {r.submission_status === "rejected" || r.submission_status === "draft" ? (
+                      <button
+                        type="button"
+                        onClick={() => onLoadForEdit(r)}
+                        className="rounded-lg border border-border bg-card px-2.5 py-1 text-[11px] font-medium text-foreground hover:bg-secondary"
+                      >
+                        Sửa & gửi lại
+                      </button>
+                    ) : null}
+                  </div>
                 </div>
-                <span className="rounded-full bg-secondary px-2.5 py-1 text-[11px] font-medium text-foreground">
-                  {r.submission_status}
-                </span>
+                <ChapterRejectionHistory revisions={revisionsByChapterId[r.id]} />
               </div>
             ))}
           </div>

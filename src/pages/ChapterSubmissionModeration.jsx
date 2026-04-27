@@ -1,6 +1,44 @@
 import { useEffect, useMemo, useState } from "react";
-import { ShieldCheck, CheckCircle2, XCircle, RefreshCcw } from "lucide-react";
+import { ShieldCheck, CheckCircle2, XCircle, RefreshCcw, History } from "lucide-react";
 import { supabase, isSupabaseConfigured } from "../lib/supabase";
+
+function ModeratorChapterRevisions({ revisions }) {
+  const [open, setOpen] = useState(false);
+  if (!revisions?.length) return null;
+  return (
+    <div className="mt-2 border-t border-border pt-2">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="inline-flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground hover:text-accent"
+      >
+        <History className="h-3.5 w-3.5" />
+        Snapshot khi từ chối ({revisions.length})
+      </button>
+      {open ? (
+        <ul className="mt-2 max-h-64 space-y-2 overflow-y-auto rounded-lg border border-border bg-secondary/15 p-2 text-[11px]">
+          {revisions.map((rev) => {
+            const s = rev.snapshot || {};
+            return (
+              <li key={rev.id} className="rounded border border-border/50 bg-card/80 p-2">
+                <p className="font-medium text-foreground">
+                  {new Date(rev.created_at).toLocaleString("vi-VN")} · {rev.previous_submission_status}
+                </p>
+                {rev.moderation_note ? (
+                  <p className="mt-0.5 text-rose-600">Ghi chú: {rev.moderation_note}</p>
+                ) : null}
+                <p className="mt-1 text-muted-foreground">
+                  Chương {s.chapter_number}: {s.title}
+                </p>
+                <p className="mt-1 line-clamp-4 text-muted-foreground">{s.content}</p>
+              </li>
+            );
+          })}
+        </ul>
+      ) : null}
+    </div>
+  );
+}
 
 const FILTERS = [
   { key: "pending_review", label: "Chờ duyệt" },
@@ -17,6 +55,7 @@ function ChapterSubmissionModeration() {
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
   const [busyId, setBusyId] = useState(null);
+  const [revisionsByChapterSubmissionId, setRevisionsByChapterSubmissionId] = useState({});
 
   const loadData = async () => {
     setLoading(true);
@@ -49,8 +88,35 @@ function ChapterSubmissionModeration() {
 
     if (fetchError) {
       setError(fetchError.message || "Không tải được danh sách chương gửi.");
+      setRows([]);
+      setRevisionsByChapterSubmissionId({});
     } else {
-      setRows(data || []);
+      const list = data || [];
+      setRows(list);
+      const ids = list.map((r) => r.id).filter(Boolean);
+      if (ids.length === 0) {
+        setRevisionsByChapterSubmissionId({});
+      } else {
+        const { data: revRows, error: revErr } = await supabase
+          .from("chapter_submission_revisions")
+          .select(
+            "id,chapter_submission_id,snapshot,previous_submission_status,moderation_note,created_at"
+          )
+          .in("chapter_submission_id", ids)
+          .order("created_at", { ascending: false });
+        if (revErr) {
+          console.warn("[Moderation] chapter revisions:", revErr.message);
+          setRevisionsByChapterSubmissionId({});
+        } else {
+          const map = {};
+          (revRows || []).forEach((rev) => {
+            const cid = rev.chapter_submission_id;
+            if (!map[cid]) map[cid] = [];
+            map[cid].push(rev);
+          });
+          setRevisionsByChapterSubmissionId(map);
+        }
+      }
     }
     setLoading(false);
   };
@@ -195,6 +261,7 @@ function ChapterSubmissionModeration() {
                   </button>
                 </div>
               ) : null}
+              <ModeratorChapterRevisions revisions={revisionsByChapterSubmissionId[row.id]} />
             </div>
           ))
         )}
