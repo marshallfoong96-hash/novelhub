@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { isAdminEmail } from '../lib/adminAccess';
 import { fetchAllGenresRows, fetchGenresCached, primeGenresCache } from '../lib/cachedQueries';
 import {
   fetchNovelsByIdsCached,
@@ -88,6 +89,7 @@ function Header() {
     }
   };
   const { user, isAuthenticated, logout } = useAuth();
+  const canAccessModeration = isAdminEmail(user?.email);
   const notificationSeenKey = useMemo(() => {
     if (!user?.id) return null;
     return `mi_notifications_last_seen__uid_${user.id}`;
@@ -865,14 +867,16 @@ function Header() {
                     <BookOpen className="h-4 w-4 text-emerald-600" />
                     Đăng truyện mới
                   </Link>
-                  <Link
-                    to="/quan-ly-bai-gui"
-                    onClick={() => setMemberMenuOpen(false)}
-                    className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-foreground hover:bg-secondary"
-                  >
-                    <List className="h-4 w-4 text-sky-600" />
-                    Quản lý bài gửi
-                  </Link>
+                  {canAccessModeration ? (
+                    <Link
+                      to="/quan-ly-bai-gui"
+                      onClick={() => setMemberMenuOpen(false)}
+                      className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-foreground hover:bg-secondary"
+                    >
+                      <List className="h-4 w-4 text-sky-600" />
+                      投稿管理
+                    </Link>
+                  ) : null}
                   <Link
                     to="/dang-chuong"
                     onClick={() => setMemberMenuOpen(false)}
@@ -881,14 +885,16 @@ function Header() {
                     <BookOpen className="h-4 w-4 text-violet-600" />
                     Đăng chương mới
                   </Link>
-                  <Link
-                    to="/quan-ly-chuong-gui"
-                    onClick={() => setMemberMenuOpen(false)}
-                    className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-foreground hover:bg-secondary"
-                  >
-                    <List className="h-4 w-4 text-indigo-600" />
-                    Duyệt chương gửi
-                  </Link>
+                  {canAccessModeration ? (
+                    <Link
+                      to="/quan-ly-chuong-gui"
+                      onClick={() => setMemberMenuOpen(false)}
+                      className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-foreground hover:bg-secondary"
+                    >
+                      <List className="h-4 w-4 text-indigo-600" />
+                      审核已提交章节
+                    </Link>
+                  ) : null}
                   <Link
                     to="/profile#liked-novels"
                     onClick={() => setMemberMenuOpen(false)}
@@ -1237,18 +1243,20 @@ function Header() {
                 Đăng truyện mới
               </Link>
 
-              <Link
-                to="/quan-ly-bai-gui"
-                onClick={() => setIsMenuOpen(false)}
-                className={`flex items-center gap-3 border-b border-border px-4 py-3.5 text-sm font-medium transition-colors ${
-                  location.pathname === '/quan-ly-bai-gui'
-                    ? 'bg-accent/10 text-accent'
-                    : 'text-foreground hover:bg-secondary/80'
-                }`}
-              >
-                <List className="h-5 w-5 shrink-0 opacity-80" />
-                Quản lý bài gửi
-              </Link>
+              {canAccessModeration ? (
+                <Link
+                  to="/quan-ly-bai-gui"
+                  onClick={() => setIsMenuOpen(false)}
+                  className={`flex items-center gap-3 border-b border-border px-4 py-3.5 text-sm font-medium transition-colors ${
+                    location.pathname === '/quan-ly-bai-gui'
+                      ? 'bg-accent/10 text-accent'
+                      : 'text-foreground hover:bg-secondary/80'
+                  }`}
+                >
+                  <List className="h-5 w-5 shrink-0 opacity-80" />
+                  投稿管理
+                </Link>
+              ) : null}
 
               <Link
                 to="/dang-chuong"
@@ -1263,18 +1271,20 @@ function Header() {
                 Đăng chương mới
               </Link>
 
-              <Link
-                to="/quan-ly-chuong-gui"
-                onClick={() => setIsMenuOpen(false)}
-                className={`flex items-center gap-3 border-b border-border px-4 py-3.5 text-sm font-medium transition-colors ${
-                  location.pathname === '/quan-ly-chuong-gui'
-                    ? 'bg-accent/10 text-accent'
-                    : 'text-foreground hover:bg-secondary/80'
-                }`}
-              >
-                <List className="h-5 w-5 shrink-0 opacity-80" />
-                Duyệt chương gửi
-              </Link>
+              {canAccessModeration ? (
+                <Link
+                  to="/quan-ly-chuong-gui"
+                  onClick={() => setIsMenuOpen(false)}
+                  className={`flex items-center gap-3 border-b border-border px-4 py-3.5 text-sm font-medium transition-colors ${
+                    location.pathname === '/quan-ly-chuong-gui'
+                      ? 'bg-accent/10 text-accent'
+                      : 'text-foreground hover:bg-secondary/80'
+                  }`}
+                >
+                  <List className="h-5 w-5 shrink-0 opacity-80" />
+                  审核已提交章节
+                </Link>
+              ) : null}
 
               <Link
                 to="/lich-su"

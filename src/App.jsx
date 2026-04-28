@@ -9,6 +9,7 @@ import { RouteErrorBoundary } from './components/RouteErrorBoundary';
 import { BookOpen, Users, PenTool, Mail } from 'lucide-react';
 import BrandLogo from './components/BrandLogo';
 import Home from './pages/Home';
+import { isAdminEmail } from './lib/adminAccess';
 
 const Login = lazyWithRetry(() => import('./pages/Login'));
 const Register = lazyWithRetry(() => import('./pages/Register'));
@@ -52,6 +53,16 @@ function RequireAuth({ children }) {
   if (loading) return <RoutePageFallback />;
   if (!isAuthenticated) {
     return <Navigate to="/login" replace state={{ from: location }} />;
+  }
+  return children;
+}
+
+function RequireAdmin({ children }) {
+  const { user, isAuthenticated, loading } = useAuth();
+
+  if (loading) return <RoutePageFallback />;
+  if (!isAuthenticated || !isAdminEmail(user?.email)) {
+    return <Navigate to="/" replace />;
   }
   return children;
 }
@@ -102,9 +113,9 @@ function RoutedMain() {
           <Route
             path="/quan-ly-bai-gui"
             element={
-              <RequireAuth>
+              <RequireAdmin>
                 <SubmissionModeration />
-              </RequireAuth>
+              </RequireAdmin>
             }
           />
           <Route
@@ -118,9 +129,9 @@ function RoutedMain() {
           <Route
             path="/quan-ly-chuong-gui"
             element={
-              <RequireAuth>
+              <RequireAdmin>
                 <ChapterSubmissionModeration />
-              </RequireAuth>
+              </RequireAdmin>
             }
           />
           <Route path="/quan-ly-the-loai" element={<GenreManager />} />
@@ -179,6 +190,8 @@ function NotFound() {
 }
 
 function Footer() {
+  const { user } = useAuth();
+  const canAccessModeration = isAdminEmail(user?.email);
   const currentYear = new Date().getFullYear();
 
   const footerLinks = {
@@ -195,8 +208,12 @@ function Footer() {
     create: [
       { label: 'Đăng truyện mới', to: '/dang-truyen' },
       { label: 'Đăng chương mới', to: '/dang-chuong' },
-      { label: 'Quản lý bài gửi', to: '/quan-ly-bai-gui' },
-      { label: 'Duyệt chương gửi', to: '/quan-ly-chuong-gui' },
+      ...(canAccessModeration
+        ? [
+                  { label: '投稿管理', to: '/quan-ly-bai-gui' },
+                  { label: '审核已提交章节', to: '/quan-ly-chuong-gui' },
+          ]
+        : []),
       { label: 'Trung tâm thành viên', to: '/profile' },
       { label: 'Mới cập nhật', to: '/truyen-moi' },
     ],
